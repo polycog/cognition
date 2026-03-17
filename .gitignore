@@ -3,4 +3,7 @@
 __pycache__/
 venv/
 
-.vscode
+.vscode/
+
+.ruff_cache/
+.mypy_cache/
