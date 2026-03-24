@@ -2,7 +2,7 @@
 Utility code
 """
 
-from typing import Any, Mapping
+from typing import Any, Mapping, Protocol
 
 #
 
@@ -50,3 +50,14 @@ class AttrReferral:
         """
 
         raise AttributeError(f"'{type(self).__name__}' object attributes are read-only.")
+
+
+# pylint: disable=too-few-public-methods
+class ImplementsLessThan(Protocol):
+    """
+    Dictates a sortable type for
+    purposes of action ranking
+    """
+
+    def __lt__(self, other) -> bool:
+        ...
