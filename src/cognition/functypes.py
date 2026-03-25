@@ -5,7 +5,7 @@ ala
 https://docs.oracle.com/javase/8/docs/api/java/util/function/package-summary.html
 """
 
-from typing import Callable
+from collections.abc import Callable
 
 #
 
