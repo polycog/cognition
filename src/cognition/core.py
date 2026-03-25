@@ -201,7 +201,7 @@ class Task[S]:
         return "\n".join(
             f"{k}={v}"
             for k, v in {
-                "Phase": f"{self.phase.name} ({self.phase})",
+                "Phase": f"{self.phase.name}",
                 "State": str(self.state),
                 "Done?": self.done,
                 "Chosen": str(self._chosen),
@@ -253,7 +253,7 @@ class Task[S]:
         String representation of the most
         recently chosen action
         """
-        return "" if self._chosen is None else str(self._chosen)
+        return None if self._chosen is None else str(self._chosen)
 
     #
 
