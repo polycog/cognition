@@ -13,7 +13,6 @@ from cognition import AttrReferral
 class TestUtility(unittest.TestCase):
     """Tests for utility code"""
 
-    # pylint: disable=no-member
     def test_attrreferral_bad(self) -> None:
         """Confirming AttrReferral read-only"""
 
@@ -42,7 +41,6 @@ class TestUtility(unittest.TestCase):
         self.assertEqual(src['b'], b_start)
 
 
-    # pylint: disable=no-member
     def test_attrreferral_good(self) -> None:
         """Testing AttrReferral golden path"""
 
