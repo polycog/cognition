@@ -2,7 +2,12 @@
 Practical library additions
 """
 
-from typing import Iterable
+from typing import (
+    Any,
+    Iterable,
+    Mapping,
+    Optional,
+)
 
 from enum import IntEnum
 
@@ -30,6 +35,57 @@ class Rank(IntEnum):
     HIGH = 1
     MEDIUM = 2
     LOW = 3
+
+
+class NamedAction[S]:
+    """
+    Convenience wrapper around
+    a function to facilitate
+    human-readable naming
+    """
+
+    def __init__(self, name: str, f: Action, **kwargs: Any) -> None:
+        """
+        Constructs the action
+        with a name and function
+        to execute when this
+        object is called,
+        as well as an optional
+        list of key=value pairs
+        to parameterize
+        """
+
+        self._name = name
+        self._f = f
+        self._params = kwargs.copy()
+
+    def __str__(self) -> str:
+        """
+        Either Name or Name[k1=v1, k2=v2, ...]
+        """
+
+        if self._params:
+            params_str = ", ".join(f"{k}={repr(v)}" for k,v in self._params.items())
+            return f"{self._name}[{params_str}]"
+
+        return self._name
+
+    @property
+    def name(self) -> str:
+        """Gets the name"""
+
+        return self._name
+
+    @property
+    def params(self) -> Mapping[str, Any]:
+        """Gets the params"""
+
+        return self._params
+
+    def __call__(self, s: S, io: IOContainer) -> Optional[S]:
+        """Execute the action"""
+
+        return self._f(s, io)
 
 
 def uniform_evaluator[S](
