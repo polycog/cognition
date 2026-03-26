@@ -187,6 +187,11 @@ class TestConvenience(unittest.TestCase):
                 ranks
             )
 
+        # HIGH < LOW b/c higher priority in sort
+        self.assertTrue(
+            ranks[0] < ranks2[0]
+        )
+
     def test_create_elaborator(self) -> None:
         """Checks create_elaborator"""
 
