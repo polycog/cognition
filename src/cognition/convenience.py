@@ -7,9 +7,13 @@ from typing import (
     Iterable,
     Mapping,
     Optional,
+    Protocol,
+    runtime_checkable
 )
 
 from enum import IntEnum
+
+from functools import wraps
 
 from cognition.functypes import Predicate
 
@@ -19,6 +23,8 @@ from cognition.core import (
     Action,
     ActionEvaluator,
     ActionRank,
+    BiFunction,
+    Elaborator,
     IOContainer,
 )
 
@@ -37,60 +43,113 @@ class Rank(IntEnum):
     LOW = 3
 
 
-class NamedAction[S]:
+class StringifiedFunction:
     """
-    Convenience wrapper around
-    a function to facilitate
-    human-readable naming
+    A callable object that wraps a function
+    and provides a custom __str__ representation.
     """
 
-    def __init__(self, name: str, f: Action, **kwargs: Any) -> None:
+    def __init__(self, func, str_representation):
         """
-        Constructs the action
-        with a name and function
-        to execute when this
-        object is called,
-        as well as an optional
-        list of key=value pairs
-        to parameterize
+        Wrapping function and __str__
+        representation
         """
 
-        self._name = name
-        self._f = f
-        self._params = kwargs.copy()
+        wraps(func)(self)
+        self._func = func
+        self._str_representation = str_representation
 
-    def __str__(self) -> str:
+    def __call__(self, *args, **kwargs):
         """
-        Either Name or Name[k1=v1, k2=v2, ...]
+        Calls the original function
+        """
+        return self._func(*args, **kwargs)
+
+    def __str__(self):
+        """
+        Returns the custom string representation
         """
 
-        if self._params:
-            params_str = ", ".join(f"{k}={repr(v)}" for k,v in self._params.items())
-            return f"{self._name}[{params_str}]"
+        return self._str_representation
 
-        return self._name
+def stringify(str_representation):
+    """
+    Decorator for stringifying
+    a function
+    """
 
-    @property
-    def name(self) -> str:
-        """Gets the name"""
+    def decorator(func):
+        return StringifiedFunction(func, str_representation)
 
-        return self._name
+    return decorator
 
-    @property
-    def params(self) -> Mapping[str, Any]:
-        """Gets the params"""
 
-        return self._params
+def create_elaborator[S](
+    name: Optional[str] = None,
+    **kwargs: BiFunction[S, IOContainer, Any]
+) -> Elaborator[S]:
+    """
+    Produces an (optionally named)
+    elaborator given association
+    between keywords and functions
+    """
 
-    def __call__(self, s: S, io: IOContainer) -> Optional[S]:
-        """Execute the action"""
+    def _f(s: S, io: IOContainer) -> dict[str, Any]:
+        return {
+            k: v(s, io)
+            for k, v in kwargs.items()
+        }
 
-        return self._f(s, io)
+    if name:
+        return stringify(name)(_f)
+
+    return _f
+
+
+# pylint: disable=too-few-public-methods
+@runtime_checkable
+class NamedAction(Protocol):
+    """
+    Represents an action
+    that has been augmented
+    with some annotation
+    """
+
+    name: str
+    params: Mapping[str, Any]
+
+def create_named_action[S](
+    name: str,
+    f: Action,
+    **kwargs: Any
+) -> Action[S]:
+    """
+    Produces a function that has
+    a nice __str__ and access to
+    name via f.name and kwargs 
+    via f.params
+    """
+
+    def qualified_name() -> str:
+        if kwargs:
+            params_str = ", ".join(f"{k}={repr(v)}" for k,v in kwargs.items())
+            return f"{name}[{params_str}]"
+
+        return name
+
+    new_f = stringify(qualified_name())(f)
+
+    # pylint: disable=attribute-defined-outside-init
+    new_f.name = name
+    new_f.params = kwargs.copy()
+
+    return new_f
 
 
 def uniform_evaluator[S](
         r: ImplementsLessThan,
         p: Predicate[Action[S]] = lambda _: True,
+        name: Optional[str] = None
     ) -> ActionEvaluator[S]:
     """
     Produces a convenience ActionEvaluator 
@@ -104,5 +163,8 @@ def uniform_evaluator[S](
         potential_actions: Iterable[Action[S]]
     ) -> Iterable[ActionRank[S]]:
         return (ActionRank(a, r) for a in potential_actions if p(a))
+
+    if name:
+        return stringify(name)(evaluation_func)
 
     return evaluation_func

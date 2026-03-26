@@ -11,9 +11,12 @@ from cognition import (
     ActionEvaluator,
     ActionRank,
     AttrReferral,
+    Elaborator,
     IOContainer,
     NamedAction,
     Rank,
+    create_named_action,
+    create_elaborator,
     uniform_evaluator,
 )
 
@@ -23,9 +26,23 @@ class TestConvenience(unittest.TestCase):
     """Tests for convenience code"""
 
     def setUp(self):
-        self.vote_yay = NamedAction("vote", lambda s, _io: s, value="yay", volume=12)
-        self.vote_nay = NamedAction("vote", lambda s, _io: s, value="nay")
-        self.abstain = NamedAction("abstain", lambda _s, _io: None)
+        self.vote_yay = create_named_action(
+            "vote",
+            lambda s, _io: s,
+            value="yay",
+            volume=12
+        )
+
+        self.vote_nay = create_named_action(
+            "vote",
+            lambda s, _io: s,
+            value="nay",
+        )
+
+        self.abstain = create_named_action(
+            "abstain",
+            lambda _s, _io: None
+        )
 
         self.io_source = {}
         self.mock_io = IOContainer(
@@ -35,6 +52,8 @@ class TestConvenience(unittest.TestCase):
 
     def test_named_action(self) -> None:
         """Confirming the named actions"""
+
+        self.assertIsInstance(self.vote_yay, NamedAction)
 
         self.assertEqual(
             self.vote_yay.name,
@@ -61,6 +80,8 @@ class TestConvenience(unittest.TestCase):
 
         #
 
+        self.assertIsInstance(self.vote_nay, NamedAction)
+
         self.assertEqual(
             self.vote_nay.name,
             "vote"
@@ -82,6 +103,8 @@ class TestConvenience(unittest.TestCase):
         )
 
         #
+
+        self.assertIsInstance(self.abstain, NamedAction)
 
         self.assertEqual(
             self.abstain.name,
@@ -113,8 +136,21 @@ class TestConvenience(unittest.TestCase):
             """distinguishes actual votes"""
             return cast(NamedAction, a).name == "vote"
 
-        eval_all_m: ActionEvaluator = uniform_evaluator(Rank.MEDIUM)
-        eval_yay_h: ActionEvaluator = uniform_evaluator(Rank.HIGH, is_vote)
+        name_all_m: str = "all_m"
+        name_vote_h: str = "vote_h"
+
+        eval_all_m: ActionEvaluator = uniform_evaluator(Rank.MEDIUM, name=name_all_m)
+        eval_vote_h: ActionEvaluator = uniform_evaluator(Rank.HIGH, is_vote, name_vote_h)
+
+        self.assertEqual(
+            str(eval_all_m),
+            name_all_m
+        )
+
+        self.assertEqual(
+            str(eval_vote_h),
+            name_vote_h
+        )
 
         #
 
@@ -130,7 +166,7 @@ class TestConvenience(unittest.TestCase):
             )
 
 
-        ranks = list(eval_yay_h(self.io_source, self.mock_io, candidates))
+        ranks = list(eval_vote_h(self.io_source, self.mock_io, candidates))
         self.assertEqual(len(ranks), len(votes))
         for c in votes:
             self.assertIn(
@@ -140,3 +176,40 @@ class TestConvenience(unittest.TestCase):
                 ),
                 ranks
             )
+
+    def test_create_elaborator(self) -> None:
+        """Checks create_elaborator"""
+
+        name: str = "foo"
+
+        elab: Elaborator[int] = create_elaborator(
+            name,
+            identity = lambda s, _: s,
+            inc = lambda s, _: s + 1,
+            neg = lambda s, _: -s,
+        )
+
+        #
+
+        self.assertEqual(
+            str(elab),
+            name
+        )
+
+        self.assertEqual(
+            elab(42, self.mock_io),
+            {
+                "identity": 42,
+                "inc": 43,
+                "neg": -42,
+            }
+        )
+
+        self.assertEqual(
+            elab(100, self.mock_io),
+            {
+                "identity": 100,
+                "inc": 101,
+                "neg": -100,
+            }
+        )
