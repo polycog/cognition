@@ -50,6 +50,7 @@ class TestConvenience(unittest.TestCase):
             AttrReferral(self.io_source)
         )
 
+
     def test_named_action(self) -> None:
         """Confirming the named actions"""
 
@@ -140,11 +141,17 @@ class TestConvenience(unittest.TestCase):
         name_vote_h: str = "vote_h"
 
         eval_all_m: ActionEvaluator = uniform_evaluator(Rank.MEDIUM, name=name_all_m)
+        eval_all_m_nameless: ActionEvaluator = uniform_evaluator(Rank.MEDIUM)
         eval_vote_h: ActionEvaluator = uniform_evaluator(Rank.HIGH, is_vote, name_vote_h)
 
         self.assertEqual(
             str(eval_all_m),
             name_all_m
+        )
+
+        self.assertNotEqual(
+            str(eval_all_m),
+            str(eval_all_m_nameless)
         )
 
         self.assertEqual(
@@ -164,6 +171,9 @@ class TestConvenience(unittest.TestCase):
                 ),
                 ranks
             )
+
+        ranks2 = list(eval_all_m_nameless(None, self.mock_io, candidates))
+        self.assertEqual(ranks, ranks2)
 
 
         ranks = list(eval_vote_h(self.io_source, self.mock_io, candidates))
@@ -212,4 +222,27 @@ class TestConvenience(unittest.TestCase):
                 "inc": 101,
                 "neg": -100,
             }
+        )
+
+        #
+
+        elab2: Elaborator[int] = create_elaborator(
+            identity = lambda s, _: s,
+            inc = lambda s, _: s + 1,
+            neg = lambda s, _: -s,
+        )
+
+        self.assertNotEqual(
+            str(elab),
+            str(elab2)
+        )
+
+        self.assertEqual(
+            elab(42, self.mock_io),
+            elab2(42, self.mock_io),
+        )
+
+        self.assertEqual(
+            elab(100, self.mock_io),
+            elab2(100, self.mock_io),
         )
