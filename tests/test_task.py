@@ -2,6 +2,8 @@
 Tests for task code
 """
 
+from typing import cast
+
 from math import sqrt
 
 import unittest
@@ -32,8 +34,17 @@ def make_goal(a_perfect: str, a_prime: str) -> GoalCheck[int]:
 
     @stringify(GOAL_NAME)
     def pred(_: int, io: IOContainer) -> bool:
-        return getattr(io.i.elaboration, a_perfect) or \
-                getattr(io.i.elaboration, a_prime)
+        v_perfect = cast(
+            bool,
+            getattr(io.i.elaboration, a_perfect)
+        )
+
+        v_prime = cast(
+            bool,
+            getattr(io.i.elaboration, a_prime)
+        )
+
+        return v_perfect or v_prime
 
     return pred
 

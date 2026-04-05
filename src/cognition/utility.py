@@ -44,7 +44,7 @@ class AttrReferral:
         return self.__getattribute__(AttrReferral._ref_field_name)[key]
 
 
-    def __setattr__(self, key, value) -> None:
+    def __setattr__(self, key: str, value: Any) -> None:
         """
         Enforces read-only access
         """
@@ -59,5 +59,5 @@ class ImplementsLessThan(Protocol):
     purposes of action ranking
     """
 
-    def __lt__(self, other) -> bool:
+    def __lt__(self, other: Any) -> bool:
         ...

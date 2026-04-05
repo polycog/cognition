@@ -4,10 +4,15 @@ Practical library additions
 
 from typing import (
     Any,
+    Callable,
+    Generic,
     Iterable,
     Mapping,
     Optional,
+    ParamSpec,
     Protocol,
+    TypeVar,
+    cast,
     runtime_checkable
 )
 
@@ -15,7 +20,10 @@ from enum import IntEnum
 
 from functools import wraps
 
-from cognition.functypes import Predicate
+from cognition.functypes import (
+    BiFunction,
+    Predicate,
+)
 
 from cognition.utility import ImplementsLessThan
 
@@ -23,7 +31,6 @@ from cognition.core import (
     Action,
     ActionEvaluator,
     ActionRank,
-    BiFunction,
     Elaborator,
     IOContainer,
 )
@@ -43,42 +50,45 @@ class Rank(IntEnum):
     LOW = 3
 
 
-class StringifiedFunction:
+P = ParamSpec("P")
+R = TypeVar("R")
+
+class StringifiedFunction(Generic[P, R]):
     """
     A callable object that wraps a function
     and provides a custom __str__ representation.
     """
 
-    def __init__(self, func, str_representation):
+    def __init__(self, func: Callable[P, R], str_representation: str):
         """
         Wrapping function and __str__
         representation
         """
 
         wraps(func)(self)
-        self._func = func
-        self._str_representation = str_representation
+        self._func: Callable[P, R] = func
+        self._str_representation: str = str_representation
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
         """
         Calls the original function
         """
         return self._func(*args, **kwargs)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Returns the custom string representation
         """
 
         return self._str_representation
 
-def stringify(str_representation):
+def stringify(str_representation: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """
     Decorator for stringifying
     a function
     """
 
-    def decorator(func):
+    def decorator(func: Callable[P, R]) -> Callable[P, R]:
         return StringifiedFunction(func, str_representation)
 
     return decorator
@@ -120,7 +130,7 @@ class NamedAction(Protocol):
 
 def create_named_action[S](
     name: str,
-    f: Action,
+    f: Action[S],
     **kwargs: Any
 ) -> Action[S]:
     """
@@ -140,8 +150,9 @@ def create_named_action[S](
     new_f = stringify(qualified_name())(f)
 
     # pylint: disable=attribute-defined-outside-init
-    new_f.name = name
-    new_f.params = kwargs.copy()
+    new_named = cast(NamedAction, new_f)
+    new_named.name = name
+    new_named.params = kwargs.copy()
 
     return new_f
 

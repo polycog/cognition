@@ -28,7 +28,6 @@ from cognition.utility import (
 )
 
 from cognition.functypes import (
-    BiConsumer,
     BiFunction,
     BiPredicate,
     Supplier,
@@ -67,9 +66,9 @@ type Elaborator[S] = BiFunction[S, IOContainer, dict[str, Any]]
 type GoalCheck[S] = BiPredicate[S, IOContainer]
 
 # An abstraction around potential change to state...
-# - Consumer: support for mutable state
-# - Function: support for replacing (immutable) state
-type Action[S] = BiConsumer[S, IOContainer] | BiFunction[S, IOContainer, S]
+# - Return None: support for mutable state
+# - Return S: support for replacing (immutable) state
+type Action[S] = BiFunction[S, IOContainer, S | None]
 
 # An abstraction around identifying viable actions
 # in the present (supplied) state
@@ -83,7 +82,7 @@ class ActionRank[S]:
     a: Action[S]
     rank: ImplementsLessThan
 
-    def __lt__(self, other) -> bool:
+    def __lt__(self, other: object) -> bool:
         """
         Smaller rank values come first,
         with a deterministic ordering in
