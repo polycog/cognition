@@ -25,7 +25,7 @@ GOAL_NAME: str = "prime_or_perfect"
 FACTORY_NAME: str = "always_inc"
 ELAB_NAME: str = "prime_and_perfect"
 
-def make_goal(a_perfect: str, a_prime: str) -> GoalCheck[int]:
+def _make_goal(a_perfect: str, a_prime: str) -> GoalCheck[int]:
     """
     Create the perfect/prime goal check
     given the supplied elaboration
@@ -49,7 +49,7 @@ def make_goal(a_perfect: str, a_prime: str) -> GoalCheck[int]:
     return pred
 
 
-def is_prime(number: int) -> bool:
+def _is_prime(number: int) -> bool:
     """
     Determines if a supplied integer is prime (slowly)
     """
@@ -63,7 +63,7 @@ def is_prime(number: int) -> bool:
     return True
 
 
-def make_increment_factory(a_name: str) -> ActionFactory[int]:
+def _make_increment_factory(a_name: str) -> ActionFactory[int]:
     """
     Create the increment factory
     given the supplied action name
@@ -97,17 +97,17 @@ class TestTask(unittest.TestCase):
         #
 
         task_count_until: Task[int] = Task(lambda: starting_point)
-        task_count_until.add_goal_check(make_goal(e_perfect, e_prime))
+        task_count_until.add_goal_check(_make_goal(e_perfect, e_prime))
         task_count_until.add_elaborator(
             create_elaborator(
                 ELAB_NAME,
                 **{
-                    e_prime: lambda s, _: is_prime(s),
+                    e_prime: lambda s, _: _is_prime(s),
                     e_perfect: lambda s, _: sqrt(s) % 1 == 0,
                 }
             )
         )
-        task_count_until.add_action_factory(make_increment_factory(a_inc))
+        task_count_until.add_action_factory(_make_increment_factory(a_inc))
 
         self.assertEqual(
             task_count_until.num_cycles,
