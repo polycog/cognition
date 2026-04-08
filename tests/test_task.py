@@ -2,7 +2,7 @@
 Tests for task code
 """
 
-from typing import cast
+from typing import Iterable, cast
 
 from math import sqrt
 
@@ -11,11 +11,15 @@ import unittest
 from cognition import (
     Action,
     ActionFactory,
+    ActionRank,
     GoalCheck,
     IOContainer,
     Phase,
+    Rank,
     Task,
+    TaskExecutionError,
     create_elaborator,
+    create_named_action,
     stringify,
 )
 
@@ -83,6 +87,94 @@ def _make_increment_factory(a_name: str) -> ActionFactory[int]:
 
 class TestTask(unittest.TestCase):
     """Tests for task code"""
+
+    def test_basics(self) -> None:
+        """Confirms some task basics"""
+
+        a_inc = create_named_action(
+            "inc",
+            lambda s, _io: s + 1
+        )
+
+        a_dec = create_named_action(
+            "dec",
+            lambda s, _io: s - 1
+        )
+
+        ar_inc_low = ActionRank(a_inc, Rank.LOW)
+        ar_dec_high = ActionRank(a_dec, Rank.HIGH)
+
+        self.assertTrue(
+            ar_dec_high < ar_inc_low
+        )
+
+        with self.assertRaises(TypeError):
+            _ = ar_dec_high < "not an ActionRank"
+
+        #
+
+        starting_point: int = 100
+
+        t: Task[int] = Task(lambda: starting_point)
+
+        # no actions yet!
+        with self.assertRaises(TaskExecutionError):
+            for _ in t.phases():
+                pass
+
+        t.reinit()
+
+        #
+
+        t.add_action_factory(
+            lambda _s, _io: [a_inc, a_dec]
+        )
+
+        # no evaluation of multiple possibilities
+        with self.assertRaises(TaskExecutionError):
+            for _ in t.cycles():
+                pass
+
+        #
+
+        t.add_action_evaluator(
+            lambda _s, _io, _actions: []
+        )
+
+        #
+
+        def dec_over_inc(
+                _s: int,
+                _io: IOContainer,
+                actions: Iterable[Action[int]]
+        ) -> Iterable[ActionRank[int]]:
+            """Always prefer dec over inc"""
+
+            return [
+                ar_inc_low if a == a_inc else ar_dec_high
+                for a in actions
+                if a in (a_dec, a_inc)
+            ]
+
+        t.add_action_evaluator(dec_over_inc)
+        t.run_cycles()
+
+        self.assertEqual(t.state, starting_point - 1)
+        self.assertEqual(t.num_cycles, 2)
+
+        #
+
+        t.add_goal_check(
+            lambda s, _io: s == starting_point - 2
+        )
+
+        for _ in t.cycles():
+            pass
+
+        self.assertEqual(t.state, starting_point - 2)
+        self.assertEqual(t.num_cycles, 3)
+
+
 
     def test_count(self) -> None:
         """Confirming simple task execution"""
