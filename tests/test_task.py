@@ -8,6 +8,8 @@ from math import sqrt
 
 import unittest
 
+from io import StringIO
+
 from cognition import (
     Action,
     ActionFactory,
@@ -18,6 +20,7 @@ from cognition import (
     Rank,
     Task,
     TaskExecutionError,
+    TimeSensor,
     create_elaborator,
     create_named_action,
     stringify,
@@ -83,6 +86,26 @@ def _make_increment_factory(a_name: str) -> ActionFactory[int]:
         return inc
 
     return factory
+
+
+class ListSensorActuator:
+    """confirms simple sensor/actuator scheme"""
+
+    def __init__(self) -> None:
+        """make the encapsulated list"""
+
+        self._data: list[str] = []
+
+    @property
+    def data(self) -> list[str]:
+        """sensor access to list contents"""
+
+        return self._data.copy()
+
+    def add(self, item: str) -> None:
+        """adds to the list"""
+
+        self._data.append(item)
 
 
 class TestTask(unittest.TestCase):
@@ -174,6 +197,136 @@ class TestTask(unittest.TestCase):
         self.assertEqual(t.state, starting_point - 2)
         self.assertEqual(t.num_cycles, 3)
 
+
+    def test_io(self) -> None:
+        """Confirming basic io functionality"""
+
+        starting_point: int = 1
+
+        lst_name: str = "lst"
+        lst: ListSensorActuator = ListSensorActuator()
+
+        task_io: Task[int] = Task(lambda: starting_point)
+
+        self.assertEqual(
+            str(task_io),
+            "\n".join((
+                f"Phase={Phase.ELABORATION.name}",
+                f"State={starting_point}",
+                f"Done?={False}",
+                f"Chosen={None}",
+                "Action Factories=",
+                "Potential Actions=",
+                "Action Evaluators=",
+                "Rankings=",
+                "Goal Checks=",
+                "Elaborators=",
+                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                f"Actuators={Task.ACTUATOR_LOG}",
+            ))
+        )
+
+        # add as both sensor/actuator
+        task_io.set_sensor(lst_name, lst)
+        task_io.set_actuator(lst_name, lst)
+
+        # confirm registration
+        self.assertEqual(
+            str(task_io),
+            "\n".join((
+                f"Phase={Phase.ELABORATION.name}",
+                f"State={starting_point}",
+                f"Done?={False}",
+                f"Chosen={None}",
+                "Action Factories=",
+                "Potential Actions=",
+                "Action Evaluators=",
+                "Rankings=",
+                "Goal Checks=",
+                "Elaborators=",
+                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}, {lst_name}",
+                f"Actuators={Task.ACTUATOR_LOG}, {lst_name}",
+            ))
+        )
+
+        def inc_and_add_and_log(s: int, io: IOContainer) -> int:
+            """
+            * logs a combo of sensed data
+            * adds sensed data to another actuator
+            * progresses the task
+            """
+
+            sensed: str = str(cast(ListSensorActuator, getattr(io.i, lst_name)).data)
+            cast(ListSensorActuator, getattr(io.o, lst_name)).add(str(s))
+
+            log: StringIO = cast(StringIO, getattr(io.o, Task.ACTUATOR_LOG))
+            cycle: int = cast(TimeSensor[int], getattr(io.i, Task.SENSOR_TIME)).cycles
+
+            print(f'@{cycle}: data={sensed}', file=log)
+
+            return s + 1
+
+        a_name: str = "go"
+        a_go = create_named_action(
+            a_name,
+            inc_and_add_and_log
+        )
+
+        factory_name: str = f"{a_name} factory"
+
+        @stringify(factory_name)
+        def go_action_factory(_s: int, _io: IOContainer) -> Action[int]:
+            """always go!"""
+
+            return a_go
+
+        task_io.add_action_factory(go_action_factory)
+
+        goal_diff: int = 3
+        goal_name: str = f"{a_name} check {goal_diff}"
+
+        @stringify(goal_name)
+        def go_goal(s: int, _io: IOContainer) -> bool:
+            """end after k increments"""
+
+            return s == starting_point + goal_diff
+
+        task_io.add_goal_check(go_goal)
+
+        task_io.run_until_done()
+
+        # confirm ability to remove sensors/actuators
+        task_io.set_sensor(lst_name, None)
+        task_io.set_actuator(lst_name, None)
+
+        self.assertEqual(
+            str(task_io),
+            "\n".join((
+                f"Phase={Phase.GOALCHECK.name}",
+                f"State={starting_point + goal_diff}",
+                f"Done?={True}",
+                f"Chosen={a_name}",
+                f"Action Factories={factory_name}",
+                f"Potential Actions={a_name}",
+                "Action Evaluators=",
+                "Rankings=",
+                f"Goal Checks={goal_name}",
+                "Elaborators=",
+                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                f"Actuators={Task.ACTUATOR_LOG}",
+            ))
+        )
+
+        # confirm logging
+        self.assertEqual(
+            task_io.log,
+            "\n".join((
+                "@1: data=[]",
+                "@2: data=['1']",
+                "@3: data=['1', '2']",
+                ''
+            ))
+        )
 
 
     def test_count(self) -> None:
