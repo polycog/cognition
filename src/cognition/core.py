@@ -402,7 +402,7 @@ class Task[S]:
 
                 self._phase = Phase.ELABORATION
             else:
-                raise TaskExecutionError("No chosen action")
+                raise TaskExecutionError("No chosen action") # pragma: no cover
 
     #
 
