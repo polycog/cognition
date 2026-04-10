@@ -4,7 +4,6 @@ Practical library additions
 
 from typing import (
     Any,
-    Callable,
     Iterable,
     Mapping,
     Optional,
@@ -15,14 +14,15 @@ from typing import (
 
 from enum import IntEnum
 
-from functools import wraps
-
 from cognition.functypes import (
     BiFunction,
     Predicate,
 )
 
-from cognition.utility import ImplementsLessThan
+from cognition.utility import (
+    ImplementsLessThan,
+    stringify,
+)
 
 from cognition.core import (
     Action,
@@ -45,48 +45,6 @@ class Rank(IntEnum):
     HIGH = 1
     MEDIUM = 2
     LOW = 3
-
-
-class StringifiedFunction[**P, R]:
-    """
-    A callable object that wraps a function
-    and provides a custom __str__ representation.
-    """
-
-    def __init__(self, func: Callable[P, R], str_representation: str):
-        """
-        Wrapping function and __str__
-        representation
-        """
-
-        wraps(func)(self)
-        self._func: Callable[P, R] = func
-        self._str_representation: str = str_representation
-
-    def __call__(self, *args: P.args, **kwargs: P.kwargs) -> R:
-        """
-        Calls the original function
-        """
-        return self._func(*args, **kwargs)
-
-    def __str__(self) -> str:
-        """
-        Returns the custom string representation
-        """
-
-        return self._str_representation
-
-# pylint: disable=invalid-name
-def stringify[**P, R](str_representation: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
-    """
-    Decorator for stringifying
-    a function
-    """
-
-    def decorator(func: Callable[P, R]) -> Callable[P, R]:
-        return StringifiedFunction(func, str_representation)
-
-    return decorator
 
 
 def create_elaborator[S](

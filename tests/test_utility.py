@@ -6,12 +6,31 @@ from typing import cast
 
 import unittest
 
-from cognition import AttrReferral
+from cognition import (
+    AttrReferral,
+    stringify,
+)
 
 #
 
 class TestUtility(unittest.TestCase):
     """Tests for utility code"""
+
+    def test_stringify(self) -> None:
+        """Confirming stringify"""
+
+        func_name: str = "test"
+
+        @stringify(func_name)
+        def not_named_the_same() -> None:
+            """nothin' but a function"""
+            print("bar")
+
+        self.assertEqual(
+            str(not_named_the_same),
+            func_name
+        )
+
 
     def test_attrreferral_bad(self) -> None:
         """Confirming AttrReferral read-only"""

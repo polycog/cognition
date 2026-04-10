@@ -8,10 +8,9 @@ from enum import StrEnum, auto
 
 import unittest
 
-from cognition.core import Task
-
-from cognition.chain import (
+from cognition import (
     ChainState,
+    Task,
     create_chain_task,
 )
 
