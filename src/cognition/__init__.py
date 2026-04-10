@@ -10,3 +10,5 @@ from .utility import * # noqa: F403
 from .core import * # noqa: F403
 
 from .convenience import * # noqa: F403
+
+from .chain import * # noqa: F403
