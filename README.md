@@ -1,5 +1,7 @@
 # cognition
 
+Run below in sequence (stopping on errors) via `source checks.sh`
+
 ## Testing
 
 1. `export PYTHONPATH="${PYTHONPATH}:src"`
