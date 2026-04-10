@@ -5,13 +5,10 @@ Practical library additions
 from typing import (
     Any,
     Callable,
-    Generic,
     Iterable,
     Mapping,
     Optional,
-    ParamSpec,
     Protocol,
-    TypeVar,
     cast,
     runtime_checkable
 )
@@ -50,10 +47,7 @@ class Rank(IntEnum):
     LOW = 3
 
 
-P = ParamSpec("P")
-R = TypeVar("R")
-
-class StringifiedFunction(Generic[P, R]):
+class StringifiedFunction[**P, R]:
     """
     A callable object that wraps a function
     and provides a custom __str__ representation.
@@ -82,7 +76,8 @@ class StringifiedFunction(Generic[P, R]):
 
         return self._str_representation
 
-def stringify(str_representation: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
+# pylint: disable=invalid-name
+def stringify[**P, R](str_representation: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """
     Decorator for stringifying
     a function
