@@ -81,6 +81,12 @@ class Frontier[SS, SA](ABC):
         Provides the next frontier item
         """
 
+    @abstractmethod
+    def __str__(self) -> str:
+        """
+        Provides human-readable view
+        """
+
 class Stack[SS, SA](Frontier[SS, SA]):
     """
     Produces DFS behavior
@@ -90,6 +96,13 @@ class Stack[SS, SA](Frontier[SS, SA]):
 
     def __init__(self) -> None:
         self._items = []
+
+    def __str__(self) -> str: # pragma: no cover
+        return (
+            "Stack("
+            f"items=[{self._items}]"
+            ")"
+        )
 
     @property
     def empty(self) -> bool:
@@ -110,6 +123,13 @@ class Queue[SS, SA](Frontier[SS, SA]):
 
     def __init__(self) -> None:
         self._items = deque()
+
+    def __str__(self) -> str: # pragma: no cover
+        return (
+            "Queue("
+            f"items=[{self._items}]"
+            ")"
+        )
 
     @property
     def empty(self) -> bool:
@@ -143,6 +163,14 @@ class PriorityQueue[SS, SA](Frontier[SS, SA]):
     ) -> None:
         self._items = []
         self._heuristic = heuristic
+
+    def __str__(self) -> str: # pragma: no cover
+        return (
+            "PriorityQueue("
+            f"heuristic=[{self._heuristic}], "
+            f"items=[{self._items}]"
+            ")"
+        )
 
     @property
     def empty(self) -> bool:
@@ -203,6 +231,18 @@ class SearchState[SS: Hashable, SA]:
         self.final_state = node.state
         self.action_path = node.path
         self.path_cost = node.path_cost
+
+    def __str__(self) -> str: # pragma: no cover
+        return (
+            "SearchState("
+            f"explored=[{self.explored}], "
+            f"frontier=[{str(self.frontier)}], "
+            f"done=[{self.done}], "
+            f"final_state=[{self.final_state}], "
+            f"action_path=[{self.action_path}], "
+            f"path_cost=[{self.path_cost}]"
+            ")"
+        )
 
 def create_search_task[SS: Hashable, SA](
     initial_state: SS,

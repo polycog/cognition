@@ -15,6 +15,7 @@ from cognition import (
     Queue,
     Stack,
     create_search_task,
+    stringify
 )
 
 #
@@ -52,6 +53,7 @@ def navigate_romania(city: str) -> Iterable[tuple[str, str, int]]:
     for c, d in sorted(romania_map.get(city, {}).items()):
         yield c, c, d
 
+@stringify("straight_line_to_bucharest")
 def straight_line_to_bucharest(city: str) -> int:
     """
     Encodes the straight-line distances in Romania
