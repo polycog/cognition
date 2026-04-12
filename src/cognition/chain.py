@@ -14,6 +14,8 @@ from dataclasses import dataclass
 
 from cognition.functypes import BiFunction
 
+from cognition.utility import stringify
+
 from cognition.core import (
     Action,
     IOContainer,
@@ -52,6 +54,16 @@ class ChainState[CV, CA]:
         self._accumulator: Optional[CA] = None
 
         self.next(init_acc)
+
+    def __str__(self) -> str: # pragma: no cover
+        """attempting to make human-readable"""
+
+        return (
+            "ChainState("
+            f"value=[{self._value}], "
+            f"acc=[{self._accumulator}]"
+            ")"
+        )
 
     @property
     def done(self) -> bool:
@@ -104,6 +116,7 @@ def create_chain_task[CV, CA](
     - init_accumulator: initial (optional) accumulator value
     """
 
+    @stringify("always_chaining")
     def action_factory(
         _s: ChainState[CV, CA],
         _io: IOContainer
@@ -113,6 +126,7 @@ def create_chain_task[CV, CA](
         to make progress in the chain
         """
 
+        @stringify("next_link")
         def link_action(cs: ChainState[CV, CA], io: IOContainer) -> None:
             """
             Make progress in the chain
@@ -128,6 +142,7 @@ def create_chain_task[CV, CA](
 
         return link_action
 
+    @stringify("is_exhausted")
     def goal_check(cs: ChainState[CV, CA], _io: IOContainer) -> bool:
         """Checks if the chain is exhausted"""
 
