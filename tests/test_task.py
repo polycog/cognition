@@ -111,6 +111,35 @@ class ListSensorActuator:
 class TestTask(unittest.TestCase):
     """Tests for task code"""
 
+    def test_phase(self) -> None:
+        """Confirms phase sequencing"""
+
+        self.assertEqual(
+            Phase.ELABORATION.next,
+            Phase.GOALCHECK
+        )
+
+        self.assertEqual(
+            Phase.GOALCHECK.next,
+            Phase.PROPOSE
+        )
+
+        self.assertEqual(
+            Phase.PROPOSE.next,
+            Phase.RANK
+        )
+
+        self.assertEqual(
+            Phase.RANK.next,
+            Phase.APPLY
+        )
+
+        self.assertEqual(
+            Phase.APPLY.next,
+            Phase.ELABORATION
+        )
+
+
     def test_basics(self) -> None:
         """Confirms some task basics"""
 

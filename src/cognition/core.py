@@ -25,6 +25,7 @@ import random
 from cognition.utility import (
     AttrReferral,
     ImplementsLessThan,
+    stringify,
 )
 
 from cognition.functypes import (
@@ -56,6 +57,12 @@ class Phase(IntEnum):
     PROPOSE = 2
     RANK = 3
     APPLY = 4
+
+    @property
+    def next(self) -> Phase:
+        """Gets the next phase"""
+
+        return Phase((self + 1) % len(Phase))
 
 
 # An abstraction around monotonic reasoning
@@ -149,6 +156,9 @@ class Task[S]:
     _actuators: dict[str, Any]
     _io: IOContainer
 
+    # Phase handling
+    _phase_handlers: list[Supplier[bool]]
+
     #
 
     def __init__(self, state_initializer: Supplier[S]) -> None:
@@ -175,6 +185,19 @@ class Task[S]:
             AttrReferral(self._sensors),
             AttrReferral(self._actuators)
         )
+
+        # establish phase handling
+        # (order dictated by enum)
+        _bad_name = "bad"
+        _f = stringify(_bad_name)(lambda: False)
+        self._phase_handlers = [_f] * len(Phase)
+        self._phase_handlers[Phase.ELABORATION] = self._elaborate
+        self._phase_handlers[Phase.GOALCHECK] = self._goal_check
+        self._phase_handlers[Phase.PROPOSE] = self._propose
+        self._phase_handlers[Phase.RANK] = self._rank
+        self._phase_handlers[Phase.APPLY] = self._apply
+        _changed = (ph for ph in self._phase_handlers if str(ph) != _bad_name)
+        assert len(list(_changed)) == len(Phase)
 
         self.reinit()
 
@@ -263,19 +286,18 @@ class Task[S]:
 
         self._elaborators.append(e)
 
-    def _elaborate(self) -> None:
+    def _elaborate(self) -> bool:
         """
         Elaboration phase: allows an opportunity to perform monotonic
                            reasoning over state
         """
 
-        if self._phase == Phase.ELABORATION:
-            self._elaboration.clear()
+        self._elaboration.clear()
 
-            for e in self._elaborators:
-                self._elaboration |= e(self._state, self._io)
+        for e in self._elaborators:
+            self._elaboration |= e(self._state, self._io)
 
-            self._phase = Phase.GOALCHECK
+        return True
 
     #
 
@@ -286,17 +308,16 @@ class Task[S]:
 
         self._goal_checks.append(p)
 
-    def _goal_check(self) -> None:
+    def _goal_check(self) -> bool:
         """
         GoalCheck phase: task is complete if any goal check returns True
                          (and if so shifts to Propose phase)
         """
-        if (not self._goal_achieved) and (self._phase == Phase.GOALCHECK):
+        if not self._goal_achieved:
             self._step_count += 1
             self._goal_achieved = any(p(self._state, self._io) for p in self._goal_checks)
 
-            if not self._goal_achieved:
-                self._phase = Phase.PROPOSE
+        return not self._goal_achieved
 
     #
 
@@ -321,19 +342,20 @@ class Task[S]:
 
         return (proposal,)
 
-    def _propose(self) -> None:
+    def _propose(self) -> bool:
         """
         Propose phase: allow factories to produce candidate actions
                        (and then shift to Rank phase)
         """
-        if self._phase == Phase.PROPOSE:
-            self._potential_actions = list(
-                chain.from_iterable(
-                    Task._make_iterable(f(self._state, self._io))
-                    for f in self._action_factories
-                )
+
+        self._potential_actions = list(
+            chain.from_iterable(
+                Task._make_iterable(f(self._state, self._io))
+                for f in self._action_factories
             )
-            self._phase = Phase.RANK
+        )
+
+        return True
 
     #
 
@@ -344,48 +366,48 @@ class Task[S]:
 
         self._action_evaluators.append(ae)
 
-    def _rank(self) -> None:
+    def _rank(self) -> bool:
         """
         Rank phase: allow evaluators to produce action rankings
                     and then select one from amongst the best
                     ranking (and then shift to Apply phase)
         """
-        if self._phase == Phase.RANK:
-            self._chosen = None
 
-            if self._potential_actions:
-                self._ranking = []
+        self._chosen = None
 
-                if len(self._potential_actions) > 1:
-                    self._ranking = list(
-                        sorted(
-                            chain.from_iterable(
-                                ae(self._state, self._io, self._potential_actions)
-                                for ae in self._action_evaluators
-                            )
+        if self._potential_actions:
+            self._ranking = []
+
+            if len(self._potential_actions) > 1:
+                self._ranking = list(
+                    sorted(
+                        chain.from_iterable(
+                            ae(self._state, self._io, self._potential_actions)
+                            for ae in self._action_evaluators
                         )
                     )
+                )
 
-                    if len(self._ranking) == 0:
-                        raise TaskExecutionError("No action rankings")
+                if len(self._ranking) == 0:
+                    raise TaskExecutionError("No action rankings")
 
-                    top = list(
-                        filter(
-                            lambda r: r.rank == self._ranking[0].rank,
-                            self._ranking
-                        )
+                top = list(
+                    filter(
+                        lambda r: r.rank == self._ranking[0].rank,
+                        self._ranking
                     )
-                    self._chosen = random.sample(top, k=1)[0].a
-                else:
-                    self._chosen = self._potential_actions[0]
-
-                self._phase = Phase.APPLY
+                )
+                self._chosen = random.sample(top, k=1)[0].a
             else:
-                raise TaskExecutionError("No potential actions")
+                self._chosen = self._potential_actions[0]
+        else:
+            raise TaskExecutionError("No potential actions")
+
+        return True
 
     #
 
-    def _apply(self) -> None:
+    def _apply(self) -> bool:
         """
         Apply phase: executes the selected action (if one exists);
                      state is...
@@ -394,15 +416,15 @@ class Task[S]:
                        to have been modified in-place by the
                        action itself)
         """
-        if self._phase == Phase.APPLY:
-            if self._chosen:
-                result: Optional[S] = self._chosen(self._state, self._io)
-                if result:
-                    self._state = result
 
-                self._phase = Phase.ELABORATION
-            else:
-                raise TaskExecutionError("No chosen action") # pragma: no cover
+        if self._chosen:
+            result: Optional[S] = self._chosen(self._state, self._io)
+            if result:
+                self._state = result
+        else:
+            raise TaskExecutionError("No chosen action") # pragma: no cover
+
+        return True
 
     #
 
@@ -411,21 +433,9 @@ class Task[S]:
         Executes the current task phase
         """
 
-        match self.phase:
-            case Phase.ELABORATION:
-                self._elaborate()
+        if self._phase_handlers[self._phase]():
+            self._phase = self._phase.next
 
-            case Phase.GOALCHECK:
-                self._goal_check()
-
-            case Phase.PROPOSE:
-                self._propose()
-
-            case Phase.RANK:
-                self._rank()
-
-            case Phase.APPLY:
-                self._apply()
 
     def run_cycles(self, n: int = 1) -> None:
         """
