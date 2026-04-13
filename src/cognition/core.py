@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 
 from typing import (
     cast,
@@ -111,15 +111,31 @@ class ActionRank[S]:
 type ActionEvaluator[S] = TriFunction[S, IOContainer, Iterable[Action[S]], Iterable[ActionRank[S]]]
 
 
+class TaskErrorMessage(StrEnum):
+    """
+    Known errors with messages
+    """
+
+    NO_PROPOSAL = "No potential actions"
+    NO_RANK = "No action rankings"
+    NO_CHOICE = "No chosen action"
+
 class TaskExecutionError(Exception):
     """
     A custom exception related to invalid task execution
     """
 
-    def __init__(self, msg: str) -> None:
+    def __init__(self, msg: TaskErrorMessage) -> None:
         """Construct the error"""
 
-        super().__init__(msg)
+        super().__init__(msg.value)
+        self._msg = msg
+
+    @property
+    def msg(self) -> TaskErrorMessage:
+        """Gets the associated messagre"""
+
+        return self._msg
 
 
 # pylint: disable=too-many-instance-attributes
@@ -389,7 +405,7 @@ class Task[S]:
                 )
 
                 if len(self._ranking) == 0:
-                    raise TaskExecutionError("No action rankings")
+                    raise TaskExecutionError(TaskErrorMessage.NO_RANK)
 
                 top = list(
                     filter(
@@ -401,7 +417,7 @@ class Task[S]:
             else:
                 self._chosen = self._potential_actions[0]
         else:
-            raise TaskExecutionError("No potential actions")
+            raise TaskExecutionError(TaskErrorMessage.NO_PROPOSAL)
 
         return True
 
@@ -422,7 +438,7 @@ class Task[S]:
             if result:
                 self._state = result
         else:
-            raise TaskExecutionError("No chosen action") # pragma: no cover
+            raise TaskExecutionError(TaskErrorMessage.NO_CHOICE) # pragma: no cover
 
         return True
 

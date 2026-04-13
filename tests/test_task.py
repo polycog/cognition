@@ -19,6 +19,7 @@ from cognition import (
     Phase,
     Rank,
     Task,
+    TaskErrorMessage,
     TaskExecutionError,
     TimeSensor,
     create_elaborator,
@@ -170,9 +171,19 @@ class TestTask(unittest.TestCase):
         t: Task[int] = Task(lambda: starting_point)
 
         # no actions yet!
-        with self.assertRaises(TaskExecutionError):
+        with self.assertRaises(TaskExecutionError) as cm:
             for _ in t.phases():
                 pass
+
+        self.assertEqual(
+            cm.exception.msg,
+            TaskErrorMessage.NO_PROPOSAL
+        )
+
+        self.assertEqual(
+            str(cm.exception),
+            TaskErrorMessage.NO_PROPOSAL.value
+        )
 
         t.reinit()
 
@@ -183,9 +194,19 @@ class TestTask(unittest.TestCase):
         )
 
         # no evaluation of multiple possibilities
-        with self.assertRaises(TaskExecutionError):
+        with self.assertRaises(TaskExecutionError) as cm:
             for _ in t.cycles():
                 pass
+
+        self.assertEqual(
+            cm.exception.msg,
+            TaskErrorMessage.NO_RANK
+        )
+
+        self.assertEqual(
+            str(cm.exception),
+            TaskErrorMessage.NO_RANK.value
+        )
 
         #
 
