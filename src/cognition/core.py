@@ -1,5 +1,5 @@
 """
-PolyCog task orchestration
+Task orchestration
 """
 
 from __future__ import annotations
