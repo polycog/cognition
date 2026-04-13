@@ -35,6 +35,8 @@ success_or_die mypy tests src
 success_or_die pylint tests src
 success_or_die ruff check tests src
 
+success_or_die validate-pyproject pyproject.toml
+
 success_or_die coverage run --source=cognition -m unittest discover
 
 intro coverage report -m

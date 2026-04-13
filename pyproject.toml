@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools >= 82.0.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "polycog-cognition"
+dynamic = ["version"]
+dependencies = [
+]
+requires-python = ">=3.13"
+authors = [
+    { name="Nate Derbinsky", email="nate@polycog.ai" }
+]
+description = "Polycog cognition library"
+readme = "README.md"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+]
+keywords = [
+    "ai",
+    "neurosymbolic",
+]
+
+[project.urls]
+Homepage = "https://polycog.ai"
+Repository = "https://github.com/polycog/cognition.git"
+
+[tool.setuptools.dynamic]
+version = {attr = "cognition.__version__"}

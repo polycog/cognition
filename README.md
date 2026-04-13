@@ -21,3 +21,4 @@ Run below in sequence (stopping on errors) via `source checks.sh`
 1. `mypy tests src`
 2. `pylint tests src`
 3. `ruff check tests src`
+4. `validate-pyproject pyproject.toml`
