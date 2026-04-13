@@ -116,6 +116,13 @@ def create_chain_task[CV, CA](
     - init_accumulator: initial (optional) accumulator value
     """
 
+    t: Task[ChainState[CV, CA]] = Task(
+        lambda: ChainState[CV, CA](chain, init_accumulator)
+    )
+
+    #
+
+    @t.action_factory
     @stringify("always_chaining")
     def action_factory(
         _s: ChainState[CV, CA],
@@ -142,6 +149,7 @@ def create_chain_task[CV, CA](
 
         return link_action
 
+    @t.goal_check
     @stringify("is_exhausted")
     def goal_check(cs: ChainState[CV, CA], _io: IOContainer) -> bool:
         """Checks if the chain is exhausted"""
@@ -149,12 +157,5 @@ def create_chain_task[CV, CA](
         return cs.done
 
     #
-
-    t: Task[ChainState[CV, CA]] = Task(
-        lambda: ChainState[CV, CA](chain, init_accumulator)
-    )
-
-    t.add_action_factory(action_factory)
-    t.add_goal_check(goal_check)
 
     return t

@@ -139,6 +139,7 @@ class TaskExecutionError(Exception):
 
 
 # pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-public-methods
 class Task[S]:
     """
     Orchestration for a sequential decision-making problem
@@ -302,6 +303,14 @@ class Task[S]:
 
         self._elaborators.append(e)
 
+    def elaborator(self, e: Elaborator[S]) -> Elaborator[S]:
+        """
+        Decorator version of above
+        """
+
+        self.add_elaborator(e)
+        return e
+
     def _elaborate(self) -> bool:
         """
         Elaboration phase: allows an opportunity to perform monotonic
@@ -324,6 +333,14 @@ class Task[S]:
 
         self._goal_checks.append(p)
 
+    def goal_check(self, p: GoalCheck[S]) -> GoalCheck[S]:
+        """
+        Decorator version of above
+        """
+
+        self.add_goal_check(p)
+        return p
+
     def _goal_check(self) -> bool:
         """
         GoalCheck phase: task is complete if any goal check returns True
@@ -343,6 +360,14 @@ class Task[S]:
         """
 
         self._action_factories.append(f)
+
+    def action_factory(self, f: ActionFactory[S]) -> ActionFactory[S]:
+        """
+        Decorator version of above
+        """
+
+        self.add_action_factory(f)
+        return f
 
     @staticmethod
     def _make_iterable(
@@ -381,6 +406,14 @@ class Task[S]:
         """
 
         self._action_evaluators.append(ae)
+
+    def action_evaluator(self, ae: ActionEvaluator[S]) -> ActionEvaluator[S]:
+        """
+        Decorator version of above
+        """
+
+        self.add_action_evaluator(ae)
+        return ae
 
     def _rank(self) -> bool:
         """

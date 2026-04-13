@@ -2,7 +2,11 @@
 Tests for task code
 """
 
-from typing import Iterable, cast
+from typing import (
+    Any,
+    Iterable,
+    cast
+)
 
 from math import sqrt
 
@@ -14,6 +18,7 @@ from cognition import (
     Action,
     ActionFactory,
     ActionRank,
+    AttrReferral,
     GoalCheck,
     IOContainer,
     Phase,
@@ -111,6 +116,116 @@ class ListSensorActuator:
 
 class TestTask(unittest.TestCase):
     """Tests for task code"""
+
+    def test_elab_dec(self) -> None:
+        """Confirms elaborator decoration"""
+
+        word = "test"
+        t: Task[str] = Task(lambda: word)
+
+        self.assertEqual(
+            str(t),
+            "\n".join((
+                f"Phase={Phase.ELABORATION.name}",
+                f"State={word}",
+                f"Done?={False}",
+                f"Chosen={None}",
+                "Action Factories=",
+                "Potential Actions=",
+                "Action Evaluators=",
+                "Rankings=",
+                "Goal Checks=",
+                "Elaborators=",
+                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                f"Actuators={Task.ACTUATOR_LOG}",
+            ))
+        )
+
+        #
+
+        e_name = "echo"
+
+        @t.elaborator
+        @stringify(e_name)
+        def echo(s: str, _io: IOContainer) -> dict[str, Any]:
+            return { e_name: s }
+
+        self.assertEqual(
+            str(t),
+            "\n".join((
+                f"Phase={Phase.ELABORATION.name}",
+                f"State={word}",
+                f"Done?={False}",
+                f"Chosen={None}",
+                "Action Factories=",
+                "Potential Actions=",
+                "Action Evaluators=",
+                "Rankings=",
+                "Goal Checks=",
+                f"Elaborators={e_name}",
+                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                f"Actuators={Task.ACTUATOR_LOG}",
+            ))
+        )
+
+        #
+
+        g_name = f"check_{e_name}"
+
+        @t.goal_check
+        @stringify(g_name)
+        def check_echo(_s: str, io: IOContainer) -> bool:
+            e_result = cast(
+                str,
+                getattr(
+                    cast(
+                        AttrReferral,
+                        getattr(io.i, Task.SENSOR_ELABORATION)
+                    ),
+                    e_name
+                )
+            )
+
+            return e_result == word
+
+        self.assertEqual(
+            str(t),
+            "\n".join((
+                f"Phase={Phase.ELABORATION.name}",
+                f"State={word}",
+                f"Done?={False}",
+                f"Chosen={None}",
+                "Action Factories=",
+                "Potential Actions=",
+                "Action Evaluators=",
+                "Rankings=",
+                f"Goal Checks={g_name}",
+                f"Elaborators={e_name}",
+                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                f"Actuators={Task.ACTUATOR_LOG}",
+            ))
+        )
+
+        t.run_until_done()
+
+        self.assertEqual(
+            str(t),
+            "\n".join((
+                f"Phase={Phase.GOALCHECK.name}",
+                f"State={word}",
+                f"Done?={True}",
+                f"Chosen={None}",
+                "Action Factories=",
+                "Potential Actions=",
+                "Action Evaluators=",
+                "Rankings=",
+                f"Goal Checks={g_name}",
+                f"Elaborators={e_name}",
+                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                f"Actuators={Task.ACTUATOR_LOG}",
+            ))
+        )
+
 
     def test_phase(self) -> None:
         """Confirms phase sequencing"""
@@ -216,6 +331,7 @@ class TestTask(unittest.TestCase):
 
         #
 
+        @t.action_evaluator
         def dec_over_inc(
                 _s: int,
                 _io: IOContainer,
@@ -229,7 +345,6 @@ class TestTask(unittest.TestCase):
                 if a in (a_dec, a_inc)
             ]
 
-        t.add_action_evaluator(dec_over_inc)
         t.run_cycles()
 
         self.assertEqual(t.state, starting_point - 1)

@@ -286,6 +286,11 @@ def create_search_task[SS: Hashable, SA](
             path_cost=None
         )
 
+    t: Task[SearchState[SS, SA]] = Task(init_task_state)
+
+    #
+
+    @t.action_factory
     @stringify("always_search")
     def search_factory(
         _s: SearchState[SS, SA],
@@ -343,6 +348,7 @@ def create_search_task[SS: Hashable, SA](
 
         return search_action
 
+    @t.goal_check
     @stringify("search_complete")
     def search_complete(
         s: SearchState[SS, SA],
@@ -351,10 +357,6 @@ def create_search_task[SS: Hashable, SA](
         """done searching?"""
 
         return s.done
-
-    t: Task[SearchState[SS, SA]] = Task(init_task_state)
-    t.add_goal_check(search_complete)
-    t.add_action_factory(search_factory)
 
     # t.set_sensor(
     #     "problem",
