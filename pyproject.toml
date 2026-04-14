@@ -29,3 +29,9 @@ Repository = "https://github.com/polycog/cognition.git"
 
 [tool.setuptools.dynamic]
 version = {attr = "cognition.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"cognition" = ["py.typed"]
