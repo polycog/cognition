@@ -4,9 +4,10 @@ Tests for task code
 
 from typing import (
     Any,
-    Iterable,
     cast
 )
+
+from collections.abc import Iterable
 
 from math import sqrt
 

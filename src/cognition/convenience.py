@@ -4,12 +4,15 @@ Practical library additions
 
 from typing import (
     Any,
-    Iterable,
-    Mapping,
     Optional,
     Protocol,
     cast,
     runtime_checkable
+)
+
+from collections.abc import (
+    Iterable,
+    Mapping,
 )
 
 from enum import IntEnum

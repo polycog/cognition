@@ -3,21 +3,19 @@ Support for a task generated
 via a Search problem.
 """
 
-from typing import (
-    Callable,
-    Iterable,
-    Optional,
-)
+from typing import Optional
 
 from abc import abstractmethod, ABC
 from dataclasses import dataclass, field
 
+from collections import deque
+
 from collections.abc import (
+    Callable,
     Hashable,
+    Iterable,
     Sequence,
 )
-
-from collections import deque
 
 import heapq
 

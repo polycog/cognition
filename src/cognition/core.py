@@ -11,9 +11,12 @@ from enum import IntEnum, StrEnum
 from typing import (
     cast,
     Any,
+    Optional,
+)
+
+from collections.abc import (
     Iterable,
     Iterator,
-    Optional,
 )
 
 from itertools import chain
@@ -305,7 +308,7 @@ class Task[S]:
 
     def elaborator(self, e: Elaborator[S]) -> Elaborator[S]:
         """
-        Decorator version of above
+        Decorator version of add_elaborator
         """
 
         self.add_elaborator(e)
@@ -335,7 +338,7 @@ class Task[S]:
 
     def goal_check(self, p: GoalCheck[S]) -> GoalCheck[S]:
         """
-        Decorator version of above
+        Decorator version of add_goal_check
         """
 
         self.add_goal_check(p)
@@ -363,7 +366,7 @@ class Task[S]:
 
     def action_factory(self, f: ActionFactory[S]) -> ActionFactory[S]:
         """
-        Decorator version of above
+        Decorator version of add_action_factory
         """
 
         self.add_action_factory(f)
@@ -409,7 +412,7 @@ class Task[S]:
 
     def action_evaluator(self, ae: ActionEvaluator[S]) -> ActionEvaluator[S]:
         """
-        Decorator version of above
+        Decorator version of add_action_evaluator
         """
 
         self.add_action_evaluator(ae)

@@ -2,10 +2,11 @@
 Tests for search code
 """
 
-from typing import (
+from typing import cast
+
+from collections.abc import (
     Iterable,
     Sequence,
-    cast,
 )
 
 import unittest

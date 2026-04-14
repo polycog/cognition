@@ -4,10 +4,13 @@ generated via an iterable value.
 """
 
 from typing import (
-    Iterable,
-    Iterator,
     Optional,
     cast,
+)
+
+from collections.abc import (
+    Iterable,
+    Iterator,
 )
 
 from dataclasses import dataclass

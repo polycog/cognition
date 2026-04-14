@@ -4,9 +4,10 @@ Tests for convenience code
 
 from typing import (
     Any,
-    Mapping,
     cast,
 )
+
+from collections.abc import Mapping
 
 import unittest
 

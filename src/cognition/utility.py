@@ -4,9 +4,12 @@ Utility code
 
 from typing import (
     Any,
+    Protocol,
+)
+
+from collections.abc import (
     Callable,
     Mapping,
-    Protocol,
 )
 
 from functools import wraps
