@@ -1,0 +1,7 @@
+markdown-it-py==4.0.0
+mdurl==0.1.2
+Pygments==2.20.0
+rich==15.0.0
+
+# adding cognition
+../..
