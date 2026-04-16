@@ -6,25 +6,63 @@ cognition library
 
 from __future__ import annotations
 
-from collections.abc import (
-    Callable,
-    Iterable,
-)
+from collections.abc import Callable
 
 from dataclasses import dataclass
 
 from enum import IntEnum
 
 from cognition import (
-    Action,
     AttrReferral,
     IOContainer,
+    NamedOperator,
     Task,
+    add_operator,
     stringify,
 )
 
 from rich import print as rprint
 from rich.prompt import Prompt
+
+#
+
+@dataclass(frozen=True)
+class CommandLogEntry:
+    """Logging past commands with result"""
+
+    cmd: str
+    result: CommandReturn
+
+class CLIStage(IntEnum):
+    """Step of CLI processing"""
+
+    GET_CMD = 0
+    EXEC_CMD = 1
+
+    def next(self) -> CLIStage:
+        """Next stage"""
+
+        return CLIStage((self + 1) % len(CLIStage))
+
+@dataclass
+class CLIState:
+    """
+    Get/Process cmd
+    +
+    cmd log
+    """
+
+    stage: CLIStage
+    log: list[CommandLogEntry]
+
+#
+
+t: Task[CLIState] = Task(lambda: CLIState(CLIStage.GET_CMD, []))
+
+# shared reference to
+# command input buffer
+cli_status: dict[str, str] = {}
+t.set_sensor("cli", AttrReferral(cli_status))
 
 #
 
@@ -89,88 +127,48 @@ def cmd_bye() -> CommandReturn:
 
     return CommandReturn(":waving_hand:", 0, True)
 
-#
+@register_command(commands)
+@stringify("history")
+def cmd_history() -> CommandReturn:
+    """Log of past interactions"""
 
-@dataclass(frozen=True)
-class CommandLogEntry:
-    """Logging past commands with result"""
-
-    cmd: str
-    result: CommandReturn
-
-class CLIStage(IntEnum):
-    """Step of CLI processing"""
-
-    GET_CMD = 0
-    EXEC_CMD = 1
-
-    def next(self) -> CLIStage:
-        """Next stage"""
-
-        return CLIStage((self + 1) % len(CLIStage))
-
-@dataclass
-class CLIState:
-    """
-    Get/Process cmd
-    +
-    cmd log
-    """
-
-    stage: CLIStage
-    log: list[CommandLogEntry]
+    return CommandReturn(
+        "\n".join(
+            str(entry) for entry in t.state.log
+        ),
+        0,
+        False
+    )
 
 #
 
-t: Task[CLIState] = Task(lambda: CLIState(CLIStage.GET_CMD, []))
+class GetCommand(NamedOperator[CLIState]):
 
-# shared reference to
-# command input buffer
-cli_status: dict[str, str] = {}
-t.set_sensor("cli", AttrReferral(cli_status))
+    def can_perform(self, state: CLIState, _io: IOContainer) -> bool:
+        return state.stage == CLIStage.GET_CMD
 
-#
-
-@t.action_factory
-def prompt_factory(s: CLIState, _: IOContainer) -> Iterable[Action[CLIState]]:
-    """Get next command"""
-
-    if s.stage != CLIStage.GET_CMD:
-        return []
-
-    #
-
-    @stringify("get_command")
-    def _exec(s: CLIState, __: IOContainer) -> None:
-        s.stage = s.stage.next()
+    def perform(self, state: CLIState, _io: IOContainer) -> None:
         cli_status["command"] = Prompt.ask("[bold blue]$[/]")
+        state.stage = state.stage.next()
 
-    return [_exec]
 
-@t.action_factory
-def cmd_factory(s: CLIState, io: IOContainer) -> Iterable[Action[CLIState]]:
-    """Either invalid or a registered command"""
+class ExecCommand(NamedOperator[CLIState]):
 
-    if s.stage != CLIStage.EXEC_CMD:
-        return []
+    def can_perform(self, state: CLIState, _io: IOContainer) -> bool:
+        return state.stage == CLIStage.EXEC_CMD
 
-    #
+    def perform(self, state: CLIState, io: IOContainer) -> None:
+        cmd = io.i.cli.command
 
-    cmd = io.i.cli.command
+        if cmd in commands:
+            log_entry = CommandLogEntry(cmd, commands[cmd]())
+        else:
+            log_entry = CommandLogEntry(
+                cmd,
+                CommandReturn(f"Invalid command: {cmd}", 1, False)
+            )
 
-    if cmd in commands:
-        log_entry = CommandLogEntry(cmd, commands[cmd]())
-    else:
-        log_entry = CommandLogEntry(
-            cmd,
-            CommandReturn(f"Invalid command: {cmd}", 1, False)
-        )
-
-    @stringify("exec_command")
-    def _exec(s: CLIState, _: IOContainer) -> None:
-        s.stage = s.stage.next()
-
-        s.log.append(log_entry)
+        state.log.append(log_entry)
 
         if log_entry.result.code != 0:
             rprint(f"[bold red]{log_entry.result.text}[/]")
@@ -178,7 +176,12 @@ def cmd_factory(s: CLIState, io: IOContainer) -> Iterable[Action[CLIState]]:
             rprint(log_entry.result.text)
         print()
 
-    return [_exec]
+        state.stage = state.stage.next()
+
+
+add_operator(t, GetCommand("get_command"))
+add_operator(t, ExecCommand("exec_command"))
+
 
 @t.goal_check
 def exit_flag(s: CLIState, _: IOContainer) -> bool:

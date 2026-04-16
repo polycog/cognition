@@ -10,6 +10,8 @@ from typing import (
     runtime_checkable
 )
 
+from abc import ABC, abstractmethod
+
 from collections.abc import (
     Iterable,
     Mapping,
@@ -33,6 +35,7 @@ from cognition.core import (
     ActionRank,
     Elaborator,
     IOContainer,
+    Task,
 )
 
 #
@@ -111,6 +114,68 @@ def create_named_action[S](
     new_named.params = kwargs.copy()
 
     return new_f
+
+
+class Operator[S](Protocol):
+    """
+    Convenience method for producing
+    action factories that follow a
+    common pattern of a predicate
+    gating a single action
+    """
+
+    def can_perform(self, state: S, io: IOContainer) -> bool:
+        """Does this hold in the current state/io?"""
+
+    def perform(self, state: S, io: IOContainer) -> Optional[S]:
+        """Then this action should be considered"""
+
+    @property
+    def name(self) -> str:
+        """How to refer to the resulting action [and factory]"""
+
+
+class NamedOperator[S](ABC, Operator[S]):
+    """
+    Interface for an operator that
+    implements the name property
+    via supplied constructor parameter
+    """
+
+    def __init__(self, name: str) -> None:
+        """
+        Initializes the operator with a name
+        """
+
+        self._name = name
+
+    @abstractmethod
+    def can_perform(self, state: S, io: IOContainer) -> bool:
+        """Gating predicate"""
+
+    @abstractmethod
+    def perform(self, state: S, io: IOContainer) -> Optional[S]:
+        """Resulting action"""
+
+    @property
+    def name(self) -> str:
+        """Implemented property"""
+
+        return self._name
+
+
+def add_operator[S](task: Task[S], op: Operator[S]) -> None:
+    """Produces an action factory from the operator"""
+
+    @task.action_factory
+    @stringify(op.name)
+    def action_factory(s: S, io: IOContainer) -> Iterable[Action[S]]:
+        """propose performing if can perform"""
+
+        if op.can_perform(s, io):
+            return [create_named_action(op.name, op.perform)]
+
+        return []
 
 
 def uniform_evaluator[S](

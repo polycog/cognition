@@ -7,6 +7,8 @@ from typing import (
     cast,
 )
 
+from enum import StrEnum, auto
+
 from collections.abc import Mapping
 
 import unittest
@@ -19,13 +21,46 @@ from cognition import (
     Elaborator,
     IOContainer,
     NamedAction,
+    NamedOperator,
+    Phase,
     Rank,
+    Task,
+    add_operator,
     create_named_action,
     create_elaborator,
+    stringify,
     uniform_evaluator,
 )
 
 #
+
+class OpStage(StrEnum):
+    """Stage of op test"""
+
+    SAY_HI = auto()
+    SAY_BYE = auto()
+    DONE = auto()
+
+class HiOp(NamedOperator[OpStage]):
+    """Says hi"""
+
+    def can_perform(self, state: OpStage, io: IOContainer) -> bool:
+        return state == OpStage.SAY_HI
+
+    def perform(self, state: OpStage, io: IOContainer) -> OpStage:
+        print("hi", file=io.o.log)
+        return OpStage.SAY_BYE
+
+class ByeOp(NamedOperator[OpStage]):
+    """Says bye"""
+
+    def can_perform(self, state: OpStage, io: IOContainer) -> bool:
+        return state == OpStage.SAY_BYE
+
+    def perform(self, state: OpStage, io: IOContainer) -> OpStage:
+        print("bye", file=io.o.log)
+        return OpStage.DONE
+
 
 class TestConvenience(unittest.TestCase):
     """Tests for convenience code"""
@@ -53,6 +88,119 @@ class TestConvenience(unittest.TestCase):
         self.mock_io = IOContainer(
             AttrReferral(self.io_source),
             AttrReferral(self.io_source)
+        )
+
+
+    def test_operator(self) -> None:
+        """Confirming operators"""
+
+        t: Task[OpStage] = Task(lambda: OpStage.SAY_HI)
+
+        hi_name: str = "hi"
+        bye_name: str = "bye"
+        done_name: str = "done_yet?"
+
+        add_operator(t, HiOp(hi_name))
+        add_operator(t, ByeOp(bye_name))
+
+        @t.goal_check
+        @stringify(done_name)
+        def check_done(s: OpStage, _io: IOContainer) -> bool:
+            "done yet?"
+
+            return s == OpStage.DONE
+
+        self.assertEqual(
+            str(t),
+            "\n".join((
+                f"Phase={Phase.ELABORATION.name}",
+                f"State={OpStage.SAY_HI}",
+                f"Done?={False}",
+                f"Chosen={None}",
+                f"Action Factories={hi_name}, {bye_name}",
+                "Potential Actions=",
+                "Action Evaluators=",
+                "Rankings=",
+                f"Goal Checks={done_name}",
+                "Elaborators=",
+                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                f"Actuators={Task.ACTUATOR_LOG}",
+            ))
+        )
+
+        t.run_cycles()
+
+        self.assertEqual(
+            str(t),
+            "\n".join((
+                f"Phase={Phase.ELABORATION.name}",
+                f"State={OpStage.SAY_BYE}",
+                f"Done?={False}",
+                f"Chosen={hi_name}",
+                f"Action Factories={hi_name}, {bye_name}",
+                f"Potential Actions={hi_name}",
+                "Action Evaluators=",
+                "Rankings=",
+                f"Goal Checks={done_name}",
+                "Elaborators=",
+                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                f"Actuators={Task.ACTUATOR_LOG}",
+            ))
+        )
+
+        self.assertEqual(
+            t.log,
+            "hi\n"
+        )
+
+        t.run_cycles()
+
+        self.assertEqual(
+            str(t),
+            "\n".join((
+                f"Phase={Phase.ELABORATION.name}",
+                f"State={OpStage.DONE}",
+                f"Done?={False}",
+                f"Chosen={bye_name}",
+                f"Action Factories={hi_name}, {bye_name}",
+                f"Potential Actions={bye_name}",
+                "Action Evaluators=",
+                "Rankings=",
+                f"Goal Checks={done_name}",
+                "Elaborators=",
+                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                f"Actuators={Task.ACTUATOR_LOG}",
+            ))
+        )
+
+        self.assertEqual(
+            t.log,
+            "hi\nbye\n"
+        )
+
+        t.run_until_done()
+
+        self.assertEqual(
+            str(t),
+            "\n".join((
+                f"Phase={Phase.GOALCHECK.name}",
+                f"State={OpStage.DONE}",
+                f"Done?={True}",
+                f"Chosen={bye_name}",
+                f"Action Factories={hi_name}, {bye_name}",
+                f"Potential Actions={bye_name}",
+                "Action Evaluators=",
+                "Rankings=",
+                f"Goal Checks={done_name}",
+                "Elaborators=",
+                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                f"Actuators={Task.ACTUATOR_LOG}",
+            ))
+        )
+
+        self.assertEqual(
+            t.log,
+            "hi\nbye\n"
         )
 
 
