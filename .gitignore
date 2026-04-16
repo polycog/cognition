@@ -14,3 +14,5 @@ htmlcov
 *.egg-info
 dist
 build
+
+.streamlit
