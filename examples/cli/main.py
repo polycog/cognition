@@ -143,6 +143,7 @@ def cmd_history() -> CommandReturn:
 #
 
 class GetCommand(NamedOperator[CLIState]):
+    """GET_CMD -> $"""
 
     def can_perform(self, state: CLIState, _io: IOContainer) -> bool:
         return state.stage == CLIStage.GET_CMD
@@ -153,6 +154,7 @@ class GetCommand(NamedOperator[CLIState]):
 
 
 class ExecCommand(NamedOperator[CLIState]):
+    """EXEC_CMD -> execute"""
 
     def can_perform(self, state: CLIState, _io: IOContainer) -> bool:
         return state.stage == CLIStage.EXEC_CMD
