@@ -1,0 +1,5 @@
+[TYPECHECK]
+ignored-classes=AttrReferral
+
+[SIMILARITIES]
+min-similarity-lines=8
