@@ -271,7 +271,16 @@ class TestTask(unittest.TestCase):
         )
 
         ar_inc_low = ActionRank(a_inc, Rank.LOW)
+        self.assertEqual(
+            str(ar_inc_low),
+            "ActionRank(a=inc, r=3)"
+        )
+
         ar_dec_high = ActionRank(a_dec, Rank.HIGH)
+        self.assertEqual(
+            str(ar_dec_high),
+            "ActionRank(a=dec, r=1)"
+        )
 
         self.assertTrue(
             ar_dec_high < ar_inc_low

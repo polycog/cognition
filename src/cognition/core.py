@@ -92,6 +92,16 @@ class ActionRank[S]:
     a: Action[S]
     rank: ImplementsLessThan
 
+    def __str__(self) -> str:
+        """string rep of both action and rank"""
+
+        return (
+            "ActionRank("
+            f"a={str(self.a)}, "
+            f"r={str(self.rank)}"
+            ")"
+        )
+
     def __lt__(self, other: object) -> bool:
         """
         Smaller rank values come first,
