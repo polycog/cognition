@@ -18,11 +18,11 @@ WaterJug via web-based (Streamlit) interface using LLM for problem configuration
 
 To run:
 
-2. Create & activate a virtual environment
-3. `pip install -r requirements.txt`
-4. Create a `secrets.toml` file in `.streamlit` (or can use a global file if preferred); populate an `llm` section with required OpenAI fields (see example below)
-5. `python -m streamlit run app.py`
-6. In the resulting browser, Yippee Ki‐Yay!!
+1. Create & activate a virtual environment
+2. `pip install -r requirements.txt`
+3. Create a `secrets.toml` file in `.streamlit` (or can use a global file if preferred); populate an `llm` section with required OpenAI fields (see example below)
+4. `python -m streamlit run app.py`
+5. In the resulting browser, Yippee Ki‐Yay!!
 
 ### Example `secrets.toml`
 Used for local access via LM Studio
