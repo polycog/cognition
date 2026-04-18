@@ -391,7 +391,7 @@ class Task[S]:
         one or more actions
         """
 
-        if hasattr(proposal, "__iter__"):
+        if isinstance(proposal, Iterable):
             return proposal
 
         return (proposal,)
