@@ -118,6 +118,51 @@ class ListSensorActuator:
 class TestTask(unittest.TestCase):
     """Tests for task code"""
 
+    def test_func_vs_imp(self) -> None:
+        """Confirms flexible action execution"""
+
+        tf: Task[list[str]] = Task(lambda: ["hi"])
+
+        self.assertEqual(
+            tf.state,
+            ["hi"]
+        )
+
+        tf.add_action_factory(
+            lambda _s, _io: [lambda s, _: s[1:]]
+        )
+
+        tf.run_cycles()
+
+        self.assertEqual(
+            tf.state,
+            []
+        )
+
+        #
+
+        ti: Task[list[str]] = Task(lambda: ["hi"])
+
+        self.assertEqual(
+            ti.state,
+            ["hi"]
+        )
+
+        def a(s: list[str], _io: IOContainer) -> None:
+            del s[0]
+
+        ti.add_action_factory(
+            lambda _s, _io: a
+        )
+
+        ti.run_cycles()
+
+        self.assertEqual(
+            ti.state,
+            []
+        )
+
+
     def test_elab_dec(self) -> None:
         """Confirms elaborator decoration"""
 

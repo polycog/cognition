@@ -481,7 +481,7 @@ class Task[S]:
 
         if self._chosen:
             result: Optional[S] = self._chosen(self._state, self._io)
-            if result:
+            if result is not None:
                 self._state = result
         else:
             raise TaskExecutionError(TaskErrorMessage.NO_CHOICE) # pragma: no cover
