@@ -79,13 +79,22 @@ def create_elaborator[S](
 
 def _qualified_name(name: str, **kwargs: Any) -> str:
     """
-    Naming convention for a combo of name + optional params
+    Naming convention for a combo
+    of name + optional params
+    (ignoring those whose name
+    starts with an underscore)
     """
 
-    if kwargs:
+    true_args = {
+        k:v
+        for k,v in kwargs.items()
+        if k[:1] != '_'
+    }
+
+    if true_args:
         params_str = ", ".join(
             f"{k}={repr(v)}"
-            for k,v in kwargs.items()
+            for k,v in true_args.items()
         )
 
         return f"{name}[{params_str}]"
@@ -187,20 +196,32 @@ class NamedOperator[S](ABC, Operator[S]):
         return self._params
 
 
-def add_operator[S](task: Task[S], op: Operator[S]) -> None:
+def add_operator[S](
+    task: Task[S],
+    op: Operator[S],
+    self_param: Optional[str] = '_op'
+) -> None:
     """Produces an action factory from the operator"""
+
+    factory_pred = op.can_perform
+
+    act_params = dict(op.params)
+    if self_param is not None:
+        act_params[self_param] = op
+
+    op_action = create_named_action(
+        op.name,
+        op.perform,
+        **act_params
+    )
 
     @task.action_factory
     @stringify(op.name)
     def action_factory(s: S, io: IOContainer) -> Iterable[Action[S]]:
         """propose performing if can perform"""
 
-        if op.can_perform(s, io):
-            return [create_named_action(
-                op.name,
-                op.perform,
-                **op.params
-            )]
+        if factory_pred(s, io):
+            return [op_action]
 
         return []
 
