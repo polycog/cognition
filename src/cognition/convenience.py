@@ -17,6 +17,8 @@ from collections.abc import (
     Mapping,
 )
 
+from types import MappingProxyType
+
 from enum import IntEnum
 
 from cognition.functypes import (
@@ -75,6 +77,21 @@ def create_elaborator[S](
     return _f
 
 
+def _qualified_name(name: str, **kwargs: Any) -> str:
+    """
+    Naming convention for a combo of name + optional params
+    """
+
+    if kwargs:
+        params_str = ", ".join(
+            f"{k}={repr(v)}"
+            for k,v in kwargs.items()
+        )
+
+        return f"{name}[{params_str}]"
+
+    return name
+
 # pylint: disable=too-few-public-methods
 @runtime_checkable
 class NamedAction(Protocol):
@@ -99,19 +116,15 @@ def create_named_action[S](
     via f.params
     """
 
-    def qualified_name() -> str:
-        if kwargs:
-            params_str = ", ".join(f"{k}={repr(v)}" for k,v in kwargs.items())
-            return f"{name}[{params_str}]"
-
-        return name
-
-    new_f = stringify(qualified_name())(f)
+    new_f = stringify(_qualified_name(
+        name,
+        **kwargs
+    ))(f)
 
     # pylint: disable=attribute-defined-outside-init
     new_named = cast(NamedAction, new_f)
     new_named.name = name
-    new_named.params = kwargs.copy()
+    new_named.params = MappingProxyType(kwargs.copy())
 
     return new_f
 
@@ -134,6 +147,9 @@ class Operator[S](Protocol):
     def name(self) -> str:
         """How to refer to the resulting action [and factory]"""
 
+    @property
+    def params(self) -> Mapping[str, Any]:
+        """Optional augmentations in the name"""
 
 class NamedOperator[S](ABC, Operator[S]):
     """
@@ -142,12 +158,13 @@ class NamedOperator[S](ABC, Operator[S]):
     via supplied constructor parameter
     """
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, **kwargs: Any) -> None:
         """
-        Initializes the operator with a name
+        Initializes the operator with a name and params
         """
 
         self._name = name
+        self._params = MappingProxyType(kwargs.copy())
 
     @abstractmethod
     def can_perform(self, state: S, io: IOContainer) -> bool:
@@ -163,6 +180,12 @@ class NamedOperator[S](ABC, Operator[S]):
 
         return self._name
 
+    @property
+    def params(self) -> Mapping[str, Any]:
+        """Implemented property"""
+
+        return self._params
+
 
 def add_operator[S](task: Task[S], op: Operator[S]) -> None:
     """Produces an action factory from the operator"""
@@ -173,7 +196,11 @@ def add_operator[S](task: Task[S], op: Operator[S]) -> None:
         """propose performing if can perform"""
 
         if op.can_perform(s, io):
-            return [create_named_action(op.name, op.perform)]
+            return [create_named_action(
+                op.name,
+                op.perform,
+                **op.params
+            )]
 
         return []
 
