@@ -6,6 +6,7 @@ from typing import (
     Any,
     Optional,
     Protocol,
+    TYPE_CHECKING,
     cast,
     runtime_checkable
 )
@@ -21,26 +22,40 @@ from types import MappingProxyType
 
 from enum import IntEnum
 
+from functools import cmp_to_key
+
 from cognition.functypes import (
     BiFunction,
     Predicate,
+    TriFunction,
 )
 
 from cognition.utility import (
     ImplementsLessThan,
+    optionally_name,
     stringify,
 )
 
 from cognition.core import (
     Action,
     ActionEvaluator,
+    ActionFactory,
     ActionRank,
     Elaborator,
     IOContainer,
     Task,
 )
 
+if TYPE_CHECKING:
+    from _typeshed import SupportsAllComparisons
+
 #
+
+# default named action
+# parameter to access
+# the source operator
+OPERATOR_SELF_PARAM: str = "_op"
+
 
 class Rank(IntEnum):
     """
@@ -71,10 +86,7 @@ def create_elaborator[S](
             for k, v in kwargs.items()
         }
 
-    if name:
-        return stringify(name)(_f)
-
-    return _f
+    return optionally_name(_f, name)
 
 
 def _qualified_name(name: str, **kwargs: Any) -> str:
@@ -199,8 +211,8 @@ class NamedOperator[S](ABC, Operator[S]):
 def add_operator[S](
     task: Task[S],
     op: Operator[S],
-    self_param: Optional[str] = '_op'
-) -> None:
+    self_param: Optional[str] = OPERATOR_SELF_PARAM
+) -> tuple[ActionFactory[S], Action[S]]:
     """Produces an action factory from the operator"""
 
     factory_pred = op.can_perform
@@ -225,12 +237,14 @@ def add_operator[S](
 
         return []
 
+    return action_factory, op_action
+
 
 def uniform_evaluator[S](
-        r: ImplementsLessThan,
-        p: Predicate[Action[S]] = lambda _: True,
-        name: Optional[str] = None
-    ) -> ActionEvaluator[S]:
+    r: ImplementsLessThan,
+    p: Predicate[Action[S]] = lambda _: True,
+    name: Optional[str] = None
+) -> ActionEvaluator[S]:
     """
     Produces a convenience ActionEvaluator 
     that applies a supplied rank to all 
@@ -244,7 +258,73 @@ def uniform_evaluator[S](
     ) -> Iterable[ActionRank[S]]:
         return (ActionRank(a, r) for a in potential_actions if p(a))
 
-    if name:
-        return stringify(name)(evaluation_func)
+    return optionally_name(evaluation_func, name)
 
-    return evaluation_func
+
+def sorting_evaluator[S](
+    sorting_key: TriFunction[Action[S], S, IOContainer, "SupportsAllComparisons"],
+    rank_start: int = 1,
+    name: Optional[str] = None
+) -> ActionEvaluator[S]:
+    """
+    Produces a convenience ActionEvaluator 
+    that associates rankings based upon
+    relative sorting order based upon
+    a supplied key, starting with a
+    supplied value
+    """
+
+    def evaluation_func(
+        state: S,
+        io: IOContainer,
+        potential_actions: Iterable[Action[S]]
+    ) -> Iterable[ActionRank[S]]:
+
+        ordered = sorted(
+            potential_actions,
+            key=lambda a: sorting_key(a, state, io)
+        )
+
+        current_rank: int = rank_start
+        ranks = [current_rank] * len(ordered)
+
+        for i in range(1, len(ordered)):
+            key_curr = sorting_key(ordered[i], state, io)
+            key_prev = sorting_key(ordered[i-1], state, io)
+
+            if key_curr != key_prev:
+                current_rank += 1
+
+            ranks[i] = current_rank
+
+        return (
+            ActionRank(e, r)
+            for e, r in zip(ordered, ranks)
+        )
+
+    return optionally_name(evaluation_func, name)
+
+def operator_sorting_key[S](
+    op_param: str = OPERATOR_SELF_PARAM
+) -> TriFunction[Action[S], S, IOContainer, "SupportsAllComparisons"]:
+    """
+    Produces a sorting key
+    for actions derived from
+    named operators (using the
+    supplied action parameter
+    name)
+    """
+
+    def cmp(a: Action[S], b: Action[S]) -> int:
+        op_a = cast(NamedAction, a).params[op_param]
+        op_b = cast(NamedAction, b).params[op_param]
+
+        if op_a == op_b:
+            return 0
+
+        if op_a < op_b:
+            return -1
+
+        return 1
+
+    return lambda a, _s, _io: cmp_to_key(cmp)(a)

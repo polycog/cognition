@@ -7,7 +7,11 @@ from typing import (
     cast,
 )
 
-from enum import StrEnum, auto
+from enum import (
+    Enum,
+    StrEnum,
+    auto
+)
 
 from collections.abc import Mapping
 
@@ -16,8 +20,10 @@ import unittest
 from cognition import (
     Action,
     ActionEvaluator,
+    ActionFactory,
     ActionRank,
     AttrReferral,
+    BiFunction,
     Elaborator,
     IOContainer,
     NamedAction,
@@ -28,6 +34,8 @@ from cognition import (
     add_operator,
     create_named_action,
     create_elaborator,
+    operator_sorting_key,
+    sorting_evaluator,
     stringify,
     uniform_evaluator,
 )
@@ -61,6 +69,72 @@ class ByeOp(NamedOperator[OpStage]):
         print("bye", file=io.o.log)
         return OpStage.DONE
 
+#
+
+class PrioritizedMathOperation(Enum):
+    """Prioritized options"""
+
+    ADD = (1, lambda a, b: a + b)
+    SUB = (2, lambda a, b: a - b)
+    MULT = (3, lambda a, b: a * b)
+
+    def __init__(self, priority: int, f: BiFunction[int, int, int]):
+        self.priority = priority
+        self.f = f
+
+    def __call__(self, a: int, b: int) -> int:
+        return self.f(a, b)
+
+
+class ChangeOp(NamedOperator[int]):
+    """Modify state via a simple math operation"""
+
+    def __init__(self, op: PrioritizedMathOperation, amt: int) -> None:
+        super().__init__(op.name, amt=amt)
+
+        self._op = op
+        self._amt = amt
+        self._enabled: bool = True
+
+    def can_perform(self, state: int, _io: IOContainer) -> bool:
+        return self._enabled
+
+    def perform(self, state: int, _io: IOContainer) -> int:
+        return self._op(state, self._amt)
+
+    def flip(self) -> None:
+        """flips enabled status"""
+
+        self._enabled = not self._enabled
+
+    @property
+    def enabled(self) -> bool:
+        """enabled status"""
+
+        return self._enabled
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ChangeOp):
+            return NotImplemented
+
+        return (self._op, self._amt, self._enabled) == (other._op, other._amt, other._enabled)
+
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, ChangeOp):
+            return NotImplemented
+
+        if (self._op, self._amt) == (other._op, other._amt):
+            return self._enabled < other._enabled
+
+        if self._op == other._op:
+            return self._amt < other._amt
+
+        return self._op.priority < other._op.priority
+
+    def __hash__(self) -> int:
+        return hash((self._op, self._amt))
+
+#
 
 class TestConvenience(unittest.TestCase):
     """Tests for convenience code"""
@@ -407,4 +481,203 @@ class TestConvenience(unittest.TestCase):
         self.assertEqual(
             elab(100, self.mock_io),
             elab2(100, self.mock_io),
+        )
+
+    # pylint: disable=too-many-locals
+    def test_sorting_elaborator(self) -> None:
+        """Checks sorting_elaborator"""
+
+        init_state: int = 3
+        t: Task[int] = Task(lambda: init_state)
+
+        final_val: int = 10
+        goal_name: str = f"at{final_val}"
+
+        @t.goal_check
+        @stringify(goal_name)
+        def at10(num: int, _io: IOContainer) -> bool:
+            """achieved value!"""
+
+            return num >= final_val
+
+        add1 = ChangeOp(PrioritizedMathOperation.ADD, 1)
+        add2 = ChangeOp(PrioritizedMathOperation.ADD, 2)
+        sub1 = ChangeOp(PrioritizedMathOperation.SUB, 1)
+        mult2 = ChangeOp(PrioritizedMathOperation.MULT, 2)
+        mult2b = ChangeOp(PrioritizedMathOperation.MULT, 2)
+
+        # confirming direct comparison
+        self.assertTrue(add1 < add2)
+        self.assertTrue(add1 < sub1)
+        self.assertTrue(add1 < mult2)
+        self.assertTrue(add2 < mult2)
+        self.assertTrue(sub1 < mult2)
+        self.assertTrue(mult2 == mult2b)
+
+        # confirming tie-breaking
+        op_param_tie: str = "foo"
+
+        t2: Task[int] = Task(lambda: 42)
+        _, a2 = add_operator(t2, mult2, op_param_tie)
+        _, a2b = add_operator(t2, mult2b, op_param_tie)
+
+        evaluator: ActionEvaluator[int] = sorting_evaluator(
+            operator_sorting_key(op_param_tie)
+        )
+
+        self.assertSequenceEqual(
+            list(ar.rank for ar in evaluator(t2.state, self.mock_io, (a2, a2b))),
+            (1, 1)
+        )
+
+        # proceed with real task
+        ops: dict[ChangeOp, tuple[ActionFactory[int], Action[int]]] = {}
+        for o in (add2, sub1, mult2, add1):
+            ops[o] = add_operator(t, o)
+
+        eval_name: str = "change_op_sort"
+        rank_start: int = 100
+
+        t.add_action_evaluator(
+            sorting_evaluator(
+                operator_sorting_key(),
+                rank_start=rank_start,
+                name=eval_name
+            )
+        )
+
+        self.assertEqual(
+            str(t),
+            "\n".join((
+                f"Phase={Phase.ELABORATION.name}",
+                f"State={init_state}",
+                f"Done?={False}",
+                f"Chosen={None}",
+                f"Action Factories={", ".join(o.name for o in ops)}",
+                "Potential Actions=",
+                f"Action Evaluators={eval_name}",
+                "Rankings=",
+                f"Goal Checks={goal_name}",
+                "Elaborators=",
+                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                f"Actuators={Task.ACTUATOR_LOG}",
+            ))
+        )
+
+        # should increase by 1
+        t.run_cycles()
+
+        self.assertEqual(
+            str(t),
+            "\n".join((
+                f"Phase={Phase.ELABORATION.name}",
+                f"State={init_state + 1}",
+                f"Done?={False}",
+                f"Chosen={str(ops[add1][1])}",
+                f"Action Factories={", ".join(str(ov[0]) for ov in ops.values())}",
+                f"Potential Actions={", ".join(str(ov[1]) for ov in ops.values())}",
+                f"Action Evaluators={eval_name}",
+                f"Rankings={
+                    ", ".join(
+                        str(ar)
+                        for ar in (
+                            ActionRank(ops[add1][1], rank_start),
+                            ActionRank(ops[add2][1], rank_start+1),
+                            ActionRank(ops[sub1][1], rank_start+2),
+                            ActionRank(ops[mult2][1], rank_start+3),
+                        )
+                    )
+                }",
+                f"Goal Checks={goal_name}",
+                "Elaborators=",
+                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                f"Actuators={Task.ACTUATOR_LOG}",
+            ))
+        )
+
+        add1.flip()
+        add2.flip()
+
+        # should decrease by 1
+        t.run_cycles()
+
+        self.assertEqual(
+            str(t),
+            "\n".join((
+                f"Phase={Phase.ELABORATION.name}",
+                f"State={init_state}",
+                f"Done?={False}",
+                f"Chosen={str(ops[sub1][1])}",
+                f"Action Factories={", ".join(str(ov[0]) for ov in ops.values())}",
+                f"Potential Actions={", ".join(str(ov[1]) for o,ov in ops.items() if o.enabled)}",
+                f"Action Evaluators={eval_name}",
+                f"Rankings={
+                    ", ".join(
+                        str(ar)
+                        for ar in (
+                            ActionRank(ops[sub1][1], rank_start),
+                            ActionRank(ops[mult2][1], rank_start+1),
+                        )
+                    )
+                }",
+                f"Goal Checks={goal_name}",
+                "Elaborators=",
+                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                f"Actuators={Task.ACTUATOR_LOG}",
+            ))
+        )
+
+        sub1.flip()
+
+        # should double
+        t.run_cycles()
+
+        self.assertEqual(
+            str(t),
+            "\n".join((
+                f"Phase={Phase.ELABORATION.name}",
+                f"State={init_state * 2}",
+                f"Done?={False}",
+                f"Chosen={str(ops[mult2][1])}",
+                f"Action Factories={", ".join(str(ov[0]) for ov in ops.values())}",
+                f"Potential Actions={", ".join(str(ov[1]) for o,ov in ops.items() if o.enabled)}",
+                f"Action Evaluators={eval_name}",
+                "Rankings=",
+                f"Goal Checks={goal_name}",
+                "Elaborators=",
+                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                f"Actuators={Task.ACTUATOR_LOG}",
+            ))
+        )
+
+        add1.flip()
+        add2.flip()
+
+        t.run_until_done()
+
+        self.assertEqual(
+            str(t),
+            "\n".join((
+                f"Phase={Phase.GOALCHECK.name}",
+                f"State={final_val}",
+                f"Done?={True}",
+                f"Chosen={str(ops[add1][1])}",
+                f"Action Factories={", ".join(str(ov[0]) for ov in ops.values())}",
+                f"Potential Actions={", ".join(str(ov[1]) for o,ov in ops.items() if o.enabled)}",
+                f"Action Evaluators={eval_name}",
+                f"Rankings={
+                    ", ".join(
+                        str(ar)
+                        for ar in (
+                            ActionRank(ops[add1][1], rank_start),
+                            ActionRank(ops[add2][1], rank_start+1),
+                            ActionRank(ops[mult2][1], rank_start+2),
+                        )
+                    )
+                }",
+                f"Goal Checks={goal_name}",
+                "Elaborators=",
+                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                f"Actuators={Task.ACTUATOR_LOG}",
+            ))
         )
