@@ -8,6 +8,7 @@ import unittest
 
 from cognition import (
     AttrReferral,
+    optionally_name,
     stringify,
 )
 
@@ -15,6 +16,35 @@ from cognition import (
 
 class TestUtility(unittest.TestCase):
     """Tests for utility code"""
+
+    def test_optionally_name(self) -> None:
+        """Confirming optionally_name"""
+
+        func_name: str = "test"
+
+        def double(x: int) -> int:
+            """double trouble"""
+
+            return 2 * x
+
+        f1 = optionally_name(double, func_name)
+        f2 = optionally_name(double, None)
+
+        self.assertNotEqual(
+            str(double),
+            str(f1)
+        )
+
+        self.assertEqual(
+            str(f1),
+            func_name
+        )
+
+        self.assertEqual(
+            str(f2),
+            str(double)
+        )
+
 
     def test_stringify(self) -> None:
         """Confirming stringify"""

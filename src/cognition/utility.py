@@ -4,6 +4,7 @@ Utility code
 
 from typing import (
     Any,
+    Optional,
     Protocol,
 )
 
@@ -115,3 +116,13 @@ def stringify[**P, R](str_representation: str) -> Callable[[Callable[P, R]], Cal
         return StringifiedFunction(func, str_representation)
 
     return decorated
+
+def optionally_name[**P, R](f: Callable[P, R], name: Optional[str]) -> Callable[P, R]:
+    """
+    Shorthand for optionally naming a callable
+    """
+
+    if name:
+        return stringify(name)(f)
+
+    return f
