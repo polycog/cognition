@@ -1,5 +1,7 @@
 # cognition
 
+[![Checks](https://github.com/polycog/cognition/actions/workflows/checks.yml/badge.svg)](https://github.com/polycog/cognition/actions/workflows/checks.yml)
+
 Run below in sequence (stopping on errors) via `source checks.sh`
 
 ## Testing
