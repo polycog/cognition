@@ -484,8 +484,8 @@ class TestConvenience(unittest.TestCase):
         )
 
     # pylint: disable=too-many-locals
-    def test_sorting_elaborator(self) -> None:
-        """Checks sorting_elaborator"""
+    def test_sorting_evaluator(self) -> None:
+        """Checks sorting_evaluator"""
 
         init_state: int = 3
         t: Task[int] = Task(lambda: init_state)
