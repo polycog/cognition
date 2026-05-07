@@ -4,6 +4,10 @@ Tests for search code
 
 from typing import cast
 
+from enum import IntEnum
+
+from collections import Counter
+
 from collections.abc import (
     Iterable,
     Sequence,
@@ -14,9 +18,11 @@ import unittest
 from cognition import (
     PriorityQueue,
     Queue,
+    SearchOption,
     Stack,
     create_search_task,
-    stringify
+    stringify,
+    succession_via_options,
 )
 
 #
@@ -250,4 +256,82 @@ class TestSearch(unittest.TestCase):
              "Rimnicu Vilcea",
              "Pitesti",
              "Bucharest"]
+        )
+
+#
+
+class USCoin(IntEnum):
+    """US coin name/value"""
+
+    QUARTER = 25
+    DIME = 10
+    NICKLE = 5
+    PENNY = 1
+
+class AddCoin(SearchOption[int, USCoin]):
+    """Option to add a coin"""
+
+    def __init__(self, coin: USCoin):
+        """
+        Indicates the name of the coin
+        and its value in cents
+        """
+
+        super().__init__(coin)
+
+    def available(self, _: int) -> bool:
+        return True
+
+    def invoke(self, state: int) -> tuple[int, int]:
+        return (state + self.action.value, 1)
+
+class TestSearchConvenience(unittest.TestCase):
+    """Tests for search convenience code"""
+
+    def test_fewest_coins(self) -> None:
+        """
+        Use planning to solve smallest
+        change via coins
+        """
+
+        us_coins: Sequence[AddCoin] = [
+            AddCoin(c)
+            for c in
+            USCoin
+        ]
+
+        goal_cents: int = 119
+
+        t_puzzle = create_search_task(
+            0,
+            lambda s: s == goal_cents,
+            succession_via_options(*us_coins),
+            Queue
+            # each coin is a single action
+            # and queue = BFS, so...
+            # produces sum with fewest coins
+        )
+
+        t_puzzle.run_until_done()
+
+        self.assertTrue(t_puzzle.done)
+        self.assertTrue(t_puzzle.state.done)
+        self.assertEqual(
+            t_puzzle.state.final_state,
+            goal_cents
+        )
+
+        coint_counts = Counter(
+            cast(Sequence[USCoin],
+                 t_puzzle.state.action_path)
+        )
+
+        self.assertDictEqual(
+            dict(coint_counts),
+            {
+                USCoin.QUARTER: 4, # 100 +
+                USCoin.DIME: 1, #     10 +
+                USCoin.NICKLE: 1, #    5 +
+                USCoin.PENNY: 4 #      4
+            } # = 119
         )

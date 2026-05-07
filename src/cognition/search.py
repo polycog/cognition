@@ -11,7 +11,6 @@ from dataclasses import dataclass, field
 from collections import deque
 
 from collections.abc import (
-    Callable,
     Hashable,
     Iterable,
     Sequence,
@@ -191,7 +190,7 @@ class PriorityQueue[SS, SA](Frontier[SS, SA]):
 # Function-like type that represents the
 # successor function of a problem:
 # Successor(S) = [State', Action, Cost]
-type Succession[S, A] = Callable[[S], Iterable[tuple[S, A, PathCost]]]
+type Succession[S, A] = Function[S, Iterable[tuple[S, A, PathCost]]]
 
 
 @dataclass
@@ -364,3 +363,69 @@ def create_search_task[SS: Hashable, SA](
     # )
 
     return t
+
+
+class SearchOption[SS, SA](ABC):
+    """
+    Convenience abstraction for a search
+    action that is generally available
+    """
+
+    def __init__(self, action: SA) -> None:
+        """
+        Initializes the option
+        """
+
+        self._action = action
+
+    @property
+    def action(self) -> SA:
+        """
+        Search action associated
+        with this option
+        """
+
+        return self._action
+
+    @abstractmethod
+    def available(self, state: SS) -> bool:
+        """
+        Indicates if the option is
+        permissible in the supplied
+        search state
+        """
+
+    @abstractmethod
+    def invoke(self, state: SS) -> tuple[SS, PathCost]:
+        """
+        Returns the search state resulting
+        from invoking the option, as well
+        as the associated invocation cost
+        """
+
+def succession_via_options[SS, SA](*options: SearchOption[SS, SA]) -> Succession[SS, SA]:
+    """
+    Convenience succession-generator via a set
+    of globally available options
+    """
+
+    fixed_opts = tuple(options)
+
+    def expand(s: SS) -> Iterable[tuple[SS, SA, PathCost]]:
+        """
+        Generic expansion function based
+        upon a supplied fixed set of
+        globally available options
+        """
+
+        for opt in fixed_opts:
+            if opt.available(s):
+                state_p, cost = opt.invoke(s)
+
+                yield (
+                    state_p,
+                    opt.action,
+                    cost
+                )
+
+    return expand
