@@ -495,7 +495,7 @@ class TestConvenience(unittest.TestCase):
 
         @t.goal_check
         @stringify(goal_name)
-        def at10(num: int, _io: IOContainer) -> bool:
+        def atval(num: int, _io: IOContainer) -> bool:
             """achieved value!"""
 
             return num >= final_val
