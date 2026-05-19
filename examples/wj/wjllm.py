@@ -84,34 +84,15 @@ def llm_convert_description(desc: str) -> Optional[ProblemConfig]:
     an associated problem configuration
     """
 
-    response = _get_client(LLM_SECRET).chat.completions.create(
-        model=LLM_MODEL,
-        messages=[
-            {
-                "role": "system",
-                "content": LLM_SYSTEM_PROMPT
-            },
-            {
-                "role": "user", 
-                "content": llm_user_prompt(desc)
-            },
-        ],
-        response_format={ # type: ignore
-            "type": "json_schema", 
-            "json_schema": {
-                "strict": True,
-                "schema": ProblemConfig.model_json_schema()
-            }
-        },
-        temperature=0.,
-    )
+    try:
+        response = _get_client(LLM_SECRET).responses.parse(
+            model=LLM_MODEL,
+            instructions=LLM_SYSTEM_PROMPT,
+            input=llm_user_prompt(desc),
+            text_format=ProblemConfig,
+        )
 
-    raw = response.choices[0].message.content
-
-    if raw is not None:
-        try:
-            return ProblemConfig.model_validate_json(raw)
-        except ValidationError as e:
-            st.exception(e)
-
-    return None
+        return response.output_parsed
+    except ValidationError as e:
+        st.exception(e)
+        return None
