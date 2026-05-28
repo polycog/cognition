@@ -25,13 +25,13 @@ from io import StringIO
 
 import random
 
-from cognition.utility import (
+from .utility import (
     AttrReferral,
     ImplementsLessThan,
     stringify,
 )
 
-from cognition.functypes import (
+from .functypes import (
     BiFunction,
     BiPredicate,
     Supplier,
@@ -47,54 +47,67 @@ class IOContainer:
     """
 
     i: AttrReferral
+    """Access to (i)nput via sensors"""
+
     o: AttrReferral
+    """Access to (o)utput via actuators"""
 
 
 class Phase(IntEnum):
     """
-    Representation of problem-solving phases
+    Representation of task phases
     """
 
     ELABORATION = 0
+    """Monotonic summarization of state"""
+
     GOALCHECK = 1
+    """Detect task completion"""
+
     PROPOSE = 2
+    """Factories to produce candidate actions"""
+
     RANK = 3
+    """Select an action (via evaluator action rankings)"""
+
     APPLY = 4
+    """Execute the selected action"""
 
     @property
     def next(self) -> Phase:
-        """Gets the next phase"""
+        """
+        Cyclic enumeration
+
+        :return: next phase
+        """
 
         return Phase((self + 1) % len(Phase))
 
 
-# An abstraction around monotonic reasoning
-# based upon current state/io
 type Elaborator[S] = BiFunction[S, IOContainer, dict[str, Any]]
+"""Monotonically summarizes current state"""
 
-# An abstraction around detecting task completion
 type GoalCheck[S] = BiPredicate[S, IOContainer]
+"""Detects task completion based upon current state"""
 
-# An abstraction around potential change to state...
-# - Return None: support for mutable state
-# - Return S: support for replacing (immutable) state
 type Action[S] = BiFunction[S, IOContainer, S | None]
+"""Changes state via mutation (return None) or replacement (return ``S``)"""
 
-# An abstraction around identifying viable actions
-# in the present (supplied) state
 type ActionFactory[S] = BiFunction[S, IOContainer, Action[S] | Iterable[Action[S]]]
+"""Identifies viable actions in the current state"""
 
 
 @dataclass(frozen=True)
 class ActionRank[S]:
-    """Association of an action instance to a rank"""
+    """Pairs an action and rank"""
 
     a: Action[S]
+    """Action"""
+
     rank: ImplementsLessThan
+    """Rank of the action (smaller is better)"""
 
     def __str__(self) -> str:
-        """string rep of both action and rank"""
-
         return (
             "ActionRank("
             f"a={str(self.a)}, "
@@ -118,10 +131,8 @@ class ActionRank[S]:
                  (str(self.a) < str(other.a)))
 
 
-# An abstraction around producing relative rankings
-# of a set of candidate actions (produced potentially
-# from multiple sources)
 type ActionEvaluator[S] = TriFunction[S, IOContainer, Iterable[Action[S]], Iterable[ActionRank[S]]]
+"""Produces rankings of candidate actions"""
 
 
 class TaskErrorMessage(StrEnum):
@@ -130,23 +141,30 @@ class TaskErrorMessage(StrEnum):
     """
 
     NO_PROPOSAL = "No potential actions"
+    """No candidate actions produced from factories"""
+
     NO_RANK = "No action rankings"
+    """No rankings produced (given multiple candidate actions)"""
+
     NO_CHOICE = "No chosen action"
+    """No action chosen to apply (should not occur)"""
 
 class TaskExecutionError(Exception):
     """
     A custom exception related to invalid task execution
+
+    :param msg: task error message
     """
 
     def __init__(self, msg: TaskErrorMessage) -> None:
-        """Construct the error"""
-
         super().__init__(msg.value)
         self._msg = msg
 
     @property
     def msg(self) -> TaskErrorMessage:
-        """Gets the associated messagre"""
+        """
+        :return: task error message
+        """
 
         return self._msg
 
@@ -155,14 +173,21 @@ class TaskExecutionError(Exception):
 # pylint: disable=too-many-public-methods
 class Task[S]:
     """
-    Orchestration for a sequential decision-making problem
+    Orchestration for a sequential decision-making problem with state type ``S``
     """
 
     # Constants
     SENSOR_TIME: str = 'clock'
+    """Key associated with the sensor for cycles"""
+
     SENSOR_TIME_ATTR: str = 'cycles'
+    """Attribute produced by the cycle sensor"""
+
     SENSOR_ELABORATION: str = 'elaboration'
+    """Key for the elaboration 'sensor'"""
+
     ACTUATOR_LOG: str = 'log'
+    """Key associated with the log actuator"""
 
     # Supplied components...
     _state: S  # arbitrary representation
@@ -193,7 +218,7 @@ class Task[S]:
 
     def __init__(self, state_initializer: Supplier[S]) -> None:
         """
-        Construct a new task
+        :param state_initializer: produces state initially (and on ``reinit``)
         """
 
         self._state_init = state_initializer
@@ -246,10 +271,6 @@ class Task[S]:
         self._elaboration.clear()
 
     def __str__(self) -> str:
-        """
-        Provides an extensive view of task internals
-        """
-
         return "\n".join(
             f"{k}={v}"
             for k, v in {
@@ -273,37 +294,39 @@ class Task[S]:
     @property
     def phase(self) -> Phase:
         """
-        Current task phase
+        :return: current task phase
         """
+
         return self._phase
 
     @property
     def done(self) -> bool:
         """
-        Has the task been completed?
+        :return: ``True`` if any goal check has returned ``True``
         """
+
         return self._goal_achieved
 
     @property
     def state(self) -> S:
         """
-        Current task state
+        :return: current task state
         """
+
         return self._state
 
     @property
     def num_cycles(self) -> int:
         """
-        Indicates how many task cycles have occurred
-        since last initialization
+        :return: how many task cycles have occurred since last initialization
         """
+
         return self._step_count
 
     @property
     def chosen_action(self) -> Optional[str]:
         """
-        String representation of the most
-        recently chosen action
+        :return: ``str()`` of the most recently chosen action
         """
         return None if self._chosen is None else str(self._chosen)
 
@@ -311,14 +334,19 @@ class Task[S]:
 
     def add_elaborator(self, e: Elaborator[S]) -> None:
         """
-        Add a reasoner to add context to the state/io representation
+        Adds a state summarizer to the task
+
+        :param e: elaborator to add
         """
 
         self._elaborators.append(e)
 
     def elaborator(self, e: Elaborator[S]) -> Elaborator[S]:
         """
-        Decorator version of add_elaborator
+        Decorator version of :meth:`Task.add_elaborator`
+
+        :param e: elaborator to add
+        :return: added elaborator
         """
 
         self.add_elaborator(e)
@@ -341,14 +369,19 @@ class Task[S]:
 
     def add_goal_check(self, p: GoalCheck[S]) -> None:
         """
-        Add a task-predicate to identify a cause of task completion
+        Add a task-state predicate to identify a cause of task completion
+
+        :param p: predicate to detect task completion
         """
 
         self._goal_checks.append(p)
 
     def goal_check(self, p: GoalCheck[S]) -> GoalCheck[S]:
         """
-        Decorator version of add_goal_check
+        Decorator version of :meth:`Task.add_goal_check`
+
+        :param p: predicate to add
+        :return: added predicate
         """
 
         self.add_goal_check(p)
@@ -370,13 +403,18 @@ class Task[S]:
     def add_action_factory(self, f: ActionFactory[S]) -> None:
         """
         Adds a factory to propose potential action(s) given current state
+
+        :param f: factory to add
         """
 
         self._action_factories.append(f)
 
     def action_factory(self, f: ActionFactory[S]) -> ActionFactory[S]:
         """
-        Decorator version of add_action_factory
+        Decorator version of :meth:`Task.add_action_factory`
+
+        :param f: factory to add
+        :return: added factory
         """
 
         self.add_action_factory(f)
@@ -416,13 +454,18 @@ class Task[S]:
     def add_action_evaluator(self, ae: ActionEvaluator[S]) -> None:
         """
         Adds an evaluator of potential actions
+
+        :param ae: evaluator to add
         """
 
         self._action_evaluators.append(ae)
 
     def action_evaluator(self, ae: ActionEvaluator[S]) -> ActionEvaluator[S]:
         """
-        Decorator version of add_action_evaluator
+        Decorator version of :meth:`Task.add_action_evaluator`
+
+        :param ae: evaluator to add
+        :return: added evaluator
         """
 
         self.add_action_evaluator(ae)
@@ -502,6 +545,8 @@ class Task[S]:
     def run_cycles(self, n: int = 1) -> None:
         """
         Executes n cycles of the full task-phases
+
+        :param n: number of task-phases to run
         """
 
         for _ in range(n):
@@ -520,16 +565,18 @@ class Task[S]:
 
     def phases(self) -> Iterator[Task[S]]:
         """
-        Convenience function to support task
-        iteration by phase
+        Facilitates iteration by phase
+
+        :return: (potentially infinite) iterator over task phases
         """
 
         return TaskIterator(self, True)
 
     def cycles(self) -> Iterator[Task[S]]:
         """
-        Convenience function to support task
-        iteration by cycle
+        Facilitates iteration by cycle
+
+        :return: (potentially infinite) iterator over task cycles
         """
 
         return TaskIterator(self, False)
@@ -548,20 +595,20 @@ class Task[S]:
 
     def set_sensor(self, name: str, buffer: Any) -> None:
         """
-        Associates a sensor name with an
-        object reference (overriding any
-        previous association); None
-        removes the sensor's name.
+        Sets value of ``io.i.name``
+
+        :param name: sensor name
+        :param buffer: arbitrary object reference (or ``None`` to remove sensor)
         """
 
         Task._set_io_buffer(self._sensors, name, buffer)
 
     def set_actuator(self, name: str, buffer: Any) -> None:
         """
-        Associates an actuator name with an
-        object reference (overriding any
-        previous association); None
-        removes the actuator's name.
+        Sets value of ``io.o.name``
+
+        :param name: actuator name
+        :param buffer: arbitrary object reference (or ``None`` to remove actuator)
         """
 
         Task._set_io_buffer(self._actuators, name, buffer)
@@ -569,7 +616,7 @@ class Task[S]:
     @property
     def log(self) -> str:
         """
-        Retrieves the result of any logging actuation
+        :return: any data provided to the :attr:`Task.ACTUATOR_LOG` actuator
         """
 
         logger: StringIO = cast(StringIO, self._actuators[Task.ACTUATOR_LOG])
@@ -579,8 +626,9 @@ class Task[S]:
 # pylint: disable=too-few-public-methods
 class TimeSensor[S]:
     """
-    Sensor implementation to provide access
-    to the current cycle count within a task.
+    Sensor (:attr:`Task.SENSOR_TIME`) of the cycle count (via :attr:`Task.SENSOR_TIME_ATTR`)
+
+    :param t: associated task
     """
 
     def __init__(self, t: Task[S]):
@@ -589,7 +637,7 @@ class TimeSensor[S]:
     @property
     def cycles(self) -> int:
         """
-        Gets associated task's cycle count
+        :return: associated task's cycle count
         """
 
         return self._t.num_cycles
@@ -597,14 +645,13 @@ class TimeSensor[S]:
 # pylint: disable=too-few-public-methods
 class TaskIterator[S](Iterator[Task[S]]):
     """
-    Custom iterator to facilitate easy task iteration
-    via either phase or cycle
+    Custom iterator to facilitate easy task iteration via phase or cycle
     """
 
     def __init__(self, t: Task[S], by_phase: bool = True) -> None:
         """
-        Constructs an iterator for a task either
-        by phase or cycle
+        :param t: associated task
+        :param by_phase: ``True`` if iteration by phase; by cycle otherwise
         """
 
         self._task: Task[S] = t
