@@ -1,6 +1,5 @@
 """
-Support for a task sequence 
-generated via an iterable value.
+Support for a task sequence generated via an iterable value.
 """
 
 from typing import (
@@ -15,11 +14,11 @@ from collections.abc import (
 
 from dataclasses import dataclass
 
-from cognition.functypes import BiFunction
+from .functypes import BiFunction
 
-from cognition.utility import stringify
+from .utility import stringify
 
-from cognition.core import (
+from .core import (
     Action,
     IOContainer,
     Task,
@@ -30,27 +29,30 @@ from cognition.core import (
 @dataclass(frozen=True)
 class Link[CV, CA]:
     """
-    A link in a chained task, consisting of...
-    - value: current iterated value
-    - accumulator: current user-accumulated value
+    A link in a chained task
     """
 
     value: CV
+    """current iterated value"""
+
     accumulator: Optional[CA]
+    """current (optional) user-accumulated value"""
 
 
 class ChainState[CV, CA]:
     """
-    State of a chained task, parameterized by...
-    - C: type of iterated values
-    - A: type of an (optional) accumulator
+    State of a chained task
+
+    Parameters represent...
+    
+    - CV: type of iterated (v)alues
+    - CA: type of an optional (a)ccumulator
     """
 
     def __init__(self, chain: Iterable[CV], init_acc: Optional[CA] = None):
         """
-        Initializes the chain, with...
-        - chain: something iterable
-        - init_acc: optionally an initial accumulator value
+        :param chain: something iterable
+        :param init_acc: (optional) initial accumulator value
         """
         self._iterator: Iterator[CV] = iter(chain)
         self._value: Optional[CV] = None
@@ -59,8 +61,6 @@ class ChainState[CV, CA]:
         self.next(init_acc)
 
     def __str__(self) -> str: # pragma: no cover
-        """attempting to make human-readable"""
-
         return (
             "ChainState("
             f"value=[{self._value}], "
@@ -71,7 +71,7 @@ class ChainState[CV, CA]:
     @property
     def done(self) -> bool:
         """
-        Indicates if the chain has been fully iterated
+        :return: ``True`` if the iterable (chain) has been exhausted
         """
 
         return self._value is None
@@ -79,8 +79,7 @@ class ChainState[CV, CA]:
     @property
     def current_link(self) -> Optional[Link[CV, CA]]:
         """
-        Produces the current link in the chain,
-        or None if the chain has been exhausted
+        :return: current link in the chain, or ``None`` if exhausted
         """
 
         if self.done:
@@ -91,15 +90,16 @@ class ChainState[CV, CA]:
     @property
     def accumulator(self) -> Optional[CA]:
         """
-        Produces the current accumulator value
+        :return: current accumulator value
         """
 
         return self._accumulator
 
     def next(self, acc: Optional[CA]) -> None:
         """
-        Proceeds down the chain with a new
-        (optional) accumulated value
+        Proceeds with the chain
+
+        :param acc: optional new accumulator value
         """
 
         self._accumulator = acc
@@ -112,11 +112,11 @@ def create_chain_task[CV, CA](
     init_accumulator: Optional[CA] = None,
 ) -> Task[ChainState[CV, CA]]:
     """
-    Produces a task based upon supplied...
-    - chain: iterable to unravel the execution sequence
-    - link_handler: function to call at each link
-                    (that optionally updates the accumulator)
-    - init_accumulator: initial (optional) accumulator value
+    Produces a sequential task to exhaust an iterable
+
+    :param chain: sequence of values
+    :param link_handler: function called at each chain link that can update the accumulator
+    :param init_accumulator: initial (optional) accumulator value
     """
 
     t: Task[ChainState[CV, CA]] = Task(
