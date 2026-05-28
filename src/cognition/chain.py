@@ -112,11 +112,12 @@ def create_chain_task[CV, CA](
     init_accumulator: Optional[CA] = None,
 ) -> Task[ChainState[CV, CA]]:
     """
-    Produces a sequential task to exhaust an iterable
+    Task sequence via an iterable that with a handler at each value accumulating a result
 
     :param chain: sequence of values
     :param link_handler: function called at each chain link that can update the accumulator
     :param init_accumulator: initial (optional) accumulator value
+    :return: produced task
     """
 
     t: Task[ChainState[CV, CA]] = Task(
