@@ -24,19 +24,19 @@ from enum import IntEnum
 
 from functools import cmp_to_key
 
-from cognition.functypes import (
+from .functypes import (
     BiFunction,
     Predicate,
     TriFunction,
 )
 
-from cognition.utility import (
+from .utility import (
     ImplementsLessThan,
     optionally_name,
     stringify,
 )
 
-from cognition.core import (
+from .core import (
     Action,
     ActionEvaluator,
     ActionFactory,
@@ -51,23 +51,23 @@ if TYPE_CHECKING:
 
 #
 
-# default named action
-# parameter to access
-# the source operator
 OPERATOR_SELF_PARAM: str = "_op"
+"""Default :class:`NamedAction` parameter key to access source operator"""
 
 
 class Rank(IntEnum):
     """
-    Simple ordering of possible
-    rankings of actions to pursue;
-    sorting is used, so lower
-    numbers are more important
+    Example 3-level rankings of actions
     """
 
     HIGH = 1
+    """High importance"""
+
     MEDIUM = 2
+    """Medium importance"""
+
     LOW = 3
+    """Low importance"""
 
 
 def create_elaborator[S](
@@ -75,9 +75,11 @@ def create_elaborator[S](
     **kwargs: BiFunction[S, IOContainer, Any]
 ) -> Elaborator[S]:
     """
-    Produces an (optionally named)
-    elaborator given association
-    between keywords and functions
+    Elaborator generator given association between keywords and value-producing functions
+
+    :param name: optional name
+    :param kwargs: ``key=value(state, io)``
+    :return: resulting elaborator
     """
 
     def _f(s: S, io: IOContainer) -> dict[str, Any]:
@@ -91,10 +93,8 @@ def create_elaborator[S](
 
 def _qualified_name(name: str, **kwargs: Any) -> str:
     """
-    Naming convention for a combo
-    of name + optional params
-    (ignoring those whose name
-    starts with an underscore)
+    Naming convention for a combo of name + optional params
+    (ignoring those whose name starts with an underscore)
     """
 
     true_args = {
@@ -117,13 +117,14 @@ def _qualified_name(name: str, **kwargs: Any) -> str:
 @runtime_checkable
 class NamedAction(Protocol):
     """
-    Represents an action
-    that has been augmented
-    with some annotation
+    An action that has name/params annotations
     """
 
     name: str
-    params: Mapping[str, Any]
+    """Action name"""
+
+    params: MappingProxyType[str, Any]
+    """Action parameters"""
 
 def create_named_action[S](
     name: str,
@@ -131,10 +132,12 @@ def create_named_action[S](
     **kwargs: Any
 ) -> Action[S]:
     """
-    Produces a function that has
-    a nice __str__ and access to
-    name via f.name and kwargs 
-    via f.params
+    Annotates an action via ``str()`` and attributes
+
+    :param name: name to add
+    :param f: original action
+    :param kwargs: arbitrary keyword=value pairs
+    :return: :class:`NamedAction` + :func:`.utility.stringify`
     """
 
     new_f = stringify(_qualified_name(
@@ -152,36 +155,44 @@ def create_named_action[S](
 
 class Operator[S](Protocol):
     """
-    Convenience method for producing
-    action factories that follow a
-    common pattern of a predicate
-    gating a single action
+    Pattern to support a predicate gating a single action
     """
 
     def can_perform(self, state: S, io: IOContainer) -> bool:
-        """Does this hold in the current state/io?"""
+        """
+        Does this hold in the current state?
+
+        :param state: current state
+        :param io: access to sensors/actuators
+        :return: ``True`` if the action applies in the current state
+        """
 
     def perform(self, state: S, io: IOContainer) -> Optional[S]:
-        """Then this action should be considered"""
+        """
+        Action to perform if selected (see :class:`.core.Action`)
+        """
 
     @property
     def name(self) -> str:
-        """How to refer to the resulting action [and factory]"""
+        """
+        :return: how to refer to the resulting action [and factory]
+        """
 
     @property
     def params(self) -> Mapping[str, Any]:
-        """Optional augmentations in the name"""
+        """
+        :return: optional augmentations in the name
+        """
 
 class NamedOperator[S](ABC, Operator[S]):
     """
-    Interface for an operator that
-    implements the name property
-    via supplied constructor parameter
+    Operator interface
     """
 
     def __init__(self, name: str, **kwargs: Any) -> None:
         """
-        Initializes the operator with a name and params
+        :param name: name for the protocol
+        :param kwargs: params for the protocol
         """
 
         self._name = name
@@ -189,21 +200,25 @@ class NamedOperator[S](ABC, Operator[S]):
 
     @abstractmethod
     def can_perform(self, state: S, io: IOContainer) -> bool:
-        """Gating predicate"""
+        """See :meth:`Operator.can_perform`"""
 
     @abstractmethod
     def perform(self, state: S, io: IOContainer) -> Optional[S]:
-        """Resulting action"""
+        """See :meth:`Operator.perform`"""
 
     @property
     def name(self) -> str:
-        """Implemented property"""
+        """
+        :return: name supplied upon construction
+        """
 
         return self._name
 
     @property
-    def params(self) -> Mapping[str, Any]:
-        """Implemented property"""
+    def params(self) -> MappingProxyType[str, Any]:
+        """
+        :return: params supplied upon construction
+        """
 
         return self._params
 
@@ -213,7 +228,14 @@ def add_operator[S](
     op: Operator[S],
     self_param: Optional[str] = OPERATOR_SELF_PARAM
 ) -> tuple[ActionFactory[S], Action[S]]:
-    """Produces an action factory from the operator"""
+    """
+    Instantiates the operator within a task
+
+    :param task: task to be added to
+    :param op: operator with factory/action info
+    :param self_param: if not ``None``, action param referring to the op
+    :return: the produced action factory and action
+    """
 
     factory_pred = op.can_perform
 
@@ -246,9 +268,12 @@ def uniform_evaluator[S](
     name: Optional[str] = None
 ) -> ActionEvaluator[S]:
     """
-    Produces a convenience ActionEvaluator 
-    that applies a supplied rank to all 
-    potential actions that satisfy a predicate
+    Applies a supplied rank to all potential actions that satisfy a predicate
+
+    :param r: rank to uniformly apply
+    :param p: optional predicate to gate potential actions
+    :param name: optional name of the evaluator
+    :return: resulting evaluator
     """
 
     def evaluation_func(
@@ -267,11 +292,12 @@ def sorting_evaluator[S](
     name: Optional[str] = None
 ) -> ActionEvaluator[S]:
     """
-    Produces a convenience ActionEvaluator 
-    that associates rankings based upon
-    relative sorting order based upon
-    a supplied key, starting with a
-    supplied value
+    Associates rankings based upon relative sorting order over actions
+    
+    :param sorting_key: key function for ``sort()`` to order actions
+    :param rank_start: starting value for produced ranks
+    :param name: optional name for the evaluator
+    :return: resulting evaluator
     """
 
     def evaluation_func(
@@ -308,11 +334,10 @@ def operator_sorting_key[S](
     op_param: str = OPERATOR_SELF_PARAM
 ) -> TriFunction[Action[S], S, IOContainer, "SupportsAllComparisons"]:
     """
-    Produces a sorting key
-    for actions derived from
-    named operators (using the
-    supplied action parameter
-    name)
+    Produces an action sorting key for actions derived from named operators
+
+    :param op_param: action param key for operator self-reference
+    :return: key function
     """
 
     def cmp(a: Action[S], b: Action[S]) -> int:
