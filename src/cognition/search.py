@@ -18,15 +18,15 @@ from collections.abc import (
 
 import heapq
 
-from cognition.functypes import (
+from .functypes import (
     Function,
     Predicate,
     Supplier,
 )
 
-from cognition.utility import stringify
+from .utility import stringify
 
-from cognition.core import (
+from .core import (
     Action,
     IOContainer,
     Task,
@@ -34,59 +34,57 @@ from cognition.core import (
 
 #
 
-# Action costs can be whole numbers or decimal
 type PathCost = int | float
+"""Cost of an action (can be whole numbers or decimal)"""
 
 
 @dataclass(frozen=True, order=True)
 class FrontierNode[SS, SA]:
     """
-    Item on the search frontier, including
-    both the next state and path of actions
-    to achieve that state from initial
-    (as well as the cost of that path)
+    Item on the search frontier
     """
 
     state: SS = field(compare=False)
+    """state that would result"""
+
     path: Sequence[SA] = field(compare=False)
+    """path of actions to achieve the state"""
+
     path_cost: PathCost
+    """cost of the path to achieve the state"""
 
 
 class Frontier[SS, SA](ABC):
     """
-	Abstraction over management of options
-	for a graph search
+	Manages of graph search options
     """
 
     @property
     @abstractmethod
     def empty(self) -> bool:
         """
-        Returns true if there are no more items
-        on the frontier
+        :return: `True` if there are no more items on the frontier
         """
 
     @abstractmethod
     def add(self, node: FrontierNode[SS, SA]) -> None:
         """
-        Adds an item to the frontier
+        :param node: item to add to the frontier
         """
 
     @abstractmethod
     def remove(self) -> FrontierNode[SS, SA]:
         """
-        Provides the next frontier item
+        :return: the next frontier item
         """
 
     @abstractmethod
     def __str__(self) -> str:
-        """
-        Provides human-readable view
-        """
+        ...
 
 class Stack[SS, SA](Frontier[SS, SA]):
     """
-    Produces DFS behavior
+    DFS frontier
     """
 
     _items: list[FrontierNode[SS, SA]]
@@ -113,7 +111,7 @@ class Stack[SS, SA](Frontier[SS, SA]):
 
 class Queue[SS, SA](Frontier[SS, SA]):
     """
-    Produces BFS behavior
+    BFS frontier
     """
 
     _items: deque[FrontierNode[SS, SA]]
@@ -140,10 +138,7 @@ class Queue[SS, SA](Frontier[SS, SA]):
 
 class PriorityQueue[SS, SA](Frontier[SS, SA]):
     """
-    Produces UCS behavior, or A*
-    given an optional heuristic
-    (which is assumed to be
-    admissible!)
+    UCS frontier, or A* if given an admissible heuristic
     """
 
     _items: list[
@@ -158,6 +153,10 @@ class PriorityQueue[SS, SA](Frontier[SS, SA]):
         self,
         heuristic: Optional[Function[SS, PathCost]] = None
     ) -> None:
+        """
+        :param heuristic: if supplied, provides an estimate of remaining cost
+        """
+
         self._items = []
         self._heuristic = heuristic
 
@@ -187,10 +186,8 @@ class PriorityQueue[SS, SA](Frontier[SS, SA]):
         return heapq.heappop(self._items)[1]
 
 
-# Function-like type that represents the
-# successor function of a problem:
-# Successor(S) = [State', Action, Cost]
 type Succession[S, A] = Function[S, Iterable[tuple[S, A, PathCost]]]
+"""Given a search state, produces (state', action, cost) triple(s)"""
 
 
 @dataclass
@@ -199,30 +196,35 @@ class SearchState[SS: Hashable, SA]:
     Internal representation of a search task
     """
 
-    # states already explored
     explored: set[SS]
+    """states already explored"""
 
-    # prioritized states to be explored
     frontier: Frontier[SS, SA]
+    """states to be explored"""
 
-    # True if done searching
     done: bool
+    """``True`` if done searching"""
 
-    # final state, or None if failure
     final_state: Optional[SS]
+    """final state, or None if failure"""
 
-    # sequence of actions to the final state, or None if failure
     action_path: Optional[Sequence[SA]]
+    """sequence of actions to the final state, or None if failure"""
 
-    # cost of actions to the final state, or None if failure
     path_cost: Optional[PathCost]
+    """cost of actions to the final state, or None if failure"""
 
     def failure(self) -> None:
         """Frontier has been exhausted"""
+
         self.done = True
 
     def success(self, node: FrontierNode[SS, SA]) -> None:
-        """Goal state found in supplied node"""
+        """
+        Goal state found
+
+        :param node: identified goal state
+        """
 
         self.done = True
         self.final_state = node.state
@@ -249,14 +251,14 @@ def create_search_task[SS: Hashable, SA](
     debug: bool = False
 ) -> Task[SearchState[SS, SA]]:
     """
-    Produces a graph-search task given...
-    * the initial problem state
-    * a goal-detection function
-    * a function to produce all successors
-      of a given state
-    * a way to produce the desired data
-      structure to maintain the ordering
-      of actions to explore
+    Produce a search-based planner
+
+    :param initial_state: starting node
+    :param is_goal: goal predicate
+    :param successors: function to produce node transitions
+    :param frontier_factory: function to produce prioritize frontier nodes
+    :param debug: if ``True`` outputs search info
+    :return: graph-search task
     """
 
     @stringify("init_search")
@@ -367,13 +369,12 @@ def create_search_task[SS: Hashable, SA](
 
 class SearchOption[SS, SA](ABC):
     """
-    Convenience abstraction for a search
-    action that is generally available
+    A transition applicable to many search states
     """
 
     def __init__(self, action: SA) -> None:
         """
-        Initializes the option
+        :param action: action that might be performed in multiple contexts
         """
 
         self._action = action
@@ -381,8 +382,7 @@ class SearchOption[SS, SA](ABC):
     @property
     def action(self) -> SA:
         """
-        Search action associated
-        with this option
+        :return: associated action
         """
 
         return self._action
@@ -390,23 +390,28 @@ class SearchOption[SS, SA](ABC):
     @abstractmethod
     def available(self, state: SS) -> bool:
         """
-        Indicates if the option is
-        permissible in the supplied
-        search state
+        State-gating predicate
+
+        :param state: state to consider
+        :return: ``True`` if action applies
         """
 
     @abstractmethod
     def invoke(self, state: SS) -> tuple[SS, PathCost]:
         """
-        Returns the search state resulting
-        from invoking the option, as well
-        as the associated invocation cost
+        Applies the action
+
+        :param state: starting state
+        :return: resulting state and cost from applying the action
         """
+
 
 def succession_via_options[SS, SA](*options: SearchOption[SS, SA]) -> Succession[SS, SA]:
     """
-    Convenience succession-generator via a set
-    of globally available options
+    Succession function from options
+    
+    :param options: globally available transitions
+    :return: resulting succession function for any search state
     """
 
     fixed_opts = tuple(options)
