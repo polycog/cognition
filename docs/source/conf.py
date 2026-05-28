@@ -15,15 +15,16 @@ author = 'Polycog, Inc.'
 
 extensions = ['sphinx.ext.autodoc', 'autoapi.extension']
 
-autoapi_dirs = ['../../src/cognition']
 autodoc_typehints = 'description'
+autoapi_python_class_content = 'both'
+autoapi_dirs = ['../../src/cognition']
 autoapi_options = [
     'members',
     'undoc-members',
     # 'private-members',
     'show-inheritance',
     'show-module-summary',
-    'special-members',
+    # 'special-members',
     # 'imported-members',
 ]
 
