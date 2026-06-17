@@ -301,9 +301,7 @@ def run_waterjug(
             PourOption(WhichJug.FIRST),
             PourOption(WhichJug.SECOND),
         )
-    )
-
-    wj.run_cycles(max_steps)
+    ).run_cycles(max_steps)
 
     #
 

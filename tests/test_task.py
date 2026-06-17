@@ -128,11 +128,12 @@ class TestTask(unittest.TestCase):
             ["hi"]
         )
 
-        tf.add_action_factory(
-            lambda _s, _io: [lambda s, _: s[1:]]
+        (tf
+         .add_action_factory(
+             lambda _s, _io: [lambda s, _: s[1:]]
+         )
+         .run_cycles()
         )
-
-        tf.run_cycles()
 
         self.assertEqual(
             tf.state,
@@ -151,11 +152,10 @@ class TestTask(unittest.TestCase):
         def a(s: list[str], _io: IOContainer) -> None:
             del s[0]
 
-        ti.add_action_factory(
-            lambda _s, _io: a
+        (ti
+         .add_action_factory(lambda _s, _io: a)
+         .run_cycles()
         )
-
-        ti.run_cycles()
 
         self.assertEqual(
             ti.state,
@@ -447,8 +447,10 @@ class TestTask(unittest.TestCase):
         )
 
         # add as both sensor/actuator
-        task_io.set_sensor(lst_name, lst)
-        task_io.set_actuator(lst_name, lst)
+        (task_io
+         .set_sensor(lst_name, lst)
+         .set_actuator(lst_name, lst)
+        )
 
         # confirm registration
         self.assertEqual(
@@ -511,13 +513,16 @@ class TestTask(unittest.TestCase):
 
             return s == starting_point + goal_diff
 
-        task_io.add_goal_check(go_goal)
-
-        task_io.run_until_done()
+        (task_io
+         .add_goal_check(go_goal)
+         .run_until_done()
+        )
 
         # confirm ability to remove sensors/actuators
-        task_io.set_sensor(lst_name, None)
-        task_io.set_actuator(lst_name, None)
+        (task_io
+         .set_sensor(lst_name, None)
+         .set_actuator(lst_name, None)
+        )
 
         self.assertEqual(
             str(task_io),
@@ -561,9 +566,9 @@ class TestTask(unittest.TestCase):
 
         #
 
-        task_count_until: Task[int] = Task(lambda: starting_point)
-        task_count_until.add_goal_check(_make_goal(e_perfect, e_prime))
-        task_count_until.add_elaborator(
+        task_count_until: Task[int] = (Task(lambda: starting_point)
+         .add_goal_check(_make_goal(e_perfect, e_prime))
+         .add_elaborator(
             create_elaborator(
                 ELAB_NAME,
                 **{
@@ -571,8 +576,9 @@ class TestTask(unittest.TestCase):
                     e_perfect: lambda s, _: sqrt(s) % 1 == 0,
                 }
             )
+         )
+         .add_action_factory(_make_increment_factory(a_inc))
         )
-        task_count_until.add_action_factory(_make_increment_factory(a_inc))
 
         self.assertEqual(
             task_count_until.num_cycles,

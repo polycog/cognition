@@ -256,9 +256,11 @@ class Task[S]:
 
         self.reinit()
 
-    def reinit(self) -> None:
+    def reinit(self) -> Task[S]:
         """
         Restarts the task
+
+        :return: this task (for chaining)
         """
         self._state = self._state_init()
 
@@ -269,6 +271,8 @@ class Task[S]:
         self._chosen = None
         self._step_count = 0
         self._elaboration.clear()
+
+        return self
 
     def __str__(self) -> str:
         return "\n".join(
@@ -332,14 +336,17 @@ class Task[S]:
 
     #
 
-    def add_elaborator(self, e: Elaborator[S]) -> None:
+    def add_elaborator(self, e: Elaborator[S]) -> Task[S]:
         """
         Adds a state summarizer to the task
 
         :param e: elaborator to add
+        :return: this task (for chaining)
         """
 
         self._elaborators.append(e)
+
+        return self
 
     def elaborator(self, e: Elaborator[S]) -> Elaborator[S]:
         """
@@ -367,14 +374,17 @@ class Task[S]:
 
     #
 
-    def add_goal_check(self, p: GoalCheck[S]) -> None:
+    def add_goal_check(self, p: GoalCheck[S]) -> Task[S]:
         """
         Add a task-state predicate to identify a cause of task completion
 
         :param p: predicate to detect task completion
+        :return: this task (for chaining)
         """
 
         self._goal_checks.append(p)
+
+        return self
 
     def goal_check(self, p: GoalCheck[S]) -> GoalCheck[S]:
         """
@@ -400,14 +410,17 @@ class Task[S]:
 
     #
 
-    def add_action_factory(self, f: ActionFactory[S]) -> None:
+    def add_action_factory(self, f: ActionFactory[S]) -> Task[S]:
         """
         Adds a factory to propose potential action(s) given current state
 
         :param f: factory to add
+        :return: this task (for chaining)
         """
 
         self._action_factories.append(f)
+
+        return self
 
     def action_factory(self, f: ActionFactory[S]) -> ActionFactory[S]:
         """
@@ -451,14 +464,17 @@ class Task[S]:
 
     #
 
-    def add_action_evaluator(self, ae: ActionEvaluator[S]) -> None:
+    def add_action_evaluator(self, ae: ActionEvaluator[S]) -> Task[S]:
         """
         Adds an evaluator of potential actions
 
         :param ae: evaluator to add
+        :return: this task (for chaining)
         """
 
         self._action_evaluators.append(ae)
+
+        return self
 
     def action_evaluator(self, ae: ActionEvaluator[S]) -> ActionEvaluator[S]:
         """
@@ -533,33 +549,44 @@ class Task[S]:
 
     #
 
-    def run_phase(self) -> None:
+    def run_phase(self) -> Task[S]:
         """
         Executes the current task phase
+
+        :return: this task (for chaining)
         """
 
         if self._phase_handlers[self._phase]():
             self._phase = self._phase.next
 
+        return self
 
-    def run_cycles(self, n: int = 1) -> None:
+
+    def run_cycles(self, n: int = 1) -> Task[S]:
         """
         Executes n cycles of the full task-phases
 
         :param n: number of task-phases to run
+        :return: this task (for chaining)
         """
 
         for _ in range(n):
             for _ in range(len(Phase)):
                 self.run_phase()
 
-    def run_until_done(self) -> None:
+        return self
+
+    def run_until_done(self) -> Task[S]:
         """
         Runs until task completion
+
+        :return: this task (for chaining)
         """
 
         while not self.done:
             self.run_phase()
+
+        return self
 
     #
 
@@ -593,25 +620,31 @@ class Task[S]:
         else:
             d[name] = buffer
 
-    def set_sensor(self, name: str, buffer: Any) -> None:
+    def set_sensor(self, name: str, buffer: Any) -> Task[S]:
         """
         Sets value of ``io.i.name``
 
         :param name: sensor name
         :param buffer: arbitrary object reference (or ``None`` to remove sensor)
+        :return: this task (for chaining)
         """
 
         Task._set_io_buffer(self._sensors, name, buffer)
 
-    def set_actuator(self, name: str, buffer: Any) -> None:
+        return self
+
+    def set_actuator(self, name: str, buffer: Any) -> Task[S]:
         """
         Sets value of ``io.o.name``
 
         :param name: actuator name
         :param buffer: arbitrary object reference (or ``None`` to remove actuator)
+        :return: this task (for chaining)
         """
 
         Task._set_io_buffer(self._actuators, name, buffer)
+
+        return self
 
     @property
     def log(self) -> str:

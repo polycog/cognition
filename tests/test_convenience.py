@@ -195,28 +195,35 @@ class TestConvenience(unittest.TestCase):
 
             return can_do
 
-        t1.add_action_factory(allow_action(do_regular))
+        (t1
+         .add_action_factory(allow_action(do_regular))
+         .run_cycles(100)
+        )
 
-        t1.run_cycles(100)
         self.assertFalse(t1.done)
 
-        t1.reinit()
+        (t1
+         .reinit()
+         .add_action_factory(allow_action(do_terminal))
+         .add_action_evaluator(uniform_evaluator(1))
+         .run_cycles(100)
+        )
 
-        t1.add_action_factory(allow_action(do_terminal))
-        t1.add_action_evaluator(uniform_evaluator(1))
-
-        t1.run_cycles(100)
         self.assertFalse(t1.done)
 
         #
 
-        t2.add_action_factory(allow_action(do_regular))
+        (t2
+         .add_action_factory(allow_action(do_regular))
+         .run_cycles(100)
+        )
 
-        t2.run_cycles(100)
         self.assertFalse(t2.done)
 
-        t2.add_action_factory(allow_action(do_terminal))
-        t2.add_action_evaluator(uniform_evaluator(1))
+        (t2
+         .add_action_factory(allow_action(do_terminal))
+         .add_action_evaluator(uniform_evaluator(1))
+        )
 
         for _ in range(100):
             t2.reinit()
@@ -550,7 +557,7 @@ class TestConvenience(unittest.TestCase):
         """Checks sorting_evaluator"""
 
         init_state: int = 3
-        t: Task[int] = Task(lambda: init_state)
+        t: EnhancedTask[int] = EnhancedTask(lambda: init_state)
 
         final_val: int = 10
         goal_name: str = f"at{final_val}"
@@ -579,9 +586,9 @@ class TestConvenience(unittest.TestCase):
         # confirming tie-breaking
         op_param_tie: str = "foo"
 
-        t2: Task[int] = Task(lambda: 42)
-        _, a2 = add_operator(t2, mult2, op_param_tie)
-        _, a2b = add_operator(t2, mult2b, op_param_tie)
+        t2: EnhancedTask[int] = EnhancedTask(lambda: 42)
+        _, a2 = t2.add_operator(mult2, op_param_tie)
+        _, a2b = t2.add_operator(mult2b, op_param_tie)
 
         evaluator: ActionEvaluator[int] = sorting_evaluator(
             operator_sorting_key(op_param_tie)
@@ -593,9 +600,10 @@ class TestConvenience(unittest.TestCase):
         )
 
         # proceed with real task
-        ops: dict[ChangeOp, tuple[ActionFactory[int], Action[int]]] = {}
-        for o in (add2, sub1, mult2, add1):
-            ops[o] = add_operator(t, o)
+        ops: dict[ChangeOp, tuple[ActionFactory[int], Action[int]]] = {
+            o: t.add_operator(o)
+            for o in (add2, sub1, mult2, add1)
+        }
 
         eval_name: str = "change_op_sort"
         rank_start: int = 100
