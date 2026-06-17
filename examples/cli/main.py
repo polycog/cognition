@@ -16,8 +16,7 @@ from cognition import (
     AttrReferral,
     IOContainer,
     NamedOperator,
-    Task,
-    add_operator,
+    EnhancedTask,
     stringify,
 )
 
@@ -57,7 +56,7 @@ class CLIState:
 
 #
 
-t: Task[CLIState] = Task(lambda: CLIState(CLIStage.GET_CMD, []))
+t: EnhancedTask[CLIState] = EnhancedTask(lambda: CLIState(CLIStage.GET_CMD, []))
 
 # shared reference to
 # command input buffer
@@ -181,8 +180,8 @@ class ExecCommand(NamedOperator[CLIState]):
         state.stage = state.stage.next()
 
 
-add_operator(t, GetCommand("get_command"))
-add_operator(t, ExecCommand("exec_command"))
+t.add_operator(GetCommand("get_command"))
+t.add_operator(ExecCommand("exec_command"))
 
 
 @t.goal_check

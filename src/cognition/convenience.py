@@ -27,6 +27,7 @@ from functools import cmp_to_key
 from .functypes import (
     BiFunction,
     Predicate,
+    Supplier,
     TriFunction,
 )
 
@@ -43,6 +44,7 @@ from .core import (
     ActionRank,
     Elaborator,
     IOContainer,
+    Phase,
     Task,
 )
 
@@ -353,3 +355,57 @@ def operator_sorting_key[S](
         return 1
 
     return lambda a, _s, _io: cmp_to_key(cmp)(a)
+
+
+TERMINAL_ACTION_ATTR: str = 'terminal'
+"""Attribute name to trigger goal completion for a selected action"""
+
+class EnhancedTask[S](Task[S]):
+    """
+    Support for optional task enhancements
+    """
+
+    def __init__(
+        self,
+        state_initializer: Supplier[S],
+        enable_terminal_check: bool = False,
+    ) -> None:
+        """
+        :param state_initializer: produces state initially (and on ``reinit``)
+        :param enable_terminal_check: if True, a selected :class:`NamedAction` with a
+                                      :const:`TERMINAL_ACTION_ATTR` parameter
+                                      triggers goal completion during goal check
+        """
+
+        super().__init__(state_initializer)
+
+        if enable_terminal_check:
+            self._phase_handlers[Phase.GOALCHECK] = self._terminal_goal_check
+
+
+    def add_operator(
+        self,
+        op: Operator[S],
+        self_param: Optional[str] = OPERATOR_SELF_PARAM
+    ) -> tuple[ActionFactory[S], Action[S]]:
+        """
+        Pass-thru to :func:`add_operator`.
+
+        :param op: operator with factory/action info
+        :param self_param: if not ``None``, action param referring to the op
+        :return: the produced action factory and action
+        """
+
+        return add_operator(self, op, self_param)
+
+
+    def _terminal_goal_check(self) -> bool:
+        """
+        Custom goal check, adding possibility of terminal actions
+        """
+
+        if not self._goal_achieved:
+            if isinstance(self._chosen, NamedAction):
+                self._goal_achieved = TERMINAL_ACTION_ATTR in self._chosen.params
+
+        return super()._goal_check()

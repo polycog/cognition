@@ -25,6 +25,7 @@ from cognition import (
     AttrReferral,
     BiFunction,
     Elaborator,
+    EnhancedTask,
     IOContainer,
     NamedAction,
     NamedOperator,
@@ -165,17 +166,78 @@ class TestConvenience(unittest.TestCase):
         )
 
 
+    def test_terminal(self) -> None:
+        """Confirming terminal goal check"""
+
+        t1: EnhancedTask[str] = EnhancedTask(
+            lambda: "",
+        )
+
+        t2: EnhancedTask[str] = EnhancedTask(
+            lambda: "",
+            enable_terminal_check=True
+        )
+
+        do_regular = create_named_action(
+            "do",
+            lambda s, _io: "regular",
+        )
+
+        do_terminal = create_named_action(
+            "do",
+            lambda s, _io: "terminal",
+            terminal=True
+        )
+
+        def allow_action(a: Action[str]) -> ActionFactory[str]:
+            def can_do(_s: str, _io: IOContainer) -> Action[str]:
+                return a
+
+            return can_do
+
+        t1.add_action_factory(allow_action(do_regular))
+
+        t1.run_cycles(100)
+        self.assertFalse(t1.done)
+
+        t1.reinit()
+
+        t1.add_action_factory(allow_action(do_terminal))
+        t1.add_action_evaluator(uniform_evaluator(1))
+
+        t1.run_cycles(100)
+        self.assertFalse(t1.done)
+
+        #
+
+        t2.add_action_factory(allow_action(do_regular))
+
+        t2.run_cycles(100)
+        self.assertFalse(t2.done)
+
+        t2.add_action_factory(allow_action(do_terminal))
+        t2.add_action_evaluator(uniform_evaluator(1))
+
+        for _ in range(100):
+            t2.reinit()
+            self.assertEqual(t2.state, "")
+
+            t2.run_cycles(100)
+            self.assertTrue(t2.done)
+            self.assertEqual(t2.state, "terminal")
+
+
     def test_operator(self) -> None:
         """Confirming operators"""
 
-        t: Task[OpStage] = Task(lambda: OpStage.SAY_HI)
+        t: EnhancedTask[OpStage] = EnhancedTask(lambda: OpStage.SAY_HI)
 
         hi_name: str = "hi"
         bye_name: str = "bye"
         done_name: str = "done_yet?"
 
         add_operator(t, HiOp(hi_name))
-        add_operator(t, ByeOp(bye_name))
+        t.add_operator(ByeOp(bye_name))
 
         @t.goal_check
         @stringify(done_name)
