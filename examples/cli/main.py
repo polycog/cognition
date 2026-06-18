@@ -14,9 +14,10 @@ from enum import IntEnum
 
 from cognition import (
     AttrReferral,
+    EnhancedTask,
     IOContainer,
     NamedOperator,
-    EnhancedTask,
+    Task,
     stringify,
 )
 
@@ -56,12 +57,9 @@ class CLIState:
 
 #
 
-t: EnhancedTask[CLIState] = EnhancedTask(lambda: CLIState(CLIStage.GET_CMD, []))
-
 # shared reference to
 # command input buffer
 cli_status: dict[str, str] = {}
-t.set_sensor("cli", AttrReferral(cli_status))
 
 #
 
@@ -180,9 +178,11 @@ class ExecCommand(NamedOperator[CLIState]):
         state.stage = state.stage.next()
 
 
-t.add_operator(GetCommand("get_command"))
-t.add_operator(ExecCommand("exec_command"))
-
+t: Task[CLIState] = (EnhancedTask(lambda: CLIState(CLIStage.GET_CMD, []))
+    .add_operator_c(GetCommand("get_command"))
+    .add_operator_c(ExecCommand("exec_command"))
+    .set_sensor("cli", AttrReferral(cli_status))
+)
 
 @t.goal_check
 def exit_flag(s: CLIState, _: IOContainer) -> bool:

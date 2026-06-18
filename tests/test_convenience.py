@@ -32,7 +32,6 @@ from cognition import (
     Phase,
     Rank,
     Task,
-    add_operator,
     create_named_action,
     create_elaborator,
     operator_sorting_key,
@@ -237,14 +236,14 @@ class TestConvenience(unittest.TestCase):
     def test_operator(self) -> None:
         """Confirming operators"""
 
-        t: EnhancedTask[OpStage] = EnhancedTask(lambda: OpStage.SAY_HI)
-
         hi_name: str = "hi"
         bye_name: str = "bye"
         done_name: str = "done_yet?"
 
-        add_operator(t, HiOp(hi_name))
-        t.add_operator(ByeOp(bye_name))
+        t: EnhancedTask[OpStage] = (EnhancedTask(lambda: OpStage.SAY_HI)
+            .add_operator_c(HiOp(hi_name))
+            .add_operator_c(ByeOp(bye_name))
+        )
 
         @t.goal_check
         @stringify(done_name)
@@ -587,8 +586,8 @@ class TestConvenience(unittest.TestCase):
         op_param_tie: str = "foo"
 
         t2: EnhancedTask[int] = EnhancedTask(lambda: 42)
-        _, a2 = t2.add_operator(mult2, op_param_tie)
-        _, a2b = t2.add_operator(mult2b, op_param_tie)
+        _, a2, _ = t2.add_operator(mult2, op_param_tie)
+        _, a2b, _ = t2.add_operator(mult2b, op_param_tie)
 
         evaluator: ActionEvaluator[int] = sorting_evaluator(
             operator_sorting_key(op_param_tie)
@@ -601,7 +600,7 @@ class TestConvenience(unittest.TestCase):
 
         # proceed with real task
         ops: dict[ChangeOp, tuple[ActionFactory[int], Action[int]]] = {
-            o: t.add_operator(o)
+            o: t.add_operator(o)[:-1]
             for o in (add2, sub1, mult2, add1)
         }
 

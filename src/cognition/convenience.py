@@ -2,6 +2,8 @@
 Practical library additions
 """
 
+from __future__ import annotations
+
 from typing import (
     Any,
     Optional,
@@ -387,17 +389,33 @@ class EnhancedTask[S](Task[S]):
         self,
         op: Operator[S],
         self_param: Optional[str] = OPERATOR_SELF_PARAM
-    ) -> tuple[ActionFactory[S], Action[S]]:
+    ) -> tuple[ActionFactory[S], Action[S], EnhancedTask[S]]:
         """
         Pass-thru to :func:`add_operator`.
 
         :param op: operator with factory/action info
         :param self_param: if not ``None``, action param referring to the op
-        :return: the produced action factory and action
+        :return: the produced action factory and action, and this task (for chaining)
         """
 
-        return add_operator(self, op, self_param)
+        af, a = add_operator(self, op, self_param)
+        return af, a, self
 
+    def add_operator_c(
+        self,
+        op: Operator[S],
+        self_param: Optional[str] = OPERATOR_SELF_PARAM
+    ) -> EnhancedTask[S]:
+        """
+        Pass-thru to :meth:`EnhancedTask.add_operator`.
+
+        :param op: operator with factory/action info
+        :param self_param: if not ``None``, action param referring to the op
+        :return: this task (for chaining)
+        """
+
+        self.add_operator(op, self_param)
+        return self
 
     def _terminal_goal_check(self) -> bool:
         """
