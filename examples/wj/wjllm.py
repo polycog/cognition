@@ -17,6 +17,7 @@ LLM_MODEL: str = "openai/gpt-oss-20b"
 
 #
 
+
 class ProblemConfig(BaseModel):
     """
     WaterJug problem configuration
@@ -24,7 +25,9 @@ class ProblemConfig(BaseModel):
 
     vol1: int = Field(description="Volume of the first jug")
     vol2: int = Field(description="Volume of the second jug")
-    desired: int = Field(description="Desired volume to achieve (in either of the jugs)")
+    desired: int = Field(
+        description="Desired volume to achieve (in either of the jugs)"
+    )
 
 
 LLM_EXAMPLE_INPUT: str = (
@@ -48,6 +51,7 @@ with a desired goal of 4, and so return {LLM_EXAMPLE_OUTPUT}.
 
 ##################################################
 
+
 @st.cache_resource
 def _get_client(secret_section: str) -> OpenAI:
     client = OpenAI(**st.secrets[secret_section])
@@ -57,6 +61,7 @@ def _get_client(secret_section: str) -> OpenAI:
 
     return client
 
+
 def llm_try_connect() -> None:
     """
     Attempts LLM connection
@@ -64,10 +69,12 @@ def llm_try_connect() -> None:
 
     try:
         _ = _get_client(LLM_SECRET)
-    except Exception as e: # pylint: disable=broad-exception-caught
+    except Exception as e:  # pylint: disable=broad-exception-caught
         st.exception(e)
 
+
 #
+
 
 @st.cache_data
 def llm_user_prompt(desc: str) -> str:
@@ -76,6 +83,7 @@ def llm_user_prompt(desc: str) -> str:
     """
 
     return f"{desc}. {LLM_JSON_REMINDER}"
+
 
 @st.cache_data
 def llm_convert_description(desc: str) -> Optional[ProblemConfig]:

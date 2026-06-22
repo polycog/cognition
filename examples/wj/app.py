@@ -17,13 +17,7 @@ from wjllm import (
     llm_user_prompt,
 )
 
-from wjplan import (
-    InvalidConfiguration,
-    Success,
-    TooLong,
-    WJResult,
-    run_waterjug
-)
+from wjplan import InvalidConfiguration, Success, TooLong, WJResult, run_waterjug
 
 # pylint: disable=pointless-statement
 # pylint: disable=pointless-string-statement
@@ -41,9 +35,7 @@ KEY_LLM_OUTPUT: str = "config"
 #
 
 st.set_page_config(
-    page_title=F"{APP_NAME}: {APP_DESC}",
-    page_icon=APP_ICON,
-    layout="wide"
+    page_title=f"{APP_NAME}: {APP_DESC}", page_icon=APP_ICON, layout="wide"
 )
 
 ##################################################
@@ -69,7 +61,7 @@ with st.container(border=True):
             "and the desired volume (to be found in either jug)."
         ),
         key=KEY_DESC,
-        placeholder=LLM_EXAMPLE_INPUT
+        placeholder=LLM_EXAMPLE_INPUT,
     )
 
     with st.expander("See movie reference"):
@@ -114,10 +106,10 @@ if all(k in st.session_state for k in (KEY_MAXSTEPS, KEY_LLM_OUTPUT)):
     prob: ProblemConfig = st.session_state[KEY_LLM_OUTPUT]
 
     result: WJResult = run_waterjug(
-        vol1 = prob.vol1,
-        vol2 = prob.vol2,
-        desired = prob.desired,
-        max_steps = st.session_state[KEY_MAXSTEPS]
+        vol1=prob.vol1,
+        vol2=prob.vol2,
+        desired=prob.desired,
+        max_steps=st.session_state[KEY_MAXSTEPS],
     )
 
     #
@@ -147,7 +139,11 @@ if all(k in st.session_state for k in (KEY_MAXSTEPS, KEY_LLM_OUTPUT)):
                 st.dataframe(
                     pd.DataFrame(
                         p,
-                        columns=['Action', 'First Jug (contents)', 'Second Jug (contents)']
+                        columns=[
+                            "Action",
+                            "First Jug (contents)",
+                            "Second Jug (contents)",
+                        ],
                     )
                 )
 
@@ -165,9 +161,12 @@ if all(k in st.session_state for k in (KEY_MAXSTEPS, KEY_LLM_OUTPUT)):
                 first_jug = selected_row[1]
                 second_jug = selected_row[2]
 
-                chart_data = pd.DataFrame({
-                    'First Jug': [first_jug, prob.vol1 - first_jug],
-                    'Second Jug': [second_jug, prob.vol2 - second_jug]
-                }, index=['Filled', 'Empty'])
+                chart_data = pd.DataFrame(
+                    {
+                        "First Jug": [first_jug, prob.vol1 - first_jug],
+                        "Second Jug": [second_jug, prob.vol2 - second_jug],
+                    },
+                    index=["Filled", "Empty"],
+                )
 
                 st.bar_chart(chart_data.T)

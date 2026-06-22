@@ -28,6 +28,7 @@ from cognition import (
 
 ##################################################
 
+
 @dataclass(frozen=True)
 class Jug:
     """
@@ -40,8 +41,10 @@ class Jug:
     def __str__(self) -> str:
         return f"{self.contents}/{self.volume}"
 
+
 # A pair of jugs!!
 type JugPair = tuple[Jug, Jug]
+
 
 class WhichJug(IntEnum):
     """
@@ -103,14 +106,18 @@ class PourOption(JugPairOption):
         pour_amt: int = min(j_from.contents, j_to.volume - j_to.contents)
 
         def by_jug(target: WhichJug) -> int:
-            return (j_from.contents - pour_amt) \
-                if (target == self.pour_from) \
-                    else (j_to.contents + pour_amt)
+            return (
+                (j_from.contents - pour_amt)
+                if (target == self.pour_from)
+                else (j_to.contents + pour_amt)
+            )
 
         return (
-            (Jug(state[0].volume, by_jug(WhichJug.FIRST)),
-             Jug(state[1].volume, by_jug(WhichJug.SECOND))),
-            1
+            (
+                Jug(state[0].volume, by_jug(WhichJug.FIRST)),
+                Jug(state[1].volume, by_jug(WhichJug.SECOND)),
+            ),
+            1,
         )
 
 
@@ -139,14 +146,15 @@ class FillOption(JugPairOption):
 
     def invoke(self, state: JugPair) -> tuple[JugPair, int]:
         new_jug: Jug = Jug(
-            state[self.fill_to.value].volume,
-            state[self.fill_to.value].volume
+            state[self.fill_to.value].volume, state[self.fill_to.value].volume
         )
 
         return (
-            (new_jug if self.fill_to == WhichJug.FIRST else state[0],
-             new_jug if self.fill_to == WhichJug.SECOND else state[1]),
-            1
+            (
+                new_jug if self.fill_to == WhichJug.FIRST else state[0],
+                new_jug if self.fill_to == WhichJug.SECOND else state[1],
+            ),
+            1,
         )
 
 
@@ -172,18 +180,19 @@ class EmptyOption(JugPairOption):
         return state[self.empty_from.value].contents > 0
 
     def invoke(self, state: JugPair) -> tuple[JugPair, int]:
-        new_jug: Jug = Jug(
-            state[self.empty_from.value].volume,
-            0
-        )
+        new_jug: Jug = Jug(state[self.empty_from.value].volume, 0)
 
         return (
-            (new_jug if self.empty_from == WhichJug.FIRST else state[0],
-             new_jug if self.empty_from == WhichJug.SECOND else state[1]),
-            1
+            (
+                new_jug if self.empty_from == WhichJug.FIRST else state[0],
+                new_jug if self.empty_from == WhichJug.SECOND else state[1],
+            ),
+            1,
         )
 
+
 ###
+
 
 def create_wj_goal(target: int) -> Predicate[JugPair]:
     """
@@ -197,7 +206,9 @@ def create_wj_goal(target: int) -> Predicate[JugPair]:
 
     return goal_test
 
+
 ##################################################
+
 
 @dataclass(frozen=True)
 class InvalidConfiguration:
@@ -207,6 +218,7 @@ class InvalidConfiguration:
 
     msg: str
 
+
 @dataclass(frozen=True)
 class TooLong:
     """
@@ -215,6 +227,7 @@ class TooLong:
     """
 
     cycles: int
+
 
 @dataclass(frozen=True)
 class Success:
@@ -226,15 +239,14 @@ class Success:
     cycles: int
     plan: Sequence[tuple[str, int, int]]
 
+
 type WJResult = InvalidConfiguration | TooLong | Success
 
 #
 
+
 def validate_inputs(
-    vol1: int,
-    vol2: int,
-    desired: int,
-    max_steps: int
+    vol1: int, vol2: int, desired: int, max_steps: int
 ) -> Optional[str]:
     """
     Produces an error message if the
@@ -265,13 +277,9 @@ def validate_inputs(
 
     return None
 
+
 @st.cache_data
-def run_waterjug(
-    vol1: int,
-    vol2: int,
-    desired: int,
-    max_steps: int
-) -> WJResult:
+def run_waterjug(vol1: int, vol2: int, desired: int, max_steps: int) -> WJResult:
     """
     Solves the supplied waterjug instance,
     validing the inputs first
@@ -283,10 +291,7 @@ def run_waterjug(
 
     #
 
-    init_jugs: JugPair = (
-        Jug(vol1, 0),
-        Jug(vol2, 0)
-    )
+    init_jugs: JugPair = (Jug(vol1, 0), Jug(vol2, 0))
 
     wj: Task[SearchState[JugPair, JugPairOption]] = create_search_task(
         init_jugs,
@@ -294,13 +299,11 @@ def run_waterjug(
         succession_via_options(
             EmptyOption(WhichJug.FIRST),
             EmptyOption(WhichJug.SECOND),
-
             FillOption(WhichJug.FIRST),
             FillOption(WhichJug.SECOND),
-
             PourOption(WhichJug.FIRST),
             PourOption(WhichJug.SECOND),
-        )
+        ),
     ).run_cycles(max_steps)
 
     #
@@ -313,19 +316,10 @@ def run_waterjug(
 
     sim_state: JugPair = init_jugs
 
-    plan = [
-        ("Initial State", sim_state[0].contents, sim_state[1].contents)
-    ]
+    plan = [("Initial State", sim_state[0].contents, sim_state[1].contents)]
 
     for a in wj.state.action_path:
         sim_state, _ = a.invoke(sim_state)
-        plan.append((
-            str(a),
-            sim_state[0].contents,
-            sim_state[1].contents
-        ))
+        plan.append((str(a), sim_state[0].contents, sim_state[1].contents))
 
-    return Success(
-        wj.num_cycles,
-        plan
-    )
+    return Success(wj.num_cycles, plan)
