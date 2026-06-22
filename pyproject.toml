@@ -35,3 +35,6 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "cognition" = ["py.typed"]
+
+[tool.black]
+target-version = ["py313",]

@@ -27,38 +27,40 @@ from cognition import (
 
 #
 
+
 def navigate_romania(city: str) -> Iterable[tuple[str, str, int]]:
     """
     Encodes the classic Romania map search from R&N
     """
 
     romania_map: dict[str, dict[str, int]] = {
-        'Arad': {'Zerind': 75, 'Timisoara': 118, 'Sibiu': 140},
-        'Zerind': {'Arad': 75, 'Oradea': 71},
-        'Oradea': {'Zerind': 71, 'Sibiu': 151},
-        'Timisoara': {'Arad': 118, 'Lugoj': 111},
-        'Lugoj': {'Timisoara': 111, 'Mehadia': 70},
-        'Mehadia': {'Lugoj': 70, 'Drobeta': 75},
-        'Drobeta': {'Mehadia': 75, 'Craiova': 120},
-        'Craiova': {'Drobeta': 120, 'Rimnicu Vilcea': 146, 'Pitesti': 138},
-        'Sibiu': {'Arad': 140, 'Oradea': 151, 'Fagaras': 99, 'Rimnicu Vilcea': 80},
-        'Rimnicu Vilcea': {'Sibiu': 80, 'Craiova': 146, 'Pitesti': 97},
-        'Fagaras': {'Sibiu': 99, 'Bucharest': 211},
-        'Pitesti': {'Rimnicu Vilcea': 97, 'Craiova': 138, 'Bucharest': 101},
-        'Bucharest': {'Fagaras': 211, 'Pitesti': 101, 'Giurgiu': 90, 'Urziceni': 85},
-        'Giurgiu': {'Bucharest': 90},
-        'Urziceni': {'Bucharest': 85, 'Vaslui': 142, 'Hirsova': 98},
-        'Vaslui': {'Urziceni': 142, 'Iasi': 92},
-        'Iasi': {'Vaslui': 92, 'Neamt': 87},
-        'Neamt': {'Iasi': 87},
-        'Hirsova': {'Urziceni': 98, 'Eforie': 86},
-        'Eforie': {'Hirsova': 86},
+        "Arad": {"Zerind": 75, "Timisoara": 118, "Sibiu": 140},
+        "Zerind": {"Arad": 75, "Oradea": 71},
+        "Oradea": {"Zerind": 71, "Sibiu": 151},
+        "Timisoara": {"Arad": 118, "Lugoj": 111},
+        "Lugoj": {"Timisoara": 111, "Mehadia": 70},
+        "Mehadia": {"Lugoj": 70, "Drobeta": 75},
+        "Drobeta": {"Mehadia": 75, "Craiova": 120},
+        "Craiova": {"Drobeta": 120, "Rimnicu Vilcea": 146, "Pitesti": 138},
+        "Sibiu": {"Arad": 140, "Oradea": 151, "Fagaras": 99, "Rimnicu Vilcea": 80},
+        "Rimnicu Vilcea": {"Sibiu": 80, "Craiova": 146, "Pitesti": 97},
+        "Fagaras": {"Sibiu": 99, "Bucharest": 211},
+        "Pitesti": {"Rimnicu Vilcea": 97, "Craiova": 138, "Bucharest": 101},
+        "Bucharest": {"Fagaras": 211, "Pitesti": 101, "Giurgiu": 90, "Urziceni": 85},
+        "Giurgiu": {"Bucharest": 90},
+        "Urziceni": {"Bucharest": 85, "Vaslui": 142, "Hirsova": 98},
+        "Vaslui": {"Urziceni": 142, "Iasi": 92},
+        "Iasi": {"Vaslui": 92, "Neamt": 87},
+        "Neamt": {"Iasi": 87},
+        "Hirsova": {"Urziceni": 98, "Eforie": 86},
+        "Eforie": {"Hirsova": 86},
     }
 
     # keep the (unnecessary) sorting to see
     # differences in stack vs queue vs pq
     for c, d in sorted(romania_map.get(city, {}).items()):
         yield c, c, d
+
 
 @stringify("straight_line_to_bucharest")
 def straight_line_to_bucharest(city: str) -> int:
@@ -68,16 +70,34 @@ def straight_line_to_bucharest(city: str) -> int:
     """
 
     return {
-        'Arad': 366, 'Bucharest': 0, 'Craiova': 160, 'Dobreta': 242, 'Eforie': 161,
-        'Fagaras': 176, 'Giurgiu': 77, 'Hirsova': 151, 'Iasi': 226, 'Lugoj': 244,
-        'Mehadia': 241, 'Neamti': 234, 'Oradea': 380, 'Pitesti': 100, 'Rimnicu Vilcea': 193,
-        'Sibiu': 253, 'Timisoara': 329, 'Urziceni': 80, 'Vaslui': 199, 'Zerind': 374
+        "Arad": 366,
+        "Bucharest": 0,
+        "Craiova": 160,
+        "Dobreta": 242,
+        "Eforie": 161,
+        "Fagaras": 176,
+        "Giurgiu": 77,
+        "Hirsova": 151,
+        "Iasi": 226,
+        "Lugoj": 244,
+        "Mehadia": 241,
+        "Neamti": 234,
+        "Oradea": 380,
+        "Pitesti": 100,
+        "Rimnicu Vilcea": 193,
+        "Sibiu": 253,
+        "Timisoara": 329,
+        "Urziceni": 80,
+        "Vaslui": 199,
+        "Zerind": 374,
     }.get(city, 1000)
+
 
 def in_bucharest(city: str) -> bool:
     """Is this Bucharest?"""
 
     return city == "Bucharest"
+
 
 class TestSearch(unittest.TestCase):
     """Tests for search code"""
@@ -108,7 +128,6 @@ class TestSearch(unittest.TestCase):
 
         self.assertTrue(t.state.frontier.empty)
 
-
     def test_romania_dfs(self) -> None:
         """testing search across Romania using DFS"""
 
@@ -134,18 +153,10 @@ class TestSearch(unittest.TestCase):
 
         self.assertFalse(t.state.frontier.empty)
 
-        actions: Sequence[str] = cast(
-            Sequence[str],
-            t.state.action_path
-        )
+        actions: Sequence[str] = cast(Sequence[str], t.state.action_path)
         self.assertSequenceEqual(
             actions,
-            ["Zerind",
-             "Oradea",
-             "Sibiu",
-             "Rimnicu Vilcea",
-             "Pitesti",
-             "Bucharest"]
+            ["Zerind", "Oradea", "Sibiu", "Rimnicu Vilcea", "Pitesti", "Bucharest"],
         )
 
     def test_romania_bfs(self) -> None:
@@ -173,16 +184,8 @@ class TestSearch(unittest.TestCase):
 
         self.assertFalse(t.state.frontier.empty)
 
-        actions: Sequence[str] = cast(
-            Sequence[str],
-            t.state.action_path
-        )
-        self.assertSequenceEqual(
-            actions,
-            ["Sibiu",
-             "Fagaras",
-             "Bucharest"]
-        )
+        actions: Sequence[str] = cast(Sequence[str], t.state.action_path)
+        self.assertSequenceEqual(actions, ["Sibiu", "Fagaras", "Bucharest"])
 
     def test_romania_ucs(self) -> None:
         """testing search across Romania using UCS"""
@@ -209,16 +212,9 @@ class TestSearch(unittest.TestCase):
 
         self.assertFalse(t.state.frontier.empty)
 
-        actions: Sequence[str] = cast(
-            Sequence[str],
-            t.state.action_path
-        )
+        actions: Sequence[str] = cast(Sequence[str], t.state.action_path)
         self.assertSequenceEqual(
-            actions,
-            ["Sibiu",
-             "Rimnicu Vilcea",
-             "Pitesti",
-             "Bucharest"]
+            actions, ["Sibiu", "Rimnicu Vilcea", "Pitesti", "Bucharest"]
         )
 
     def test_romania_astar(self) -> None:
@@ -246,19 +242,14 @@ class TestSearch(unittest.TestCase):
 
         self.assertFalse(t.state.frontier.empty)
 
-        actions: Sequence[str] = cast(
-            Sequence[str],
-            t.state.action_path
-        )
+        actions: Sequence[str] = cast(Sequence[str], t.state.action_path)
         self.assertSequenceEqual(
-            actions,
-            ["Sibiu",
-             "Rimnicu Vilcea",
-             "Pitesti",
-             "Bucharest"]
+            actions, ["Sibiu", "Rimnicu Vilcea", "Pitesti", "Bucharest"]
         )
 
+
 #
+
 
 class USCoin(IntEnum):
     """US coin name/value"""
@@ -267,6 +258,7 @@ class USCoin(IntEnum):
     DIME = 10
     NICKLE = 5
     PENNY = 1
+
 
 class AddCoin(SearchOption[int, USCoin]):
     """Option to add a coin"""
@@ -285,6 +277,7 @@ class AddCoin(SearchOption[int, USCoin]):
     def invoke(self, state: int) -> tuple[int, int]:
         return (state + self.action.value, 1)
 
+
 class TestSearchConvenience(unittest.TestCase):
     """Tests for search convenience code"""
 
@@ -294,11 +287,7 @@ class TestSearchConvenience(unittest.TestCase):
         change via coins
         """
 
-        us_coins: Sequence[AddCoin] = [
-            AddCoin(c)
-            for c in
-            USCoin
-        ]
+        us_coins: Sequence[AddCoin] = [AddCoin(c) for c in USCoin]
 
         goal_cents: int = 119
 
@@ -306,7 +295,7 @@ class TestSearchConvenience(unittest.TestCase):
             0,
             lambda s: s == goal_cents,
             succession_via_options(*us_coins),
-            Queue
+            Queue,
             # each coin is a single action
             # and queue = BFS, so...
             # produces sum with fewest coins
@@ -316,22 +305,16 @@ class TestSearchConvenience(unittest.TestCase):
 
         self.assertTrue(t_puzzle.done)
         self.assertTrue(t_puzzle.state.done)
-        self.assertEqual(
-            t_puzzle.state.final_state,
-            goal_cents
-        )
+        self.assertEqual(t_puzzle.state.final_state, goal_cents)
 
-        coint_counts = Counter(
-            cast(Sequence[USCoin],
-                 t_puzzle.state.action_path)
-        )
+        coint_counts = Counter(cast(Sequence[USCoin], t_puzzle.state.action_path))
 
         self.assertDictEqual(
             dict(coint_counts),
             {
-                USCoin.QUARTER: 4, # 100 +
-                USCoin.DIME: 1, #     10 +
-                USCoin.NICKLE: 1, #    5 +
-                USCoin.PENNY: 4 #      4
-            } # = 119
+                USCoin.QUARTER: 4,  # 100 +
+                USCoin.DIME: 1,  #     10 +
+                USCoin.NICKLE: 1,  #    5 +
+                USCoin.PENNY: 4,  #     4
+            },  #                   = 119
         )

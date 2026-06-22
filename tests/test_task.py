@@ -2,10 +2,7 @@
 Tests for task code
 """
 
-from typing import (
-    Any,
-    cast
-)
+from typing import Any, cast
 
 from collections.abc import Iterable
 
@@ -39,6 +36,7 @@ GOAL_NAME: str = "prime_or_perfect"
 FACTORY_NAME: str = "always_inc"
 ELAB_NAME: str = "prime_and_perfect"
 
+
 def _make_goal(a_perfect: str, a_prime: str) -> GoalCheck[int]:
     """
     Create the perfect/prime goal check
@@ -48,15 +46,9 @@ def _make_goal(a_perfect: str, a_prime: str) -> GoalCheck[int]:
 
     @stringify(GOAL_NAME)
     def pred(_: int, io: IOContainer) -> bool:
-        v_perfect = cast(
-            bool,
-            getattr(io.i.elaboration, a_perfect)
-        )
+        v_perfect = cast(bool, getattr(io.i.elaboration, a_perfect))
 
-        v_prime = cast(
-            bool,
-            getattr(io.i.elaboration, a_prime)
-        )
+        v_prime = cast(bool, getattr(io.i.elaboration, a_prime))
 
         return v_perfect or v_prime
 
@@ -123,45 +115,24 @@ class TestTask(unittest.TestCase):
 
         tf: Task[list[str]] = Task(lambda: ["hi"])
 
-        self.assertEqual(
-            tf.state,
-            ["hi"]
-        )
+        self.assertEqual(tf.state, ["hi"])
 
-        (tf
-         .add_action_factory(
-             lambda _s, _io: [lambda s, _: s[1:]]
-         )
-         .run_cycles()
-        )
+        (tf.add_action_factory(lambda _s, _io: [lambda s, _: s[1:]]).run_cycles())
 
-        self.assertEqual(
-            tf.state,
-            []
-        )
+        self.assertEqual(tf.state, [])
 
         #
 
         ti: Task[list[str]] = Task(lambda: ["hi"])
 
-        self.assertEqual(
-            ti.state,
-            ["hi"]
-        )
+        self.assertEqual(ti.state, ["hi"])
 
         def a(s: list[str], _io: IOContainer) -> None:
             del s[0]
 
-        (ti
-         .add_action_factory(lambda _s, _io: a)
-         .run_cycles()
-        )
+        (ti.add_action_factory(lambda _s, _io: a).run_cycles())
 
-        self.assertEqual(
-            ti.state,
-            []
-        )
-
+        self.assertEqual(ti.state, [])
 
     def test_elab_dec(self) -> None:
         """Confirms elaborator decoration"""
@@ -171,20 +142,22 @@ class TestTask(unittest.TestCase):
 
         self.assertEqual(
             str(t),
-            "\n".join((
-                f"Phase={Phase.ELABORATION.name}",
-                f"State={word}",
-                f"Done?={False}",
-                f"Chosen={None}",
-                "Action Factories=",
-                "Potential Actions=",
-                "Action Evaluators=",
-                "Rankings=",
-                "Goal Checks=",
-                "Elaborators=",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={word}",
+                    f"Done?={False}",
+                    f"Chosen={None}",
+                    "Action Factories=",
+                    "Potential Actions=",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    "Goal Checks=",
+                    "Elaborators=",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )
 
         #
@@ -194,24 +167,26 @@ class TestTask(unittest.TestCase):
         @t.elaborator
         @stringify(e_name)
         def echo(s: str, _io: IOContainer) -> dict[str, Any]:
-            return { e_name: s }
+            return {e_name: s}
 
         self.assertEqual(
             str(t),
-            "\n".join((
-                f"Phase={Phase.ELABORATION.name}",
-                f"State={word}",
-                f"Done?={False}",
-                f"Chosen={None}",
-                "Action Factories=",
-                "Potential Actions=",
-                "Action Evaluators=",
-                "Rankings=",
-                "Goal Checks=",
-                f"Elaborators={e_name}",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={word}",
+                    f"Done?={False}",
+                    f"Chosen={None}",
+                    "Action Factories=",
+                    "Potential Actions=",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    "Goal Checks=",
+                    f"Elaborators={e_name}",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )
 
         #
@@ -224,112 +199,81 @@ class TestTask(unittest.TestCase):
             e_result = cast(
                 str,
                 getattr(
-                    cast(
-                        AttrReferral,
-                        getattr(io.i, Task.SENSOR_ELABORATION)
-                    ),
-                    e_name
-                )
+                    cast(AttrReferral, getattr(io.i, Task.SENSOR_ELABORATION)), e_name
+                ),
             )
 
             return e_result == word
 
         self.assertEqual(
             str(t),
-            "\n".join((
-                f"Phase={Phase.ELABORATION.name}",
-                f"State={word}",
-                f"Done?={False}",
-                f"Chosen={None}",
-                "Action Factories=",
-                "Potential Actions=",
-                "Action Evaluators=",
-                "Rankings=",
-                f"Goal Checks={g_name}",
-                f"Elaborators={e_name}",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={word}",
+                    f"Done?={False}",
+                    f"Chosen={None}",
+                    "Action Factories=",
+                    "Potential Actions=",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    f"Goal Checks={g_name}",
+                    f"Elaborators={e_name}",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )
 
         t.run_until_done()
 
         self.assertEqual(
             str(t),
-            "\n".join((
-                f"Phase={Phase.GOALCHECK.name}",
-                f"State={word}",
-                f"Done?={True}",
-                f"Chosen={None}",
-                "Action Factories=",
-                "Potential Actions=",
-                "Action Evaluators=",
-                "Rankings=",
-                f"Goal Checks={g_name}",
-                f"Elaborators={e_name}",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+            "\n".join(
+                (
+                    f"Phase={Phase.GOALCHECK.name}",
+                    f"State={word}",
+                    f"Done?={True}",
+                    f"Chosen={None}",
+                    "Action Factories=",
+                    "Potential Actions=",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    f"Goal Checks={g_name}",
+                    f"Elaborators={e_name}",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )
-
 
     def test_phase(self) -> None:
         """Confirms phase sequencing"""
 
-        self.assertEqual(
-            Phase.ELABORATION.next,
-            Phase.GOALCHECK
-        )
+        self.assertEqual(Phase.ELABORATION.next, Phase.GOALCHECK)
 
-        self.assertEqual(
-            Phase.GOALCHECK.next,
-            Phase.PROPOSE
-        )
+        self.assertEqual(Phase.GOALCHECK.next, Phase.PROPOSE)
 
-        self.assertEqual(
-            Phase.PROPOSE.next,
-            Phase.RANK
-        )
+        self.assertEqual(Phase.PROPOSE.next, Phase.RANK)
 
-        self.assertEqual(
-            Phase.RANK.next,
-            Phase.APPLY
-        )
+        self.assertEqual(Phase.RANK.next, Phase.APPLY)
 
-        self.assertEqual(
-            Phase.APPLY.next,
-            Phase.ELABORATION
-        )
-
+        self.assertEqual(Phase.APPLY.next, Phase.ELABORATION)
 
     def test_basics(self) -> None:
         """Confirms some task basics"""
 
-        a_inc = create_named_action(
-            "inc",
-            lambda s, _io: s + 1
-        )
+        a_inc = create_named_action("inc", lambda s, _io: s + 1)
 
-        a_dec = create_named_action(
-            "dec",
-            lambda s, _io: s - 1
-        )
+        a_dec = create_named_action("dec", lambda s, _io: s - 1)
 
         ar_inc_low = ActionRank(a_inc, Rank.LOW)
-        self.assertEqual(
-            str(ar_inc_low),
-            "ActionRank(a=inc, r=3)"
-        )
+        self.assertEqual(str(ar_inc_low), "ActionRank(a=inc, r=3)")
 
         ar_dec_high = ActionRank(a_dec, Rank.HIGH)
-        self.assertEqual(
-            str(ar_dec_high),
-            "ActionRank(a=dec, r=1)"
-        )
+        self.assertEqual(str(ar_dec_high), "ActionRank(a=dec, r=1)")
 
-        self.assertTrue(
-            ar_dec_high < ar_inc_low
-        )
+        self.assertTrue(ar_dec_high < ar_inc_low)
 
         with self.assertRaises(TypeError):
             _ = ar_dec_high < "not an ActionRank"
@@ -345,52 +289,34 @@ class TestTask(unittest.TestCase):
             for _ in t.phases():
                 pass
 
-        self.assertEqual(
-            cm.exception.msg,
-            TaskErrorMessage.NO_PROPOSAL
-        )
+        self.assertEqual(cm.exception.msg, TaskErrorMessage.NO_PROPOSAL)
 
-        self.assertEqual(
-            str(cm.exception),
-            TaskErrorMessage.NO_PROPOSAL.value
-        )
+        self.assertEqual(str(cm.exception), TaskErrorMessage.NO_PROPOSAL.value)
 
         t.reinit()
 
         #
 
-        t.add_action_factory(
-            lambda _s, _io: [a_inc, a_dec]
-        )
+        t.add_action_factory(lambda _s, _io: [a_inc, a_dec])
 
         # no evaluation of multiple possibilities
         with self.assertRaises(TaskExecutionError) as cm:
             for _ in t.cycles():
                 pass
 
-        self.assertEqual(
-            cm.exception.msg,
-            TaskErrorMessage.NO_RANK
-        )
+        self.assertEqual(cm.exception.msg, TaskErrorMessage.NO_RANK)
 
-        self.assertEqual(
-            str(cm.exception),
-            TaskErrorMessage.NO_RANK.value
-        )
+        self.assertEqual(str(cm.exception), TaskErrorMessage.NO_RANK.value)
 
         #
 
-        t.add_action_evaluator(
-            lambda _s, _io, _actions: []
-        )
+        t.add_action_evaluator(lambda _s, _io, _actions: [])
 
         #
 
         @t.action_evaluator
         def dec_over_inc(
-                _s: int,
-                _io: IOContainer,
-                actions: Iterable[Action[int]]
+            _s: int, _io: IOContainer, actions: Iterable[Action[int]]
         ) -> Iterable[ActionRank[int]]:
             """Always prefer dec over inc"""
 
@@ -407,16 +333,13 @@ class TestTask(unittest.TestCase):
 
         #
 
-        t.add_goal_check(
-            lambda s, _io: s == starting_point - 2
-        )
+        t.add_goal_check(lambda s, _io: s == starting_point - 2)
 
         for _ in t.cycles():
             pass
 
         self.assertEqual(t.state, starting_point - 2)
         self.assertEqual(t.num_cycles, 3)
-
 
     def test_io(self) -> None:
         """Confirming basic io functionality"""
@@ -430,45 +353,46 @@ class TestTask(unittest.TestCase):
 
         self.assertEqual(
             str(task_io),
-            "\n".join((
-                f"Phase={Phase.ELABORATION.name}",
-                f"State={starting_point}",
-                f"Done?={False}",
-                f"Chosen={None}",
-                "Action Factories=",
-                "Potential Actions=",
-                "Action Evaluators=",
-                "Rankings=",
-                "Goal Checks=",
-                "Elaborators=",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={starting_point}",
+                    f"Done?={False}",
+                    f"Chosen={None}",
+                    "Action Factories=",
+                    "Potential Actions=",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    "Goal Checks=",
+                    "Elaborators=",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )
 
         # add as both sensor/actuator
-        (task_io
-         .set_sensor(lst_name, lst)
-         .set_actuator(lst_name, lst)
-        )
+        (task_io.set_sensor(lst_name, lst).set_actuator(lst_name, lst))
 
         # confirm registration
         self.assertEqual(
             str(task_io),
-            "\n".join((
-                f"Phase={Phase.ELABORATION.name}",
-                f"State={starting_point}",
-                f"Done?={False}",
-                f"Chosen={None}",
-                "Action Factories=",
-                "Potential Actions=",
-                "Action Evaluators=",
-                "Rankings=",
-                "Goal Checks=",
-                "Elaborators=",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}, {lst_name}",
-                f"Actuators={Task.ACTUATOR_LOG}, {lst_name}",
-            ))
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={starting_point}",
+                    f"Done?={False}",
+                    f"Chosen={None}",
+                    "Action Factories=",
+                    "Potential Actions=",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    "Goal Checks=",
+                    "Elaborators=",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}, {lst_name}",
+                    f"Actuators={Task.ACTUATOR_LOG}, {lst_name}",
+                )
+            ),
         )
 
         def inc_and_add_and_log(s: int, io: IOContainer) -> int:
@@ -484,15 +408,12 @@ class TestTask(unittest.TestCase):
             log: StringIO = cast(StringIO, getattr(io.o, Task.ACTUATOR_LOG))
             cycle: int = cast(TimeSensor[int], getattr(io.i, Task.SENSOR_TIME)).cycles
 
-            print(f'@{cycle}: data={sensed}', file=log)
+            print(f"@{cycle}: data={sensed}", file=log)
 
             return s + 1
 
         a_name: str = "go"
-        a_go = create_named_action(
-            a_name,
-            inc_and_add_and_log
-        )
+        a_go = create_named_action(a_name, inc_and_add_and_log)
 
         factory_name: str = f"{a_name} factory"
 
@@ -513,46 +434,36 @@ class TestTask(unittest.TestCase):
 
             return s == starting_point + goal_diff
 
-        (task_io
-         .add_goal_check(go_goal)
-         .run_until_done()
-        )
+        (task_io.add_goal_check(go_goal).run_until_done())
 
         # confirm ability to remove sensors/actuators
-        (task_io
-         .set_sensor(lst_name, None)
-         .set_actuator(lst_name, None)
-        )
+        (task_io.set_sensor(lst_name, None).set_actuator(lst_name, None))
 
         self.assertEqual(
             str(task_io),
-            "\n".join((
-                f"Phase={Phase.GOALCHECK.name}",
-                f"State={starting_point + goal_diff}",
-                f"Done?={True}",
-                f"Chosen={a_name}",
-                f"Action Factories={factory_name}",
-                f"Potential Actions={a_name}",
-                "Action Evaluators=",
-                "Rankings=",
-                f"Goal Checks={goal_name}",
-                "Elaborators=",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+            "\n".join(
+                (
+                    f"Phase={Phase.GOALCHECK.name}",
+                    f"State={starting_point + goal_diff}",
+                    f"Done?={True}",
+                    f"Chosen={a_name}",
+                    f"Action Factories={factory_name}",
+                    f"Potential Actions={a_name}",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    f"Goal Checks={goal_name}",
+                    "Elaborators=",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )
 
         # confirm logging
         self.assertEqual(
             task_io.log,
-            "\n".join((
-                "@1: data=[]",
-                "@2: data=['1']",
-                "@3: data=['1', '2']",
-                ''
-            ))
+            "\n".join(("@1: data=[]", "@2: data=['1']", "@3: data=['1', '2']", "")),
         )
-
 
     def test_count(self) -> None:
         """Confirming simple task execution"""
@@ -566,101 +477,79 @@ class TestTask(unittest.TestCase):
 
         #
 
-        task_count_until: Task[int] = (Task(lambda: starting_point)
-         .add_goal_check(_make_goal(e_perfect, e_prime))
-         .add_elaborator(
-            create_elaborator(
-                ELAB_NAME,
-                **{
-                    e_prime: lambda s, _: _is_prime(s),
-                    e_perfect: lambda s, _: sqrt(s) % 1 == 0,
-                }
+        task_count_until: Task[int] = (
+            Task(lambda: starting_point)
+            .add_goal_check(_make_goal(e_perfect, e_prime))
+            .add_elaborator(
+                create_elaborator(
+                    ELAB_NAME,
+                    **{
+                        e_prime: lambda s, _: _is_prime(s),
+                        e_perfect: lambda s, _: sqrt(s) % 1 == 0,
+                    },
+                )
             )
-         )
-         .add_action_factory(_make_increment_factory(a_inc))
+            .add_action_factory(_make_increment_factory(a_inc))
         )
 
-        self.assertEqual(
-            task_count_until.num_cycles,
-            0
-        )
+        self.assertEqual(task_count_until.num_cycles, 0)
 
-        self.assertEqual(
-            task_count_until.state,
-            starting_point
-        )
+        self.assertEqual(task_count_until.state, starting_point)
 
-        self.assertFalse(
-            task_count_until.done
-        )
+        self.assertFalse(task_count_until.done)
 
-        self.assertEqual(
-            task_count_until.phase,
-            Phase.ELABORATION
-        )
+        self.assertEqual(task_count_until.phase, Phase.ELABORATION)
 
-        self.assertIsNone(
-            task_count_until.chosen_action
-        )
+        self.assertIsNone(task_count_until.chosen_action)
 
         self.assertEqual(
             str(task_count_until),
-            "\n".join((
-                f"Phase={Phase.ELABORATION.name}",
-                f"State={starting_point}",
-                f"Done?={False}",
-                f"Chosen={None}",
-                f"Action Factories={FACTORY_NAME}",
-                "Potential Actions=",
-                "Action Evaluators=",
-                "Rankings=",
-                f"Goal Checks={GOAL_NAME}",
-                f"Elaborators={ELAB_NAME}",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={starting_point}",
+                    f"Done?={False}",
+                    f"Chosen={None}",
+                    f"Action Factories={FACTORY_NAME}",
+                    "Potential Actions=",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    f"Goal Checks={GOAL_NAME}",
+                    f"Elaborators={ELAB_NAME}",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )
 
         task_count_until.run_until_done()
 
-        self.assertEqual(
-            task_count_until.num_cycles,
-            9
-        )
+        self.assertEqual(task_count_until.num_cycles, 9)
 
-        self.assertEqual(
-            task_count_until.state,
-            next_perfect_prime
-        )
+        self.assertEqual(task_count_until.state, next_perfect_prime)
 
-        self.assertTrue(
-            task_count_until.done
-        )
+        self.assertTrue(task_count_until.done)
 
-        self.assertEqual(
-            task_count_until.phase,
-            Phase.GOALCHECK
-        )
+        self.assertEqual(task_count_until.phase, Phase.GOALCHECK)
 
-        self.assertEqual(
-            task_count_until.chosen_action,
-            a_inc
-        )
+        self.assertEqual(task_count_until.chosen_action, a_inc)
 
         self.assertEqual(
             str(task_count_until),
-            "\n".join((
-                f"Phase={Phase.GOALCHECK.name}",
-                f"State={next_perfect_prime}",
-                f"Done?={True}",
-                f"Chosen={a_inc}",
-                f"Action Factories={FACTORY_NAME}",
-                f"Potential Actions={a_inc}",
-                "Action Evaluators=",
-                "Rankings=",
-                f"Goal Checks={GOAL_NAME}",
-                f"Elaborators={ELAB_NAME}",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+            "\n".join(
+                (
+                    f"Phase={Phase.GOALCHECK.name}",
+                    f"State={next_perfect_prime}",
+                    f"Done?={True}",
+                    f"Chosen={a_inc}",
+                    f"Action Factories={FACTORY_NAME}",
+                    f"Potential Actions={a_inc}",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    f"Goal Checks={GOAL_NAME}",
+                    f"Elaborators={ELAB_NAME}",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )

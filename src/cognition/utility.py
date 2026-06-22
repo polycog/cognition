@@ -17,13 +17,14 @@ from functools import wraps
 
 #
 
+
 class AttrReferral:
     """
     Read-only .key access to a value via external mapping { key:value }
     """
 
     # private field name for the mapping reference
-    _ref_field_name: str = '_attr_mapping'
+    _ref_field_name: str = "_attr_mapping"
 
     #
 
@@ -32,11 +33,7 @@ class AttrReferral:
         :param external_source: mapping reference
         """
 
-        object.__setattr__(
-            self,
-            AttrReferral._ref_field_name,
-            external_source
-        )
+        object.__setattr__(self, AttrReferral._ref_field_name, external_source)
 
     def __getattr__(self, key: str) -> Any:
         if key not in self.__getattribute__(AttrReferral._ref_field_name):
@@ -49,7 +46,9 @@ class AttrReferral:
         :raises AttributeError: read-only access
         """
 
-        raise AttributeError(f"'{type(self).__name__}' object attributes are read-only.")
+        raise AttributeError(
+            f"'{type(self).__name__}' object attributes are read-only."
+        )
 
 
 # pylint: disable=too-few-public-methods
@@ -105,7 +104,7 @@ def stringify[**P, R](str_value: str) -> Callable[[Callable[P, R]], Callable[P, 
         Newly wrapped function
 
         :param func: original function
-        :return: resulting callable       
+        :return: resulting callable
         """
 
         return StringifiedFunction(func, str_value)

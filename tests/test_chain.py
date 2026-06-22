@@ -16,6 +16,7 @@ from cognition import (
 
 #
 
+
 class NerdFighter(StrEnum):
     """Words to live by!"""
 
@@ -40,7 +41,7 @@ class TestChain(unittest.TestCase):
             t: Task[ChainState[int, int]] = create_chain_task(
                 range(n),
                 lambda link, _io: cast(int, link.accumulator) * (link.value + 1),
-                1
+                1,
             )
 
             t.run_until_done()
@@ -50,21 +51,11 @@ class TestChain(unittest.TestCase):
 
         #
 
-        self.assertEqual(
-            my_fact(0),
-            1
-        )
+        self.assertEqual(my_fact(0), 1)
 
-        self.assertEqual(
-            my_fact(5),
-            1 * 2 * 3 * 4 * 5
-        )
+        self.assertEqual(my_fact(5), 1 * 2 * 3 * 4 * 5)
 
-        self.assertEqual(
-            my_fact(7),
-            1 * 2 * 3 * 4 * 5 * 6 * 7
-        )
-
+        self.assertEqual(my_fact(7), 1 * 2 * 3 * 4 * 5 * 6 * 7)
 
     def test_dftba(self) -> None:
         """
@@ -73,16 +64,9 @@ class TestChain(unittest.TestCase):
 
         t: Task[ChainState[NerdFighter, None]] = create_chain_task(
             NerdFighter,
-            lambda link, io: print(
-                link.value.value[0].lower(),
-                end="",
-                file=io.o.log
-            )
+            lambda link, io: print(link.value.value[0].lower(), end="", file=io.o.log),
         )
 
         t.run_until_done()
 
-        self.assertEqual(
-            t.log,
-            "dftba"
-        )
+        self.assertEqual(t.log, "dftba")

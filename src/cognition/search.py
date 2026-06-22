@@ -56,7 +56,7 @@ class FrontierNode[SS, SA]:
 
 class Frontier[SS, SA](ABC):
     """
-	Manages of graph search options
+    Manages of graph search options
     """
 
     @property
@@ -79,8 +79,8 @@ class Frontier[SS, SA](ABC):
         """
 
     @abstractmethod
-    def __str__(self) -> str:
-        ...
+    def __str__(self) -> str: ...
+
 
 class Stack[SS, SA](Frontier[SS, SA]):
     """
@@ -92,12 +92,8 @@ class Stack[SS, SA](Frontier[SS, SA]):
     def __init__(self) -> None:
         self._items = []
 
-    def __str__(self) -> str: # pragma: no cover
-        return (
-            "Stack("
-            f"items=[{self._items}]"
-            ")"
-        )
+    def __str__(self) -> str:  # pragma: no cover
+        return f"Stack(items=[{self._items}])"
 
     @property
     def empty(self) -> bool:
@@ -109,6 +105,7 @@ class Stack[SS, SA](Frontier[SS, SA]):
     def remove(self) -> FrontierNode[SS, SA]:
         return self._items.pop()
 
+
 class Queue[SS, SA](Frontier[SS, SA]):
     """
     BFS frontier
@@ -119,12 +116,8 @@ class Queue[SS, SA](Frontier[SS, SA]):
     def __init__(self) -> None:
         self._items = deque()
 
-    def __str__(self) -> str: # pragma: no cover
-        return (
-            "Queue("
-            f"items=[{self._items}]"
-            ")"
-        )
+    def __str__(self) -> str:  # pragma: no cover
+        return f"Queue(items=[{self._items}])"
 
     @property
     def empty(self) -> bool:
@@ -136,23 +129,16 @@ class Queue[SS, SA](Frontier[SS, SA]):
     def remove(self) -> FrontierNode[SS, SA]:
         return self._items.pop()
 
+
 class PriorityQueue[SS, SA](Frontier[SS, SA]):
     """
     UCS frontier, or A* if given an admissible heuristic
     """
 
-    _items: list[
-        tuple[
-            PathCost,
-            FrontierNode[SS, SA]
-        ]
-    ]
+    _items: list[tuple[PathCost, FrontierNode[SS, SA]]]
     _heuristic: Optional[Function[SS, PathCost]]
 
-    def __init__(
-        self,
-        heuristic: Optional[Function[SS, PathCost]] = None
-    ) -> None:
+    def __init__(self, heuristic: Optional[Function[SS, PathCost]] = None) -> None:
         """
         :param heuristic: if supplied, provides an estimate of remaining cost
         """
@@ -160,7 +146,7 @@ class PriorityQueue[SS, SA](Frontier[SS, SA]):
         self._items = []
         self._heuristic = heuristic
 
-    def __str__(self) -> str: # pragma: no cover
+    def __str__(self) -> str:  # pragma: no cover
         return (
             "PriorityQueue("
             f"heuristic=[{self._heuristic}], "
@@ -177,10 +163,7 @@ class PriorityQueue[SS, SA](Frontier[SS, SA]):
         if self._heuristic:
             node_priority += self._heuristic(node.state)
 
-        heapq.heappush(
-            self._items,
-            (node_priority, node)
-        )
+        heapq.heappush(self._items, (node_priority, node))
 
     def remove(self) -> FrontierNode[SS, SA]:
         return heapq.heappop(self._items)[1]
@@ -231,7 +214,7 @@ class SearchState[SS: Hashable, SA]:
         self.action_path = node.path
         self.path_cost = node.path_cost
 
-    def __str__(self) -> str: # pragma: no cover
+    def __str__(self) -> str:  # pragma: no cover
         return (
             "SearchState("
             f"explored=[{self.explored}], "
@@ -243,12 +226,13 @@ class SearchState[SS: Hashable, SA]:
             ")"
         )
 
+
 def create_search_task[SS: Hashable, SA](
     initial_state: SS,
     is_goal: Predicate[SS],
     successors: Succession[SS, SA],
     frontier_factory: Supplier[Frontier[SS, SA]] = PriorityQueue,
-    debug: bool = False
+    debug: bool = False,
 ) -> Task[SearchState[SS, SA]]:
     """
     Produce a search-based planner
@@ -266,23 +250,15 @@ def create_search_task[SS: Hashable, SA](
         """Initialize search problem"""
 
         init_frontier = frontier_factory()
-        init_frontier.add(
-            FrontierNode(
-                initial_state,
-                tuple(),
-                0
-            )
-        )
+        init_frontier.add(FrontierNode(initial_state, tuple(), 0))
 
         return SearchState[SS, SA](
             explored=set(),
             frontier=init_frontier,
-
             done=False,
-
             final_state=None,
             action_path=None,
-            path_cost=None
+            path_cost=None,
         )
 
     t: Task[SearchState[SS, SA]] = Task(init_task_state)
@@ -292,56 +268,48 @@ def create_search_task[SS: Hashable, SA](
     @t.action_factory
     @stringify("always_search")
     def search_factory(
-        _s: SearchState[SS, SA],
-        _io: IOContainer
+        _s: SearchState[SS, SA], _io: IOContainer
     ) -> Action[SearchState[SS, SA]]:
         """Always propose searching"""
 
         @stringify("search")
-        def search_action(
-            sa: SearchState[SS, SA],
-            io: IOContainer
-        ) -> None:
+        def search_action(sa: SearchState[SS, SA], io: IOContainer) -> None:
             """Graph search step"""
 
             if sa.frontier.empty:
                 return sa.failure()
 
             node = sa.frontier.remove()
-            if debug: # pragma: no cover
-                print(
-                    f"Graph Search: remove ({node})",
-                    file=io.o.log
-                )
+            if debug:  # pragma: no cover
+                print(f"Graph Search: remove ({node})", file=io.o.log)
 
             if is_goal(node.state):
-                if debug: # pragma: no cover
-                    print(
-                        f"Graph Search: goal achieved ({node})",
-                        file=io.o.log
-                    )
+                if debug:  # pragma: no cover
+                    print(f"Graph Search: goal achieved ({node})", file=io.o.log)
                 return sa.success(node)
 
             if node.state not in sa.explored:
                 sa.explored.add(node.state)
-                if debug: # pragma: no cover
+                if debug:  # pragma: no cover
                     print(
                         "Graph Search: unexplored "
                         f"({node.state}) -> |{len(sa.explored)}|",
-                        file=io.o.log
+                        file=io.o.log,
                     )
 
                 for state_p, action, cost in successors(node.state):
-                    if debug: # pragma: no cover
+                    if debug:  # pragma: no cover
                         print(
                             f"Graph Search: add ({state_p}, {action}, {cost})",
-                            file=io.o.log
+                            file=io.o.log,
                         )
-                    sa.frontier.add(FrontierNode(
-                        state=state_p,
-                        path=(tuple(node.path) + (action,)),
-                        path_cost=node.path_cost + cost
-                    ))
+                    sa.frontier.add(
+                        FrontierNode(
+                            state=state_p,
+                            path=(tuple(node.path) + (action,)),
+                            path_cost=node.path_cost + cost,
+                        )
+                    )
 
             return None
 
@@ -356,13 +324,6 @@ def create_search_task[SS: Hashable, SA](
         """done searching?"""
 
         return s.done
-
-    # t.set_sensor(
-    #     "problem",
-    #     AttrReferral({
-    #         "init_state": initial_state,
-    #     })
-    # )
 
     return t
 
@@ -406,10 +367,12 @@ class SearchOption[SS, SA](ABC):
         """
 
 
-def succession_via_options[SS, SA](*options: SearchOption[SS, SA]) -> Succession[SS, SA]:
+def succession_via_options[SS, SA](
+    *options: SearchOption[SS, SA]
+) -> Succession[SS, SA]:
     """
     Succession function from options
-    
+
     :param options: globally available transitions
     :return: resulting succession function for any search state
     """
@@ -427,10 +390,6 @@ def succession_via_options[SS, SA](*options: SearchOption[SS, SA]) -> Succession
             if opt.available(s):
                 state_p, cost = opt.invoke(s)
 
-                yield (
-                    state_p,
-                    opt.action,
-                    cost
-                )
+                yield (state_p, opt.action, cost)
 
     return expand

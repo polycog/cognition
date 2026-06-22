@@ -40,6 +40,7 @@ from .functypes import (
 
 #
 
+
 @dataclass(frozen=True)
 class IOContainer:
     """
@@ -108,12 +109,7 @@ class ActionRank[S]:
     """Rank of the action (smaller is better)"""
 
     def __str__(self) -> str:
-        return (
-            "ActionRank("
-            f"a={str(self.a)}, "
-            f"r={str(self.rank)}"
-            ")"
-        )
+        return f"ActionRank(a={str(self.a)}, r={str(self.rank)})"
 
     def __lt__(self, other: object) -> bool:
         """
@@ -126,12 +122,14 @@ class ActionRank[S]:
         if not isinstance(other, ActionRank):
             return NotImplemented
 
-        return (self.rank < other.rank) or \
-                ((self.rank == other.rank) and \
-                 (str(self.a) < str(other.a)))
+        return (self.rank < other.rank) or (
+            (self.rank == other.rank) and (str(self.a) < str(other.a))
+        )
 
 
-type ActionEvaluator[S] = TriFunction[S, IOContainer, Iterable[Action[S]], Iterable[ActionRank[S]]]
+type ActionEvaluator[S] = TriFunction[
+    S, IOContainer, Iterable[Action[S]], Iterable[ActionRank[S]]
+]
 """Produces rankings of candidate actions"""
 
 
@@ -148,6 +146,7 @@ class TaskErrorMessage(StrEnum):
 
     NO_CHOICE = "No chosen action"
     """No action chosen to apply (should not occur)"""
+
 
 class TaskExecutionError(Exception):
     """
@@ -177,22 +176,22 @@ class Task[S]:
     """
 
     # Constants
-    SENSOR_TIME: str = 'clock'
+    SENSOR_TIME: str = "clock"
     """Key associated with the sensor for cycles"""
 
-    SENSOR_TIME_ATTR: str = 'cycles'
+    SENSOR_TIME_ATTR: str = "cycles"
     """Attribute produced by the cycle sensor"""
 
-    SENSOR_ELABORATION: str = 'elaboration'
+    SENSOR_ELABORATION: str = "elaboration"
     """Key for the elaboration 'sensor'"""
 
-    ACTUATOR_LOG: str = 'log'
+    ACTUATOR_LOG: str = "log"
     """Key associated with the log actuator"""
 
     # Supplied components...
     _state: S  # arbitrary representation
     _state_init: Supplier[S]  # state start
-    _elaborators: list[Elaborator[S]] # elaborates state each cycle
+    _elaborators: list[Elaborator[S]]  # elaborates state each cycle
     _goal_checks: list[GoalCheck[S]]  # determines if the task been completed
     _action_factories: list[ActionFactory[S]]  # identifying potential next task steps
     _action_evaluators: list[ActionEvaluator[S]] = []  # ranking for supplied tasks
@@ -231,14 +230,11 @@ class Task[S]:
 
         self._sensors = {
             Task.SENSOR_TIME: TimeSensor(self),
-            Task.SENSOR_ELABORATION: AttrReferral(self._elaboration)
+            Task.SENSOR_ELABORATION: AttrReferral(self._elaboration),
         }
-        self._actuators = {
-            Task.ACTUATOR_LOG: StringIO()
-        }
+        self._actuators = {Task.ACTUATOR_LOG: StringIO()}
         self._io = IOContainer(
-            AttrReferral(self._sensors),
-            AttrReferral(self._actuators)
+            AttrReferral(self._sensors), AttrReferral(self._actuators)
         )
 
         # establish phase handling
@@ -404,7 +400,9 @@ class Task[S]:
         """
         if not self._goal_achieved:
             self._step_count += 1
-            self._goal_achieved = any(p(self._state, self._io) for p in self._goal_checks)
+            self._goal_achieved = any(
+                p(self._state, self._io) for p in self._goal_checks
+            )
 
         return not self._goal_achieved
 
@@ -435,7 +433,7 @@ class Task[S]:
 
     @staticmethod
     def _make_iterable(
-        proposal: Action[S] | Iterable[Action[S]]
+        proposal: Action[S] | Iterable[Action[S]],
     ) -> Iterable[Action[S]]:
         """
         Helps unify processing of either
@@ -513,10 +511,7 @@ class Task[S]:
                     raise TaskExecutionError(TaskErrorMessage.NO_RANK)
 
                 top = list(
-                    filter(
-                        lambda r: r.rank == self._ranking[0].rank,
-                        self._ranking
-                    )
+                    filter(lambda r: r.rank == self._ranking[0].rank, self._ranking)
                 )
                 self._chosen = random.sample(top, k=1)[0].a
             else:
@@ -543,7 +538,7 @@ class Task[S]:
             if result is not None:
                 self._state = result
         else:
-            raise TaskExecutionError(TaskErrorMessage.NO_CHOICE) # pragma: no cover
+            raise TaskExecutionError(TaskErrorMessage.NO_CHOICE)  # pragma: no cover
 
         return True
 
@@ -560,7 +555,6 @@ class Task[S]:
             self._phase = self._phase.next
 
         return self
-
 
     def run_cycles(self, n: int = 1) -> Task[S]:
         """
@@ -674,6 +668,7 @@ class TimeSensor[S]:
         """
 
         return self._t.num_cycles
+
 
 # pylint: disable=too-few-public-methods
 class TaskIterator[S](Iterator[Task[S]]):

@@ -7,11 +7,7 @@ from typing import (
     cast,
 )
 
-from enum import (
-    Enum,
-    StrEnum,
-    auto
-)
+from enum import Enum, StrEnum, auto
 
 from collections.abc import Mapping
 
@@ -42,12 +38,14 @@ from cognition import (
 
 #
 
+
 class OpStage(StrEnum):
     """Stage of op test"""
 
     SAY_HI = auto()
     SAY_BYE = auto()
     DONE = auto()
+
 
 class HiOp(NamedOperator[OpStage]):
     """Says hi"""
@@ -59,6 +57,7 @@ class HiOp(NamedOperator[OpStage]):
         print("hi", file=io.o.log)
         return OpStage.SAY_BYE
 
+
 class ByeOp(NamedOperator[OpStage]):
     """Says bye"""
 
@@ -69,7 +68,9 @@ class ByeOp(NamedOperator[OpStage]):
         print("bye", file=io.o.log)
         return OpStage.DONE
 
+
 #
+
 
 class PrioritizedMathOperation(Enum):
     """Prioritized options"""
@@ -117,7 +118,11 @@ class ChangeOp(NamedOperator[int]):
         if not isinstance(other, ChangeOp):
             return NotImplemented
 
-        return (self._op, self._amt, self._enabled) == (other._op, other._amt, other._enabled)
+        return (self._op, self._amt, self._enabled) == (
+            other._op,
+            other._amt,
+            other._enabled,
+        )
 
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, ChangeOp):
@@ -134,17 +139,16 @@ class ChangeOp(NamedOperator[int]):
     def __hash__(self) -> int:
         return hash((self._op, self._amt))
 
+
 #
+
 
 class TestConvenience(unittest.TestCase):
     """Tests for convenience code"""
 
     def setUp(self) -> None:
         self.vote_yay = create_named_action(
-            "vote",
-            lambda _s, _io: 1,
-            value="yay",
-            volume=12
+            "vote", lambda _s, _io: 1, value="yay", volume=12
         )
 
         self.vote_nay = create_named_action(
@@ -160,10 +164,8 @@ class TestConvenience(unittest.TestCase):
 
         self.io_source: Mapping[str, Any] = {}
         self.mock_io = IOContainer(
-            AttrReferral(self.io_source),
-            AttrReferral(self.io_source)
+            AttrReferral(self.io_source), AttrReferral(self.io_source)
         )
-
 
     def test_terminal(self) -> None:
         """Confirming terminal goal check"""
@@ -172,10 +174,7 @@ class TestConvenience(unittest.TestCase):
             lambda: "",
         )
 
-        t2: EnhancedTask[str] = EnhancedTask(
-            lambda: "",
-            enable_terminal_check=True
-        )
+        t2: EnhancedTask[str] = EnhancedTask(lambda: "", enable_terminal_check=True)
 
         do_regular = create_named_action(
             "do",
@@ -183,9 +182,7 @@ class TestConvenience(unittest.TestCase):
         )
 
         do_terminal = create_named_action(
-            "do",
-            lambda s, _io: "terminal",
-            terminal=True
+            "do", lambda s, _io: "terminal", terminal=True
         )
 
         def allow_action(a: Action[str]) -> ActionFactory[str]:
@@ -194,34 +191,29 @@ class TestConvenience(unittest.TestCase):
 
             return can_do
 
-        (t1
-         .add_action_factory(allow_action(do_regular))
-         .run_cycles(100)
-        )
+        (t1.add_action_factory(allow_action(do_regular)).run_cycles(100))
 
         self.assertFalse(t1.done)
 
-        (t1
-         .reinit()
-         .add_action_factory(allow_action(do_terminal))
-         .add_action_evaluator(uniform_evaluator(1))
-         .run_cycles(100)
+        (
+            t1.reinit()
+            .add_action_factory(allow_action(do_terminal))
+            .add_action_evaluator(uniform_evaluator(1))
+            .run_cycles(100)
         )
 
         self.assertFalse(t1.done)
 
         #
 
-        (t2
-         .add_action_factory(allow_action(do_regular))
-         .run_cycles(100)
-        )
+        (t2.add_action_factory(allow_action(do_regular)).run_cycles(100))
 
         self.assertFalse(t2.done)
 
-        (t2
-         .add_action_factory(allow_action(do_terminal))
-         .add_action_evaluator(uniform_evaluator(1))
+        (
+            t2.add_action_factory(allow_action(do_terminal)).add_action_evaluator(
+                uniform_evaluator(1)
+            )
         )
 
         for _ in range(100):
@@ -232,7 +224,6 @@ class TestConvenience(unittest.TestCase):
             self.assertTrue(t2.done)
             self.assertEqual(t2.state, "terminal")
 
-
     def test_operator(self) -> None:
         """Confirming operators"""
 
@@ -240,7 +231,8 @@ class TestConvenience(unittest.TestCase):
         bye_name: str = "bye"
         done_name: str = "done_yet?"
 
-        t: EnhancedTask[OpStage] = (EnhancedTask(lambda: OpStage.SAY_HI)
+        t: EnhancedTask[OpStage] = (
+            EnhancedTask(lambda: OpStage.SAY_HI)
             .add_operator_c(HiOp(hi_name))
             .add_operator_c(ByeOp(bye_name))
         )
@@ -254,97 +246,95 @@ class TestConvenience(unittest.TestCase):
 
         self.assertEqual(
             str(t),
-            "\n".join((
-                f"Phase={Phase.ELABORATION.name}",
-                f"State={OpStage.SAY_HI}",
-                f"Done?={False}",
-                f"Chosen={None}",
-                f"Action Factories={hi_name}, {bye_name}",
-                "Potential Actions=",
-                "Action Evaluators=",
-                "Rankings=",
-                f"Goal Checks={done_name}",
-                "Elaborators=",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={OpStage.SAY_HI}",
+                    f"Done?={False}",
+                    f"Chosen={None}",
+                    f"Action Factories={hi_name}, {bye_name}",
+                    "Potential Actions=",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    f"Goal Checks={done_name}",
+                    "Elaborators=",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )
 
         t.run_cycles()
 
         self.assertEqual(
             str(t),
-            "\n".join((
-                f"Phase={Phase.ELABORATION.name}",
-                f"State={OpStage.SAY_BYE}",
-                f"Done?={False}",
-                f"Chosen={hi_name}",
-                f"Action Factories={hi_name}, {bye_name}",
-                f"Potential Actions={hi_name}",
-                "Action Evaluators=",
-                "Rankings=",
-                f"Goal Checks={done_name}",
-                "Elaborators=",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={OpStage.SAY_BYE}",
+                    f"Done?={False}",
+                    f"Chosen={hi_name}",
+                    f"Action Factories={hi_name}, {bye_name}",
+                    f"Potential Actions={hi_name}",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    f"Goal Checks={done_name}",
+                    "Elaborators=",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )
 
-        self.assertEqual(
-            t.log,
-            "hi\n"
-        )
+        self.assertEqual(t.log, "hi\n")
 
         t.run_cycles()
 
         self.assertEqual(
             str(t),
-            "\n".join((
-                f"Phase={Phase.ELABORATION.name}",
-                f"State={OpStage.DONE}",
-                f"Done?={False}",
-                f"Chosen={bye_name}",
-                f"Action Factories={hi_name}, {bye_name}",
-                f"Potential Actions={bye_name}",
-                "Action Evaluators=",
-                "Rankings=",
-                f"Goal Checks={done_name}",
-                "Elaborators=",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={OpStage.DONE}",
+                    f"Done?={False}",
+                    f"Chosen={bye_name}",
+                    f"Action Factories={hi_name}, {bye_name}",
+                    f"Potential Actions={bye_name}",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    f"Goal Checks={done_name}",
+                    "Elaborators=",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )
 
-        self.assertEqual(
-            t.log,
-            "hi\nbye\n"
-        )
+        self.assertEqual(t.log, "hi\nbye\n")
 
         t.run_until_done()
 
         self.assertEqual(
             str(t),
-            "\n".join((
-                f"Phase={Phase.GOALCHECK.name}",
-                f"State={OpStage.DONE}",
-                f"Done?={True}",
-                f"Chosen={bye_name}",
-                f"Action Factories={hi_name}, {bye_name}",
-                f"Potential Actions={bye_name}",
-                "Action Evaluators=",
-                "Rankings=",
-                f"Goal Checks={done_name}",
-                "Elaborators=",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+            "\n".join(
+                (
+                    f"Phase={Phase.GOALCHECK.name}",
+                    f"State={OpStage.DONE}",
+                    f"Done?={True}",
+                    f"Chosen={bye_name}",
+                    f"Action Factories={hi_name}, {bye_name}",
+                    f"Potential Actions={bye_name}",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    f"Goal Checks={done_name}",
+                    "Elaborators=",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )
 
-        self.assertEqual(
-            t.log,
-            "hi\nbye\n"
-        )
-
+        self.assertEqual(t.log, "hi\nbye\n")
 
     def test_named_action(self) -> None:
         """Confirming the named actions"""
@@ -352,79 +342,39 @@ class TestConvenience(unittest.TestCase):
         self.assertIsInstance(self.vote_yay, NamedAction)
         vote_yay_named = cast(NamedAction, self.vote_yay)
 
-        self.assertEqual(
-            vote_yay_named.name,
-            "vote"
-        )
+        self.assertEqual(vote_yay_named.name, "vote")
 
-        self.assertEqual(
-            vote_yay_named.params,
-            {
-                "value": "yay",
-                "volume": 12
-            }
-        )
+        self.assertEqual(vote_yay_named.params, {"value": "yay", "volume": 12})
 
-        self.assertEqual(
-            str(self.vote_yay),
-            "vote[value='yay', volume=12]"
-        )
+        self.assertEqual(str(self.vote_yay), "vote[value='yay', volume=12]")
 
-        self.assertEqual(
-            self.vote_yay(42, self.mock_io),
-            1
-        )
+        self.assertEqual(self.vote_yay(42, self.mock_io), 1)
 
         #
 
         self.assertIsInstance(self.vote_nay, NamedAction)
         vote_nay_named = cast(NamedAction, self.vote_nay)
 
-        self.assertEqual(
-            vote_nay_named.name,
-            "vote"
-        )
+        self.assertEqual(vote_nay_named.name, "vote")
 
-        self.assertEqual(
-            vote_nay_named.params,
-            {"value": "nay"}
-        )
+        self.assertEqual(vote_nay_named.params, {"value": "nay"})
 
-        self.assertEqual(
-            str(self.vote_nay),
-            "vote[value='nay']"
-        )
+        self.assertEqual(str(self.vote_nay), "vote[value='nay']")
 
-        self.assertEqual(
-            self.vote_nay(42, self.mock_io),
-            0
-        )
+        self.assertEqual(self.vote_nay(42, self.mock_io), 0)
 
         #
 
         self.assertIsInstance(self.abstain, NamedAction)
         abstrain_named = cast(NamedAction, self.abstain)
 
-        self.assertEqual(
-            abstrain_named.name,
-            "abstain"
-        )
+        self.assertEqual(abstrain_named.name, "abstain")
 
-        self.assertEqual(
-            abstrain_named.params,
-            {}
-        )
+        self.assertEqual(abstrain_named.params, {})
 
-        self.assertEqual(
-            str(self.abstain),
-            "abstain"
-        )
+        self.assertEqual(str(self.abstain), "abstain")
 
-        self.assertEqual(
-            self.abstain(42, self.mock_io),
-            -1
-        )
-
+        self.assertEqual(self.abstain(42, self.mock_io), -1)
 
     def test_uniform_evaluator(self) -> None:
         """Checks uniform_evaluator"""
@@ -439,57 +389,37 @@ class TestConvenience(unittest.TestCase):
         name_all_m: str = "all_m"
         name_vote_h: str = "vote_h"
 
-        eval_all_m: ActionEvaluator[int] = uniform_evaluator(Rank.MEDIUM, name=name_all_m)
+        eval_all_m: ActionEvaluator[int] = uniform_evaluator(
+            Rank.MEDIUM, name=name_all_m
+        )
         eval_all_m_nameless: ActionEvaluator[int] = uniform_evaluator(Rank.MEDIUM)
-        eval_vote_h: ActionEvaluator[int] = uniform_evaluator(Rank.HIGH, is_vote, name_vote_h)
-
-        self.assertEqual(
-            str(eval_all_m),
-            name_all_m
+        eval_vote_h: ActionEvaluator[int] = uniform_evaluator(
+            Rank.HIGH, is_vote, name_vote_h
         )
 
-        self.assertNotEqual(
-            str(eval_all_m),
-            str(eval_all_m_nameless)
-        )
+        self.assertEqual(str(eval_all_m), name_all_m)
 
-        self.assertEqual(
-            str(eval_vote_h),
-            name_vote_h
-        )
+        self.assertNotEqual(str(eval_all_m), str(eval_all_m_nameless))
+
+        self.assertEqual(str(eval_vote_h), name_vote_h)
 
         #
 
         ranks = list(eval_all_m(51, self.mock_io, candidates))
         self.assertEqual(len(ranks), len(candidates))
         for c in candidates:
-            self.assertIn(
-                ActionRank(
-                    c,
-                    Rank.MEDIUM
-                ),
-                ranks
-            )
+            self.assertIn(ActionRank(c, Rank.MEDIUM), ranks)
 
         ranks2 = list(eval_all_m_nameless(17, self.mock_io, candidates))
         self.assertEqual(ranks, ranks2)
 
-
         ranks = list(eval_vote_h(100, self.mock_io, candidates))
         self.assertEqual(len(ranks), len(votes))
         for c in votes:
-            self.assertIn(
-                ActionRank(
-                    c,
-                    Rank.HIGH
-                ),
-                ranks
-            )
+            self.assertIn(ActionRank(c, Rank.HIGH), ranks)
 
         # HIGH < LOW b/c higher priority in sort
-        self.assertTrue(
-            ranks[0] < ranks2[0]
-        )
+        self.assertTrue(ranks[0] < ranks2[0])
 
     def test_create_elaborator(self) -> None:
         """Checks create_elaborator"""
@@ -498,17 +428,14 @@ class TestConvenience(unittest.TestCase):
 
         elab: Elaborator[int] = create_elaborator(
             name,
-            identity = lambda s, _: s,
-            inc = lambda s, _: s + 1,
-            neg = lambda s, _: -s,
+            identity=lambda s, _: s,
+            inc=lambda s, _: s + 1,
+            neg=lambda s, _: -s,
         )
 
         #
 
-        self.assertEqual(
-            str(elab),
-            name
-        )
+        self.assertEqual(str(elab), name)
 
         self.assertEqual(
             elab(42, self.mock_io),
@@ -516,7 +443,7 @@ class TestConvenience(unittest.TestCase):
                 "identity": 42,
                 "inc": 43,
                 "neg": -42,
-            }
+            },
         )
 
         self.assertEqual(
@@ -525,21 +452,18 @@ class TestConvenience(unittest.TestCase):
                 "identity": 100,
                 "inc": 101,
                 "neg": -100,
-            }
+            },
         )
 
         #
 
         elab2: Elaborator[int] = create_elaborator(
-            identity = lambda s, _: s,
-            inc = lambda s, _: s + 1,
-            neg = lambda s, _: -s,
+            identity=lambda s, _: s,
+            inc=lambda s, _: s + 1,
+            neg=lambda s, _: -s,
         )
 
-        self.assertNotEqual(
-            str(elab),
-            str(elab2)
-        )
+        self.assertNotEqual(str(elab), str(elab2))
 
         self.assertEqual(
             elab(42, self.mock_io),
@@ -594,14 +518,12 @@ class TestConvenience(unittest.TestCase):
         )
 
         self.assertSequenceEqual(
-            list(ar.rank for ar in evaluator(t2.state, self.mock_io, (a2, a2b))),
-            (1, 1)
+            list(ar.rank for ar in evaluator(t2.state, self.mock_io, (a2, a2b))), (1, 1)
         )
 
         # proceed with real task
         ops: dict[ChangeOp, tuple[ActionFactory[int], Action[int]]] = {
-            o: t.add_operator(o)[:-1]
-            for o in (add2, sub1, mult2, add1)
+            o: t.add_operator(o)[:-1] for o in (add2, sub1, mult2, add1)
         }
 
         eval_name: str = "change_op_sort"
@@ -609,28 +531,28 @@ class TestConvenience(unittest.TestCase):
 
         t.add_action_evaluator(
             sorting_evaluator(
-                operator_sorting_key(),
-                rank_start=rank_start,
-                name=eval_name
+                operator_sorting_key(), rank_start=rank_start, name=eval_name
             )
         )
 
         self.assertEqual(
             str(t),
-            "\n".join((
-                f"Phase={Phase.ELABORATION.name}",
-                f"State={init_state}",
-                f"Done?={False}",
-                f"Chosen={None}",
-                f"Action Factories={", ".join(o.name for o in ops)}",
-                "Potential Actions=",
-                f"Action Evaluators={eval_name}",
-                "Rankings=",
-                f"Goal Checks={goal_name}",
-                "Elaborators=",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={init_state}",
+                    f"Done?={False}",
+                    f"Chosen={None}",
+                    f"Action Factories={", ".join(o.name for o in ops)}",
+                    "Potential Actions=",
+                    f"Action Evaluators={eval_name}",
+                    "Rankings=",
+                    f"Goal Checks={goal_name}",
+                    "Elaborators=",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )
 
         # should increase by 1
@@ -638,15 +560,16 @@ class TestConvenience(unittest.TestCase):
 
         self.assertEqual(
             str(t),
-            "\n".join((
-                f"Phase={Phase.ELABORATION.name}",
-                f"State={init_state + 1}",
-                f"Done?={False}",
-                f"Chosen={str(ops[add1][1])}",
-                f"Action Factories={", ".join(str(ov[0]) for ov in ops.values())}",
-                f"Potential Actions={", ".join(str(ov[1]) for ov in ops.values())}",
-                f"Action Evaluators={eval_name}",
-                f"Rankings={
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={init_state + 1}",
+                    f"Done?={False}",
+                    f"Chosen={str(ops[add1][1])}",
+                    f"Action Factories={", ".join(str(ov[0]) for ov in ops.values())}",
+                    f"Potential Actions={", ".join(str(ov[1]) for ov in ops.values())}",
+                    f"Action Evaluators={eval_name}",
+                    f"Rankings={
                     ", ".join(
                         str(ar)
                         for ar in (
@@ -657,11 +580,12 @@ class TestConvenience(unittest.TestCase):
                         )
                     )
                 }",
-                f"Goal Checks={goal_name}",
-                "Elaborators=",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+                    f"Goal Checks={goal_name}",
+                    "Elaborators=",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )
 
         add1.flip()
@@ -672,15 +596,17 @@ class TestConvenience(unittest.TestCase):
 
         self.assertEqual(
             str(t),
-            "\n".join((
-                f"Phase={Phase.ELABORATION.name}",
-                f"State={init_state}",
-                f"Done?={False}",
-                f"Chosen={str(ops[sub1][1])}",
-                f"Action Factories={", ".join(str(ov[0]) for ov in ops.values())}",
-                f"Potential Actions={", ".join(str(ov[1]) for o,ov in ops.items() if o.enabled)}",
-                f"Action Evaluators={eval_name}",
-                f"Rankings={
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={init_state}",
+                    f"Done?={False}",
+                    f"Chosen={str(ops[sub1][1])}",
+                    f"Action Factories={", ".join(str(ov[0]) for ov in ops.values())}",
+                    "Potential Actions="
+                    f"{", ".join(str(ov[1]) for o,ov in ops.items() if o.enabled)}",
+                    f"Action Evaluators={eval_name}",
+                    f"Rankings={
                     ", ".join(
                         str(ar)
                         for ar in (
@@ -689,11 +615,12 @@ class TestConvenience(unittest.TestCase):
                         )
                     )
                 }",
-                f"Goal Checks={goal_name}",
-                "Elaborators=",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+                    f"Goal Checks={goal_name}",
+                    "Elaborators=",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )
 
         sub1.flip()
@@ -703,20 +630,23 @@ class TestConvenience(unittest.TestCase):
 
         self.assertEqual(
             str(t),
-            "\n".join((
-                f"Phase={Phase.ELABORATION.name}",
-                f"State={init_state * 2}",
-                f"Done?={False}",
-                f"Chosen={str(ops[mult2][1])}",
-                f"Action Factories={", ".join(str(ov[0]) for ov in ops.values())}",
-                f"Potential Actions={", ".join(str(ov[1]) for o,ov in ops.items() if o.enabled)}",
-                f"Action Evaluators={eval_name}",
-                "Rankings=",
-                f"Goal Checks={goal_name}",
-                "Elaborators=",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={init_state * 2}",
+                    f"Done?={False}",
+                    f"Chosen={str(ops[mult2][1])}",
+                    f"Action Factories={", ".join(str(ov[0]) for ov in ops.values())}",
+                    "Potential Actions="
+                    f"{", ".join(str(ov[1]) for o,ov in ops.items() if o.enabled)}",
+                    f"Action Evaluators={eval_name}",
+                    "Rankings=",
+                    f"Goal Checks={goal_name}",
+                    "Elaborators=",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )
 
         add1.flip()
@@ -726,15 +656,17 @@ class TestConvenience(unittest.TestCase):
 
         self.assertEqual(
             str(t),
-            "\n".join((
-                f"Phase={Phase.GOALCHECK.name}",
-                f"State={final_val}",
-                f"Done?={True}",
-                f"Chosen={str(ops[add1][1])}",
-                f"Action Factories={", ".join(str(ov[0]) for ov in ops.values())}",
-                f"Potential Actions={", ".join(str(ov[1]) for o,ov in ops.items() if o.enabled)}",
-                f"Action Evaluators={eval_name}",
-                f"Rankings={
+            "\n".join(
+                (
+                    f"Phase={Phase.GOALCHECK.name}",
+                    f"State={final_val}",
+                    f"Done?={True}",
+                    f"Chosen={str(ops[add1][1])}",
+                    f"Action Factories={", ".join(str(ov[0]) for ov in ops.values())}",
+                    "Potential Actions="
+                    f"{", ".join(str(ov[1]) for o,ov in ops.items() if o.enabled)}",
+                    f"Action Evaluators={eval_name}",
+                    f"Rankings={
                     ", ".join(
                         str(ar)
                         for ar in (
@@ -744,9 +676,10 @@ class TestConvenience(unittest.TestCase):
                         )
                     )
                 }",
-                f"Goal Checks={goal_name}",
-                "Elaborators=",
-                f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                f"Actuators={Task.ACTUATOR_LOG}",
-            ))
+                    f"Goal Checks={goal_name}",
+                    "Elaborators=",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
         )

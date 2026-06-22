@@ -4,14 +4,7 @@ Practical library additions
 
 from __future__ import annotations
 
-from typing import (
-    Any,
-    Optional,
-    Protocol,
-    TYPE_CHECKING,
-    cast,
-    runtime_checkable
-)
+from typing import Any, Optional, Protocol, TYPE_CHECKING, cast, runtime_checkable
 
 from abc import ABC, abstractmethod
 
@@ -75,8 +68,7 @@ class Rank(IntEnum):
 
 
 def create_elaborator[S](
-    name: Optional[str] = None,
-    **kwargs: BiFunction[S, IOContainer, Any]
+    name: Optional[str] = None, **kwargs: BiFunction[S, IOContainer, Any]
 ) -> Elaborator[S]:
     """
     Elaborator generator given association between keywords and value-producing functions
@@ -87,10 +79,7 @@ def create_elaborator[S](
     """
 
     def _f(s: S, io: IOContainer) -> dict[str, Any]:
-        return {
-            k: v(s, io)
-            for k, v in kwargs.items()
-        }
+        return {k: v(s, io) for k, v in kwargs.items()}
 
     return optionally_name(_f, name)
 
@@ -101,21 +90,15 @@ def _qualified_name(name: str, **kwargs: Any) -> str:
     (ignoring those whose name starts with an underscore)
     """
 
-    true_args = {
-        k:v
-        for k,v in kwargs.items()
-        if k[:1] != '_'
-    }
+    true_args = {k: v for k, v in kwargs.items() if k[:1] != "_"}
 
     if true_args:
-        params_str = ", ".join(
-            f"{k}={repr(v)}"
-            for k,v in true_args.items()
-        )
+        params_str = ", ".join(f"{k}={repr(v)}" for k, v in true_args.items())
 
         return f"{name}[{params_str}]"
 
     return name
+
 
 # pylint: disable=too-few-public-methods
 @runtime_checkable
@@ -130,11 +113,8 @@ class NamedAction(Protocol):
     params: MappingProxyType[str, Any]
     """Action parameters"""
 
-def create_named_action[S](
-    name: str,
-    f: Action[S],
-    **kwargs: Any
-) -> Action[S]:
+
+def create_named_action[S](name: str, f: Action[S], **kwargs: Any) -> Action[S]:
     """
     Annotates an action via ``str()`` and attributes
 
@@ -144,10 +124,7 @@ def create_named_action[S](
     :return: :class:`NamedAction` + :func:`.utility.stringify`
     """
 
-    new_f = stringify(_qualified_name(
-        name,
-        **kwargs
-    ))(f)
+    new_f = stringify(_qualified_name(name, **kwargs))(f)
 
     # pylint: disable=attribute-defined-outside-init
     new_named = cast(NamedAction, new_f)
@@ -187,6 +164,7 @@ class Operator[S](Protocol):
         """
         :return: optional augmentations in the name
         """
+
 
 class NamedOperator[S](ABC, Operator[S]):
     """
@@ -228,9 +206,7 @@ class NamedOperator[S](ABC, Operator[S]):
 
 
 def add_operator[S](
-    task: Task[S],
-    op: Operator[S],
-    self_param: Optional[str] = OPERATOR_SELF_PARAM
+    task: Task[S], op: Operator[S], self_param: Optional[str] = OPERATOR_SELF_PARAM
 ) -> tuple[ActionFactory[S], Action[S]]:
     """
     Instantiates the operator within a task
@@ -247,11 +223,7 @@ def add_operator[S](
     if self_param is not None:
         act_params[self_param] = op
 
-    op_action = create_named_action(
-        op.name,
-        op.perform,
-        **act_params
-    )
+    op_action = create_named_action(op.name, op.perform, **act_params)
 
     @task.action_factory
     @stringify(op.name)
@@ -269,7 +241,7 @@ def add_operator[S](
 def uniform_evaluator[S](
     r: ImplementsLessThan,
     p: Predicate[Action[S]] = lambda _: True,
-    name: Optional[str] = None
+    name: Optional[str] = None,
 ) -> ActionEvaluator[S]:
     """
     Applies a supplied rank to all potential actions that satisfy a predicate
@@ -281,9 +253,7 @@ def uniform_evaluator[S](
     """
 
     def evaluation_func(
-        _state: S,
-        _io: IOContainer,
-        potential_actions: Iterable[Action[S]]
+        _state: S, _io: IOContainer, potential_actions: Iterable[Action[S]]
     ) -> Iterable[ActionRank[S]]:
         return (ActionRank(a, r) for a in potential_actions if p(a))
 
@@ -293,11 +263,11 @@ def uniform_evaluator[S](
 def sorting_evaluator[S](
     sorting_key: TriFunction[Action[S], S, IOContainer, "SupportsAllComparisons"],
     rank_start: int = 1,
-    name: Optional[str] = None
+    name: Optional[str] = None,
 ) -> ActionEvaluator[S]:
     """
     Associates rankings based upon relative sorting order over actions
-    
+
     :param sorting_key: key function for ``sort()`` to order actions
     :param rank_start: starting value for produced ranks
     :param name: optional name for the evaluator
@@ -305,37 +275,30 @@ def sorting_evaluator[S](
     """
 
     def evaluation_func(
-        state: S,
-        io: IOContainer,
-        potential_actions: Iterable[Action[S]]
+        state: S, io: IOContainer, potential_actions: Iterable[Action[S]]
     ) -> Iterable[ActionRank[S]]:
 
-        ordered = sorted(
-            potential_actions,
-            key=lambda a: sorting_key(a, state, io)
-        )
+        ordered = sorted(potential_actions, key=lambda a: sorting_key(a, state, io))
 
         current_rank: int = rank_start
         ranks = [current_rank] * len(ordered)
 
         for i in range(1, len(ordered)):
             key_curr = sorting_key(ordered[i], state, io)
-            key_prev = sorting_key(ordered[i-1], state, io)
+            key_prev = sorting_key(ordered[i - 1], state, io)
 
             if key_curr != key_prev:
                 current_rank += 1
 
             ranks[i] = current_rank
 
-        return (
-            ActionRank(e, r)
-            for e, r in zip(ordered, ranks)
-        )
+        return (ActionRank(e, r) for e, r in zip(ordered, ranks))
 
     return optionally_name(evaluation_func, name)
 
+
 def operator_sorting_key[S](
-    op_param: str = OPERATOR_SELF_PARAM
+    op_param: str = OPERATOR_SELF_PARAM,
 ) -> TriFunction[Action[S], S, IOContainer, "SupportsAllComparisons"]:
     """
     Produces an action sorting key for actions derived from named operators
@@ -359,8 +322,9 @@ def operator_sorting_key[S](
     return lambda a, _s, _io: cmp_to_key(cmp)(a)
 
 
-TERMINAL_ACTION_ATTR: str = 'terminal'
+TERMINAL_ACTION_ATTR: str = "terminal"
 """Attribute name to trigger goal completion for a selected action"""
+
 
 class EnhancedTask[S](Task[S]):
     """
@@ -384,11 +348,8 @@ class EnhancedTask[S](Task[S]):
         if enable_terminal_check:
             self._phase_handlers[Phase.GOALCHECK] = self._terminal_goal_check
 
-
     def add_operator(
-        self,
-        op: Operator[S],
-        self_param: Optional[str] = OPERATOR_SELF_PARAM
+        self, op: Operator[S], self_param: Optional[str] = OPERATOR_SELF_PARAM
     ) -> tuple[ActionFactory[S], Action[S], EnhancedTask[S]]:
         """
         Pass-thru to :func:`add_operator`.
@@ -402,9 +363,7 @@ class EnhancedTask[S](Task[S]):
         return af, a, self
 
     def add_operator_c(
-        self,
-        op: Operator[S],
-        self_param: Optional[str] = OPERATOR_SELF_PARAM
+        self, op: Operator[S], self_param: Optional[str] = OPERATOR_SELF_PARAM
     ) -> EnhancedTask[S]:
         """
         Pass-thru to :meth:`EnhancedTask.add_operator`.

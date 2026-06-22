@@ -26,6 +26,7 @@ from .core import (
 
 #
 
+
 @dataclass(frozen=True)
 class Link[CV, CA]:
     """
@@ -44,7 +45,7 @@ class ChainState[CV, CA]:
     State of a chained task
 
     Parameters represent...
-    
+
     - CV: type of iterated (v)alues
     - CA: type of an optional (a)ccumulator
     """
@@ -60,13 +61,8 @@ class ChainState[CV, CA]:
 
         self.next(init_acc)
 
-    def __str__(self) -> str: # pragma: no cover
-        return (
-            "ChainState("
-            f"value=[{self._value}], "
-            f"acc=[{self._accumulator}]"
-            ")"
-        )
+    def __str__(self) -> str:  # pragma: no cover
+        return f"ChainState(value=[{self._value}], acc=[{self._accumulator}])"
 
     @property
     def done(self) -> bool:
@@ -129,8 +125,7 @@ def create_chain_task[CV, CA](
     @t.action_factory
     @stringify("always_chaining")
     def action_factory(
-        _s: ChainState[CV, CA],
-        _io: IOContainer
+        _s: ChainState[CV, CA], _io: IOContainer
     ) -> Action[ChainState[CV, CA]]:
         """
         Always produce an action to try
@@ -147,9 +142,7 @@ def create_chain_task[CV, CA](
             link: Optional[Link[CV, CA]] = cs.current_link
 
             if link is not None:
-                cs.next(
-                    link_handler(link, io)
-                )
+                cs.next(link_handler(link, io))
 
         return link_action
 
