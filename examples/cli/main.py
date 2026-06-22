@@ -26,12 +26,14 @@ from rich.prompt import Prompt
 
 #
 
+
 @dataclass(frozen=True)
 class CommandLogEntry:
     """Logging past commands with result"""
 
     cmd: str
     result: CommandReturn
+
 
 class CLIStage(IntEnum):
     """Step of CLI processing"""
@@ -44,6 +46,7 @@ class CLIStage(IntEnum):
 
         return CLIStage((self + 1) % len(CLIStage))
 
+
 @dataclass
 class CLIState:
     """
@@ -55,6 +58,7 @@ class CLIState:
     stage: CLIStage
     log: list[CommandLogEntry]
 
+
 #
 
 # shared reference to
@@ -62,6 +66,7 @@ class CLIState:
 cli_status: dict[str, str] = {}
 
 #
+
 
 @dataclass(frozen=True)
 class CommandReturn:
@@ -71,7 +76,9 @@ class CommandReturn:
     code: int
     exit: bool
 
+
 type Command = Callable[[], CommandReturn]
+
 
 def register_command(dest: dict[str, Command]) -> Callable[[Command], Command]:
     """adds a command to the destination"""
@@ -84,20 +91,19 @@ def register_command(dest: dict[str, Command]) -> Callable[[Command], Command]:
 
     return dec
 
+
 #
 
 commands: dict[str, Command] = {}
+
 
 @register_command(commands)
 @stringify("help")
 def cmd_help() -> CommandReturn:
     """List of available commands"""
 
-    return CommandReturn(
-        f"Available commands: {", ".join(commands.keys())}",
-        0,
-        False
-    )
+    return CommandReturn(f"Available commands: {", ".join(commands.keys())}", 0, False)
+
 
 @register_command(commands)
 @stringify("hello")
@@ -106,16 +112,16 @@ def cmd_hello() -> CommandReturn:
 
     return CommandReturn(":smile:", 0, False)
 
+
 @register_command(commands)
 @stringify("err")
 def cmd_err() -> CommandReturn:
     """Badness"""
 
     return CommandReturn(
-        ":scream: What we've got here is... failure to communicate",
-        1,
-        False
+        ":scream: What we've got here is... failure to communicate", 1, False
     )
+
 
 @register_command(commands)
 @stringify("bye")
@@ -124,20 +130,17 @@ def cmd_bye() -> CommandReturn:
 
     return CommandReturn(":waving_hand:", 0, True)
 
+
 @register_command(commands)
 @stringify("history")
 def cmd_history() -> CommandReturn:
     """Log of past interactions"""
 
-    return CommandReturn(
-        "\n".join(
-            str(entry) for entry in t.state.log
-        ),
-        0,
-        False
-    )
+    return CommandReturn("\n".join(str(entry) for entry in t.state.log), 0, False)
+
 
 #
+
 
 class GetCommand(NamedOperator[CLIState]):
     """GET_CMD -> $"""
@@ -163,8 +166,7 @@ class ExecCommand(NamedOperator[CLIState]):
             log_entry = CommandLogEntry(cmd, commands[cmd]())
         else:
             log_entry = CommandLogEntry(
-                cmd,
-                CommandReturn(f"Invalid command: {cmd}", 1, False)
+                cmd, CommandReturn(f"Invalid command: {cmd}", 1, False)
             )
 
         state.log.append(log_entry)
@@ -178,11 +180,13 @@ class ExecCommand(NamedOperator[CLIState]):
         state.stage = state.stage.next()
 
 
-t: Task[CLIState] = (EnhancedTask(lambda: CLIState(CLIStage.GET_CMD, []))
+t: Task[CLIState] = (
+    EnhancedTask(lambda: CLIState(CLIStage.GET_CMD, []))
     .add_operator_c(GetCommand("get_command"))
     .add_operator_c(ExecCommand("exec_command"))
     .set_sensor("cli", AttrReferral(cli_status))
 )
+
 
 @t.goal_check
 def exit_flag(s: CLIState, _: IOContainer) -> bool:
@@ -193,7 +197,9 @@ def exit_flag(s: CLIState, _: IOContainer) -> bool:
 
     return False
 
+
 #
+
 
 def main() -> None:
     """Start the CLI"""
