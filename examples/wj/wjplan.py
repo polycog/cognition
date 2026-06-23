@@ -14,8 +14,6 @@ from enum import IntEnum
 
 from math import gcd
 
-import streamlit as st
-
 from cognition import (
     Predicate,
     SearchOption,
@@ -278,7 +276,6 @@ def validate_inputs(
     return None
 
 
-@st.cache_data
 def run_waterjug(vol1: int, vol2: int, desired: int, max_steps: int) -> WJResult:
     """
     Solves the supplied waterjug instance,

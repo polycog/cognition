@@ -9,11 +9,13 @@ import pandas as pd
 
 from wjllm import (
     LLM_EXAMPLE_INPUT,
-    LLM_MODEL,
     LLM_SYSTEM_PROMPT,
+    ConfigFail,
+    LLMException,
     ProblemConfig,
-    llm_convert_description,
-    llm_try_connect,
+    llm_init,
+    llm_model_name,
+    llm_parse_config,
     llm_user_prompt,
 )
 
@@ -47,7 +49,26 @@ with st.container(border=False):
     {APP_DESC}
     """
 
-    llm_try_connect()
+    try:
+        llm = llm_init()
+    except LLMException as e:
+        st.exception(e)
+
+
+@st.cache_data
+def run_llm(description: str) -> Optional[ProblemConfig]:
+    """Invokes llm to try to parse problem configuration from text"""
+
+    if llm:
+        parse_result = llm_parse_config(llm, description)
+
+        if isinstance(parse_result, ProblemConfig):
+            return parse_result
+
+        if isinstance(parse_result, ConfigFail):
+            st.warning(parse_result.msg)
+
+    return None
 
 
 with st.container(border=True):
@@ -68,13 +89,13 @@ with st.container(border=True):
         st.video("https://youtu.be/m9F0i-1Jys0")
 
     if desc:
-        conversion: Optional[ProblemConfig] = llm_convert_description(desc)
+        conversion: Optional[ProblemConfig] = run_llm(desc)
 
         if conversion:
             st.session_state[KEY_LLM_OUTPUT] = conversion
 
             with st.expander("See details of LLM conversion"):
-                st.write(f"Using model: `{LLM_MODEL}`")
+                st.write(f"Using model: `{llm_model_name(llm)}`")
 
                 with st.chat_message("system"):
                     st.write(LLM_SYSTEM_PROMPT)
@@ -102,15 +123,22 @@ with st.container(border=True):
         value=100,
     )
 
+
+@st.cache_data
+def run_planner(prob_config: ProblemConfig, max_steps: int) -> WJResult:
+    """Invokes planner to try to solve the problem given the steps"""
+
+    return run_waterjug(
+        vol1=prob_config.vol1,
+        vol2=prob_config.vol2,
+        desired=prob_config.desired,
+        max_steps=max_steps,
+    )
+
+
 if all(k in st.session_state for k in (KEY_MAXSTEPS, KEY_LLM_OUTPUT)):
     prob: ProblemConfig = st.session_state[KEY_LLM_OUTPUT]
-
-    result: WJResult = run_waterjug(
-        vol1=prob.vol1,
-        vol2=prob.vol2,
-        desired=prob.desired,
-        max_steps=st.session_state[KEY_MAXSTEPS],
-    )
+    result: WJResult = run_planner(prob, st.session_state[KEY_MAXSTEPS])
 
     #
 

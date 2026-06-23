@@ -2,20 +2,23 @@
 LLM code for WaterJug
 """
 
-from typing import Optional
+from pydantic import BaseModel, Field
+from pydantic_ai import Agent
+from pydantic_ai.models import Model
 
-import streamlit as st
+from dotenv import load_dotenv
 
-from openai import OpenAI
-
-from pydantic import BaseModel, Field, ValidationError
+load_dotenv()
 
 ##################################################
 
-LLM_SECRET: str = "llm"
-LLM_MODEL: str = "openai/gpt-oss-20b"
+AGENT_FILE: str = "agent.yaml"
 
 #
+
+
+class LLMException(Exception):
+    """Raised for various LLM-related issues"""
 
 
 class ProblemConfig(BaseModel):
@@ -28,6 +31,20 @@ class ProblemConfig(BaseModel):
     desired: int = Field(
         description="Desired volume to achieve (in either of the jugs)"
     )
+
+
+class ConfigFail(BaseModel):
+    """
+    No reasonable WaterJug problem detected
+    """
+
+    msg: str = Field(description="Feedback from a parse failure")
+
+
+type WJConfig = ProblemConfig | ConfigFail
+
+
+#
 
 
 LLM_EXAMPLE_INPUT: str = (
@@ -52,31 +69,28 @@ with a desired goal of 4, and so return {LLM_EXAMPLE_OUTPUT}.
 ##################################################
 
 
-@st.cache_resource
-def _get_client(secret_section: str) -> OpenAI:
-    client = OpenAI(**st.secrets[secret_section])
-
-    # make sure connection actually works
-    client.models.list()
-
-    return client
-
-
-def llm_try_connect() -> None:
+def llm_init() -> Agent[str, WJConfig]:
     """
-    Attempts LLM connection
+    Produces the LLM agent
     """
 
     try:
-        _ = _get_client(LLM_SECRET)
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        st.exception(e)
+        return Agent.from_file(  # type: ignore
+            AGENT_FILE, output_type=WJConfig, system_prompt=LLM_SYSTEM_PROMPT
+        )
+    except Exception as e:
+        raise LLMException(f"Error creating agent from {AGENT_FILE}: {e}") from e
 
 
-#
+def llm_model_name(agent: Agent[str, WJConfig]) -> str:
+    """Best attempt at model identification"""
+
+    if isinstance(agent.model, Model):
+        return agent.model.model_name
+
+    return str(agent.model)
 
 
-@st.cache_data
 def llm_user_prompt(desc: str) -> str:
     """
     Provides the user prompt (with added instruction)
@@ -85,22 +99,12 @@ def llm_user_prompt(desc: str) -> str:
     return f"{desc}. {LLM_JSON_REMINDER}"
 
 
-@st.cache_data
-def llm_convert_description(desc: str) -> Optional[ProblemConfig]:
+def llm_parse_config(agent: Agent[str, WJConfig], desc: str) -> WJConfig:
     """
-    Converts from a supplied prompt to
-    an associated problem configuration
+    Attempts to convert a string to a configuration
     """
 
     try:
-        response = _get_client(LLM_SECRET).responses.parse(
-            model=LLM_MODEL,
-            instructions=LLM_SYSTEM_PROMPT,
-            input=llm_user_prompt(desc),
-            text_format=ProblemConfig,
-        )
-
-        return response.output_parsed
-    except ValidationError as e:
-        st.exception(e)
-        return None
+        return agent.run_sync(llm_user_prompt(desc)).output
+    except Exception as e:
+        raise LLMException(e) from e
