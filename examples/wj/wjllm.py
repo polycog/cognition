@@ -52,18 +52,41 @@ LLM_EXAMPLE_INPUT: str = (
     "a five gallon and a three gallon; "
     "fill one of the jugs with exactly 4 gallons of water."
 )
-LLM_EXAMPLE_OUTPUT: str = '{ "vol1": 3, "vol2": 5, "desired": 4 }'
+LLM_EXAMPLE_OUTPUT: str = ProblemConfig(vol1=5, vol2=3, desired=4).model_dump_json()
 
-LLM_JSON_REMINDER: str = "Return ONLY valid JSON that matches the provided schema."
+LLM_EXAMPLE_BAD_INPUT: str = "Where can I buy water?"
+LLM_EXAMPLE_BAD_OUTPUT: str = ConfigFail(
+    msg="Unable to parse WaterJug configuration from input."
+).model_dump_json()
 
-LLM_SYSTEM_PROMPT: str = f"""
-You are a helpful assistant.
-Please help me to describe an instance of a classic WaterJug puzzle.
+LLM_SYSTEM_PROMPT: str = "You are a helpful assistant."
+
+LLM_USER_PROMPT: str = """
+Please help me to describe an instance of a WaterJug problem.
+
+[General Context]
+
 In WaterJug, you use two jugs with fixed, different capacities (like 3 and 5) to measure a precise amount of water (e.g., 4), with no markings on the jugs, by filling, emptying, and pouring between them to reach a target volume.
-At this point we just need to understand the user's intended configuration of the problem: the volumes of the two jugs, as well as the desired goal volume, neither of which need to take into account units of measurement.
-{LLM_JSON_REMINDER}
-For example, if told that '{LLM_EXAMPLE_INPUT}' then we know the jug volumes are 3 and 5,
-with a desired goal of 4, and so return {LLM_EXAMPLE_OUTPUT}.
+I just need to understand the user's intended configuration of the problem: the volumes of the two jugs, as well as the desired goal volume, neither of which need to take into account units of measurement.
+
+[Output Requirements]
+
+1. Return ONLY valid JSON that matches the provided schema.
+2. If the supplied text cannot be parsed as a reasonable WaterJug problem, there is a configuration failure option.
+
+[Examples]
+
+1. Given '{}'...
+   a configuration would be: {}
+
+2. However, given an input that is clearly not a WaterJug description (e.g., '{}')...
+   a response might be: {}
+
+[Problem Description]
+
+'{}'
+
+Please extract the problem configuration (or failure if not reasonable).
 """
 
 ##################################################
@@ -96,7 +119,13 @@ def llm_user_prompt(desc: str) -> str:
     Provides the user prompt (with added instruction)
     """
 
-    return f"{desc}. {LLM_JSON_REMINDER}"
+    return LLM_USER_PROMPT.format(
+        LLM_EXAMPLE_INPUT,
+        LLM_EXAMPLE_OUTPUT,
+        LLM_EXAMPLE_BAD_INPUT,
+        LLM_EXAMPLE_BAD_OUTPUT,
+        desc,
+    )
 
 
 def llm_parse_config(agent: Agent[str, WJConfig], desc: str) -> WJConfig:

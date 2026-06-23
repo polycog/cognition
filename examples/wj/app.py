@@ -105,7 +105,8 @@ with st.container(border=True):
 
                 with st.chat_message("ai"):
                     st.code(conversion)
-    else:
+
+    if not desc or not conversion:
         if KEY_LLM_OUTPUT in st.session_state:
             del st.session_state[KEY_LLM_OUTPUT]
 
