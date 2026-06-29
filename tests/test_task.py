@@ -117,7 +117,7 @@ class TestTask(unittest.TestCase):
 
         self.assertEqual(tf.state, ["hi"])
 
-        (tf.add_action_factory(lambda _s, _io: [lambda s, _: s[1:]]).run_cycles())
+        tf.add_action_factory(lambda _s, _io: [lambda s, _: s[1:]]).run_cycles()
 
         self.assertEqual(tf.state, [])
 
@@ -130,7 +130,7 @@ class TestTask(unittest.TestCase):
         def a(s: list[str], _io: IOContainer) -> None:
             del s[0]
 
-        (ti.add_action_factory(lambda _s, _io: a).run_cycles())
+        ti.add_action_factory(lambda _s, _io: a).run_cycles()
 
         self.assertEqual(ti.state, [])
 
@@ -372,7 +372,7 @@ class TestTask(unittest.TestCase):
         )
 
         # add as both sensor/actuator
-        (task_io.set_sensor(lst_name, lst).set_actuator(lst_name, lst))
+        task_io.set_sensor(lst_name, lst).set_actuator(lst_name, lst)
 
         # confirm registration
         self.assertEqual(
@@ -434,10 +434,10 @@ class TestTask(unittest.TestCase):
 
             return s == starting_point + goal_diff
 
-        (task_io.add_goal_check(go_goal).run_until_done())
+        task_io.add_goal_check(go_goal).run_until_done()
 
         # confirm ability to remove sensors/actuators
-        (task_io.set_sensor(lst_name, None).set_actuator(lst_name, None))
+        task_io.set_sensor(lst_name, None).set_actuator(lst_name, None)
 
         self.assertEqual(
             str(task_io),

@@ -4,7 +4,7 @@ Practical library additions
 
 from __future__ import annotations
 
-from typing import Any, Optional, Protocol, TYPE_CHECKING, cast, runtime_checkable
+from typing import Any, Optional, Protocol, Self, TYPE_CHECKING, cast, runtime_checkable
 
 from abc import ABC, abstractmethod
 
@@ -350,7 +350,7 @@ class EnhancedTask[S](Task[S]):
 
     def add_operator(
         self, op: Operator[S], self_param: Optional[str] = OPERATOR_SELF_PARAM
-    ) -> tuple[ActionFactory[S], Action[S], EnhancedTask[S]]:
+    ) -> tuple[ActionFactory[S], Action[S], Self]:
         """
         Pass-thru to :func:`add_operator`.
 
@@ -364,7 +364,7 @@ class EnhancedTask[S](Task[S]):
 
     def add_operator_c(
         self, op: Operator[S], self_param: Optional[str] = OPERATOR_SELF_PARAM
-    ) -> EnhancedTask[S]:
+    ) -> Self:
         """
         Pass-thru to :meth:`EnhancedTask.add_operator`.
 

@@ -191,7 +191,7 @@ class TestConvenience(unittest.TestCase):
 
             return can_do
 
-        (t1.add_action_factory(allow_action(do_regular)).run_cycles(100))
+        t1.add_action_factory(allow_action(do_regular)).run_cycles(100)
 
         self.assertFalse(t1.done)
 
@@ -206,14 +206,12 @@ class TestConvenience(unittest.TestCase):
 
         #
 
-        (t2.add_action_factory(allow_action(do_regular)).run_cycles(100))
+        t2.add_action_factory(allow_action(do_regular)).run_cycles(100)
 
         self.assertFalse(t2.done)
 
-        (
-            t2.add_action_factory(allow_action(do_terminal)).add_action_evaluator(
-                uniform_evaluator(1)
-            )
+        t2.add_action_factory(allow_action(do_terminal)).add_action_evaluator(
+            uniform_evaluator(1)
         )
 
         for _ in range(100):

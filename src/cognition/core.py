@@ -12,6 +12,7 @@ from typing import (
     cast,
     Any,
     Optional,
+    Self,
 )
 
 from collections.abc import (
@@ -252,7 +253,7 @@ class Task[S]:
 
         self.reinit()
 
-    def reinit(self) -> Task[S]:
+    def reinit(self) -> Self:
         """
         Restarts the task
 
@@ -332,7 +333,7 @@ class Task[S]:
 
     #
 
-    def add_elaborator(self, e: Elaborator[S]) -> Task[S]:
+    def add_elaborator(self, e: Elaborator[S]) -> Self:
         """
         Adds a state summarizer to the task
 
@@ -370,7 +371,7 @@ class Task[S]:
 
     #
 
-    def add_goal_check(self, p: GoalCheck[S]) -> Task[S]:
+    def add_goal_check(self, p: GoalCheck[S]) -> Self:
         """
         Add a task-state predicate to identify a cause of task completion
 
@@ -408,7 +409,7 @@ class Task[S]:
 
     #
 
-    def add_action_factory(self, f: ActionFactory[S]) -> Task[S]:
+    def add_action_factory(self, f: ActionFactory[S]) -> Self:
         """
         Adds a factory to propose potential action(s) given current state
 
@@ -462,7 +463,7 @@ class Task[S]:
 
     #
 
-    def add_action_evaluator(self, ae: ActionEvaluator[S]) -> Task[S]:
+    def add_action_evaluator(self, ae: ActionEvaluator[S]) -> Self:
         """
         Adds an evaluator of potential actions
 
@@ -544,7 +545,7 @@ class Task[S]:
 
     #
 
-    def run_phase(self) -> Task[S]:
+    def run_phase(self) -> Self:
         """
         Executes the current task phase
 
@@ -556,7 +557,7 @@ class Task[S]:
 
         return self
 
-    def run_cycles(self, n: int = 1) -> Task[S]:
+    def run_cycles(self, n: int = 1) -> Self:
         """
         Executes n cycles of the full task-phases
 
@@ -570,7 +571,7 @@ class Task[S]:
 
         return self
 
-    def run_until_done(self) -> Task[S]:
+    def run_until_done(self) -> Self:
         """
         Runs until task completion
 
@@ -614,7 +615,7 @@ class Task[S]:
         else:
             d[name] = buffer
 
-    def set_sensor(self, name: str, buffer: Any) -> Task[S]:
+    def set_sensor(self, name: str, buffer: Any) -> Self:
         """
         Sets value of ``io.i.name``
 
@@ -627,7 +628,7 @@ class Task[S]:
 
         return self
 
-    def set_actuator(self, name: str, buffer: Any) -> Task[S]:
+    def set_actuator(self, name: str, buffer: Any) -> Self:
         """
         Sets value of ``io.o.name``
 
