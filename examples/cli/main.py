@@ -17,7 +17,6 @@ from cognition import (
     EnhancedTask,
     IOContainer,
     NamedOperator,
-    Task,
     stringify,
 )
 
@@ -141,7 +140,12 @@ def cmd_history() -> CommandReturn:
 
 #
 
+t = EnhancedTask(lambda: CLIState(CLIStage.GET_CMD, [])).set_sensor(
+    "cli", AttrReferral(cli_status)
+)
 
+
+@t.operator("get_command")
 class GetCommand(NamedOperator[CLIState]):
     """GET_CMD -> $"""
 
@@ -153,6 +157,7 @@ class GetCommand(NamedOperator[CLIState]):
         state.stage = state.stage.next()
 
 
+@t.operator("exec_command")
 class ExecCommand(NamedOperator[CLIState]):
     """EXEC_CMD -> execute"""
 
@@ -178,14 +183,6 @@ class ExecCommand(NamedOperator[CLIState]):
         print()
 
         state.stage = state.stage.next()
-
-
-t: Task[CLIState] = (
-    EnhancedTask(lambda: CLIState(CLIStage.GET_CMD, []))
-    .add_operator_c(GetCommand("get_command"))
-    .add_operator_c(ExecCommand("exec_command"))
-    .set_sensor("cli", AttrReferral(cli_status))
-)
 
 
 @t.goal_check

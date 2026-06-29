@@ -21,6 +21,7 @@ from functools import cmp_to_key
 
 from .functypes import (
     BiFunction,
+    Function,
     Predicate,
     Supplier,
     TriFunction,
@@ -375,6 +376,38 @@ class EnhancedTask[S](Task[S]):
 
         self.add_operator(op, self_param)
         return self
+
+    def operator(
+        self,
+        op_name: str,
+        self_param: Optional[str] = OPERATOR_SELF_PARAM,
+        **kwargs: Any,
+    ) -> Function[type[NamedOperator[S]], type[NamedOperator[S]]]:
+        """
+        Decorator version of :meth:`EnhancedTask.add_operator`
+        that assumes instantiation takes a positional name
+        and arbitrary keywords
+
+        :param op_name: name to give to the added instance
+        :param self_param: if not ``None``, action param referring to the op
+        :param kwargs: operator params
+        :return: parameterized named-object decorator
+        """
+
+        def cls_dec(cls: type[NamedOperator[S]]) -> type[NamedOperator[S]]:
+            """
+            Parameterized named-object decorator that adds an
+            operator instance to this task.
+
+            :param cls: named operator to instantiate
+            :return: added class
+            """
+
+            self.add_operator(cls(op_name, **kwargs), self_param)
+
+            return cls
+
+        return cls_dec
 
     def _terminal_goal_check(self) -> bool:
         """

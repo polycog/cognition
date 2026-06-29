@@ -167,6 +167,46 @@ class TestConvenience(unittest.TestCase):
             AttrReferral(self.io_source), AttrReferral(self.io_source)
         )
 
+    def test_named_op_decorator(self) -> None:
+        """Confirming named operator decorator"""
+
+        t: EnhancedTask[bool] = EnhancedTask(lambda: False, enable_terminal_check=True)
+
+        op_name = "done"
+        act_name = f"{op_name}[terminal=True]"
+
+        @t.operator(op_name, terminal=True)
+        class Done(NamedOperator[bool]):  # pylint: disable=unused-variable
+            """one and only op"""
+
+            def can_perform(self, state: bool, _io: IOContainer) -> bool:
+                return not state
+
+            def perform(self, _state: bool, _io: IOContainer) -> bool:
+                return True
+
+        t.run_until_done()
+
+        self.assertEqual(
+            str(t),
+            "\n".join(
+                (
+                    f"Phase={Phase.GOALCHECK.name}",
+                    f"State={True}",
+                    f"Done?={True}",
+                    f"Chosen={act_name}",
+                    f"Action Factories={op_name}",
+                    f"Potential Actions={act_name}",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    "Goal Checks=",
+                    "Elaborators=",
+                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
+                    f"Actuators={Task.ACTUATOR_LOG}",
+                )
+            ),
+        )
+
     def test_terminal(self) -> None:
         """Confirming terminal goal check"""
 
