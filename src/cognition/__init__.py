@@ -12,4 +12,5 @@ from .core import *  # noqa: F403
 from .convenience import *  # noqa: F403
 
 from .chain import *  # noqa: F403
-from .search import *  # noqa: F403
+
+from .planning import *  # noqa: F403

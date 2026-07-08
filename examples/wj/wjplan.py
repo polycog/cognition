@@ -16,10 +16,8 @@ from math import gcd
 
 from cognition import (
     Predicate,
-    SearchOption,
-    SearchState,
-    Task,
-    create_search_task,
+    SearchPlanner,
+    SearchPlannerOption,
     stringify,
     succession_via_options,
 )
@@ -62,7 +60,7 @@ class WhichJug(IntEnum):
         return WhichJug.FIRST if self == WhichJug.SECOND else WhichJug.SECOND
 
 
-class JugPairOption(SearchOption[JugPair, "JugPairOption"]):
+class JugPairOption(SearchPlannerOption[JugPair, "JugPairOption"]):
     """
     An option on a pair of jugs
     """
@@ -224,7 +222,7 @@ class TooLong:
     requiring too many steps of inference
     """
 
-    cycles: int
+    steps: int
 
 
 @dataclass(frozen=True)
@@ -234,7 +232,7 @@ class Success:
     producing a plan
     """
 
-    cycles: int
+    explored: int
     plan: Sequence[tuple[str, int, int]]
 
 
@@ -290,7 +288,7 @@ def run_waterjug(vol1: int, vol2: int, desired: int, max_steps: int) -> WJResult
 
     init_jugs: JugPair = (Jug(vol1, 0), Jug(vol2, 0))
 
-    wj: Task[SearchState[JugPair, JugPairOption]] = create_search_task(
+    planner = SearchPlanner(
         init_jugs,
         create_wj_goal(desired),
         succession_via_options(
@@ -301,22 +299,22 @@ def run_waterjug(vol1: int, vol2: int, desired: int, max_steps: int) -> WJResult
             PourOption(WhichJug.FIRST),
             PourOption(WhichJug.SECOND),
         ),
-    ).run_cycles(max_steps)
+    ).run(max_steps)
 
     #
 
-    if not wj.done:
-        return TooLong(wj.num_cycles)
+    if planner.still_searching:
+        return TooLong(max_steps)
 
-    if not wj.state.action_path:
+    if not planner.plan_found:
         return InvalidConfiguration("There is no possible solution :'(")
 
     sim_state: JugPair = init_jugs
 
     plan = [("Initial State", sim_state[0].contents, sim_state[1].contents)]
 
-    for a in wj.state.action_path:
+    for a in planner.plan:
         sim_state, _ = a.invoke(sim_state)
         plan.append((str(a), sim_state[0].contents, sim_state[1].contents))
 
-    return Success(wj.num_cycles, plan)
+    return Success(planner.states_explored, plan)

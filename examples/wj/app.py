@@ -156,14 +156,14 @@ if all(k in st.session_state for k in (KEY_MAXSTEPS, KEY_LLM_OUTPUT)):
             case InvalidConfiguration(msg=m):
                 st.error(m)
 
-            case TooLong(cycles=c):
+            case TooLong(steps=c):
                 st.warning(
                     f"Did not complete given max steps ({c}); "
-                    "you can try extending this limit or choose a different seed."
+                    "you can try extending this limit."
                 )
 
-            case Success(cycles=c, plan=p):
-                st.success(f"Success (in {c} planner steps)")
+            case Success(explored=e, plan=p):
+                st.success(f"Success (after exploring {e} planner states)")
 
                 st.dataframe(
                     pd.DataFrame(

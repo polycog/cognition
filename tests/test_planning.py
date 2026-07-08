@@ -1,5 +1,5 @@
 """
-Tests for search code
+Tests for planning code
 """
 
 from typing import cast
@@ -8,23 +8,19 @@ from enum import IntEnum
 
 from collections import Counter
 
-from collections.abc import (
-    Iterable,
-    Sequence,
-)
+from collections.abc import Iterable
 
 import unittest
 
 from cognition import (
-    Frontier,
+    FrontierManager,
     FrontierNode,
     PriorityQueue,
     Queue,
-    SearchOption,
-    SearchState,
+    SearchPlanner,
+    SearchPlannerOption,
     Stack,
-    Task,
-    create_search_task,
+    Supplier,
     stringify,
     succession_via_options,
 )
@@ -33,7 +29,7 @@ from cognition import (
 
 
 class TestFrontier(unittest.TestCase):
-    """Tests for search data structures"""
+    """Tests frontier data structures"""
 
     def setUp(self) -> None:
         """Common testing info"""
@@ -47,7 +43,7 @@ class TestFrontier(unittest.TestCase):
     def test_stack(self) -> None:
         """testing stack code"""
 
-        ds: Frontier[int, str] = Stack()
+        ds: FrontierManager[int, str] = Stack()
 
         #
 
@@ -91,7 +87,7 @@ class TestFrontier(unittest.TestCase):
     def test_queue(self) -> None:
         """testing queue code"""
 
-        ds: Frontier[int, str] = Queue()
+        ds: FrontierManager[int, str] = Queue()
 
         #
 
@@ -145,7 +141,7 @@ class TestFrontier(unittest.TestCase):
     def test_pq(self) -> None:
         """testing priority queue code"""
 
-        ds: Frontier[int, str] = PriorityQueue()
+        ds: FrontierManager[int, str] = PriorityQueue()
 
         #
 
@@ -270,8 +266,8 @@ def in_bucharest(city: str) -> bool:
     return city == "Bucharest"
 
 
-class TestSearch(unittest.TestCase):
-    """Tests for search code"""
+class TestSearchPlanning(unittest.TestCase):
+    """Tests search planner code"""
 
     def setUp(self) -> None:
         """Common testing info"""
@@ -281,141 +277,88 @@ class TestSearch(unittest.TestCase):
     def test_romania_exhaustion(self) -> None:
         """testing search across Romania without achievable goal"""
 
-        t = create_search_task(
+        planner = SearchPlanner(
             self.initial_state,
             lambda city: city == "does not exist",
             navigate_romania,
             Stack,
         )
-        t.run_until_done()
 
-        self.assertTrue(t.state.done)
-        self.assertIsNone(t.state.path_cost)
-        self.assertIsNone(t.state.action_path)
-        self.assertIsNone(t.state.final_state)
+        # there are 20 distinct cities,
+        # so assuming you can get to all
+        # of them from start city...
+        planner.run(max_steps=18)
+        self.assertTrue(planner.still_searching)
 
-        explored: int = len(t.state.explored)
-        self.assertEqual(explored, 20)
+        planner.run()
 
-        self.assertTrue(t.state.frontier.empty)
+        self.assertFalse(planner.still_searching)
+        self.assertEqual(planner.states_explored, 20)
+
+        self.assertFalse(planner.plan_found)
+
+        with self.assertRaises(RuntimeError):
+            _ = planner.plan
+
+        with self.assertRaises(RuntimeError):
+            _ = planner.plan_cost
+
+    def _test_success(
+        self,
+        ds: Supplier[FrontierManager[str, str]],
+        expected_explored: int,
+        expected_cost: int,
+        expected_plan: list[str],
+    ) -> None:
+        """
+        common testing code across frontiers
+        (given successful parameters)
+        """
+
+        planner = SearchPlanner(
+            self.initial_state, in_bucharest, navigate_romania, ds
+        ).run()
+
+        self.assertFalse(planner.still_searching)
+        self.assertEqual(planner.states_explored, expected_explored)
+
+        self.assertTrue(planner.plan_found)
+        self.assertEqual(cast(int, planner.plan_cost), expected_cost)
+        self.assertSequenceEqual(
+            planner.plan,
+            expected_plan,
+        )
 
     def test_romania_dfs(self) -> None:
         """testing search across Romania using DFS"""
 
-        t = create_search_task(
-            self.initial_state,
-            in_bucharest,
-            navigate_romania,
+        self._test_success(
             Stack,
-            # debug=True
-        )
-        t.run_until_done()
-
-        self.assertTrue(t.state.done)
-
-        final: str = cast(str, t.state.final_state)
-        self.assertEqual(final, "Bucharest")
-
-        dist: int = cast(int, t.state.path_cost)
-        self.assertEqual(dist, 575)
-
-        explored: int = len(t.state.explored)
-        self.assertEqual(explored, 11)
-
-        self.assertFalse(t.state.frontier.empty)
-
-        actions: Sequence[str] = cast(Sequence[str], t.state.action_path)
-        self.assertSequenceEqual(
-            actions,
+            11,
+            575,
             ["Zerind", "Oradea", "Sibiu", "Rimnicu Vilcea", "Pitesti", "Bucharest"],
         )
 
     def test_romania_bfs(self) -> None:
         """testing search across Romania using BFS"""
 
-        t = create_search_task(
-            self.initial_state,
-            in_bucharest,
-            navigate_romania,
-            Queue,
-            # debug=True
-        )
-        t.run_until_done()
-
-        self.assertTrue(t.state.done)
-
-        final: str = cast(str, t.state.final_state)
-        self.assertEqual(final, "Bucharest")
-
-        dist: int = cast(int, t.state.path_cost)
-        self.assertEqual(dist, 450)
-
-        explored: int = len(t.state.explored)
-        self.assertEqual(explored, 8)
-
-        self.assertFalse(t.state.frontier.empty)
-
-        actions: Sequence[str] = cast(Sequence[str], t.state.action_path)
-        self.assertSequenceEqual(actions, ["Sibiu", "Fagaras", "Bucharest"])
+        self._test_success(Queue, 8, 450, ["Sibiu", "Fagaras", "Bucharest"])
 
     def test_romania_ucs(self) -> None:
         """testing search across Romania using UCS"""
 
-        t = create_search_task(
-            self.initial_state,
-            in_bucharest,
-            navigate_romania,
-            PriorityQueue,
-            # debug=True
-        )
-        t.run_until_done()
-
-        self.assertTrue(t.state.done)
-
-        final: str = cast(str, t.state.final_state)
-        self.assertEqual(final, "Bucharest")
-
-        dist: int = cast(int, t.state.path_cost)
-        self.assertEqual(dist, 418)
-
-        explored: int = len(t.state.explored)
-        self.assertEqual(explored, 12)
-
-        self.assertFalse(t.state.frontier.empty)
-
-        actions: Sequence[str] = cast(Sequence[str], t.state.action_path)
-        self.assertSequenceEqual(
-            actions, ["Sibiu", "Rimnicu Vilcea", "Pitesti", "Bucharest"]
+        self._test_success(
+            PriorityQueue, 12, 418, ["Sibiu", "Rimnicu Vilcea", "Pitesti", "Bucharest"]
         )
 
     def test_romania_astar(self) -> None:
         """testing search across Romania using A*"""
 
-        t = create_search_task(
-            self.initial_state,
-            in_bucharest,
-            navigate_romania,
+        self._test_success(
             lambda: PriorityQueue(straight_line_to_bucharest),
-            # debug=True
-        )
-        t.run_until_done()
-
-        self.assertTrue(t.state.done)
-
-        final: str = cast(str, t.state.final_state)
-        self.assertEqual(final, "Bucharest")
-
-        dist: int = cast(int, t.state.path_cost)
-        self.assertEqual(dist, 418)
-
-        explored: int = len(t.state.explored)
-        self.assertEqual(explored, 5)
-
-        self.assertFalse(t.state.frontier.empty)
-
-        actions: Sequence[str] = cast(Sequence[str], t.state.action_path)
-        self.assertSequenceEqual(
-            actions, ["Sibiu", "Rimnicu Vilcea", "Pitesti", "Bucharest"]
+            5,
+            418,
+            ["Sibiu", "Rimnicu Vilcea", "Pitesti", "Bucharest"],
         )
 
 
@@ -431,15 +374,10 @@ class USCoin(IntEnum):
     PENNY = 1
 
 
-class AddCoin(SearchOption[int, USCoin]):
+class AddCoin(SearchPlannerOption[int, USCoin]):
     """Option to add a coin"""
 
     def __init__(self, coin: USCoin):
-        """
-        Indicates the name of the coin
-        and its value in cents
-        """
-
         super().__init__(coin)
 
     def available(self, _: int) -> bool:
@@ -449,46 +387,8 @@ class AddCoin(SearchOption[int, USCoin]):
         return (state + self.action.value, 1)
 
 
-class TestSearchConvenience(unittest.TestCase):
-    """Tests for search convenience code"""
-
-    @staticmethod
-    def _solve_coins(goal_cents: int) -> Task[SearchState[int, USCoin]]:
-        """produces + runs the coin-solving task"""
-
-        return create_search_task(
-            0,
-            lambda s: s == goal_cents,
-            succession_via_options(*(AddCoin(c) for c in USCoin)),
-            Queue,
-            # each coin is a single action
-            # and queue = BFS, so...
-            # produces sum with fewest coins
-        ).run_until_done()
-
-    def test_search_state(self) -> None:
-        """
-        Smaller problem to confirm state representation
-        """
-
-        t = TestSearchConvenience._solve_coins(25)
-
-        frontier: Frontier[int, USCoin] = Queue()
-        frontier.add(FrontierNode(10, (USCoin.DIME,), 1))
-        frontier.add(FrontierNode(5, (USCoin.NICKLE,), 1))
-        frontier.add(FrontierNode(1, (USCoin.PENNY,), 1))
-
-        self.assertEqual(
-            str(t.state),
-            "SearchState("
-            f"explored={ { 0 } }, "
-            f"frontier={ frontier }, "
-            f"done={ True }, "
-            f"final_state={ 25 }, "
-            f"action_path={ (USCoin.QUARTER,) }, "
-            f"path_cost={ 1 }"
-            ")",
-        )
+class TestPlanningConvenience(unittest.TestCase):
+    """Tests planning convenience code"""
 
     def test_fewest_coins(self) -> None:
         """
@@ -497,18 +397,24 @@ class TestSearchConvenience(unittest.TestCase):
         """
 
         goal_cents: int = 119
-        t_puzzle = TestSearchConvenience._solve_coins(goal_cents)
+        planner = SearchPlanner(
+            0,
+            lambda s: s == goal_cents,
+            succession_via_options(*(AddCoin(c) for c in USCoin)),
+            Queue,
+            # each coin is a single action
+            # and queue = BFS, so...
+            # produces sum with fewest coins
+        ).run()
 
         #
 
-        self.assertTrue(t_puzzle.done)
-        self.assertTrue(t_puzzle.state.done)
-        self.assertEqual(t_puzzle.state.final_state, goal_cents)
+        self.assertFalse(planner.still_searching)
 
-        coint_counts = Counter(cast(Sequence[USCoin], t_puzzle.state.action_path))
-
+        self.assertTrue(planner.plan_found)
+        self.assertEqual(planner.plan_cost, 10)
         self.assertDictEqual(
-            dict(coint_counts),
+            dict(Counter(planner.plan)),
             {
                 USCoin.QUARTER: 4,  # 100 +
                 USCoin.DIME: 1,  #     10 +
