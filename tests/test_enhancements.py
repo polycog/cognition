@@ -1,5 +1,5 @@
 """
-Tests for convenience code
+Tests for enhancement code
 """
 
 from typing import (
@@ -143,8 +143,8 @@ class ChangeOp(NamedOperator[int]):
 #
 
 
-class TestConvenience(unittest.TestCase):
-    """Tests for convenience code"""
+class TestEnhancements(unittest.TestCase):
+    """Tests for enhancement code"""
 
     def setUp(self) -> None:
         self.vote_yay = create_named_action(
