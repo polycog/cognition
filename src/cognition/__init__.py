@@ -2,7 +2,7 @@
 Polycog cognition library
 """
 
-__version__ = "0.2"
+__version__ = "1.0"
 
 from .functypes import *  # noqa: F403
 from .utility import *  # noqa: F403
