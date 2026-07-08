@@ -8,6 +8,7 @@ import unittest
 
 from cognition import (
     AttrReferral,
+    MutableWrapper,
     optionally_name,
     stringify,
 )
@@ -17,6 +18,27 @@ from cognition import (
 
 class TestUtility(unittest.TestCase):
     """Tests for utility code"""
+
+    def test_mutable_wrapper(self) -> None:
+        """Confirming MutableWrapper"""
+
+        start = "start"
+        end = "end"
+
+        r1 = MutableWrapper(start)
+        r2 = r1
+
+        self.assertEqual(r1.value, start)
+        self.assertEqual(r2.value, start)
+        self.assertEqual(str(r1), start)
+        self.assertEqual(repr(r1), f"{ type(r1).__name__ }({ repr(start) })")
+
+        r2.value = end
+
+        self.assertEqual(r1.value, end)
+        self.assertEqual(r2.value, end)
+        self.assertEqual(str(r2), end)
+        self.assertEqual(repr(r2), f"{ type(r1).__name__ }({ repr(end) })")
 
     def test_optionally_name(self) -> None:
         """Confirming optionally_name"""

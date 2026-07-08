@@ -18,6 +18,30 @@ from functools import wraps
 #
 
 
+# pylint: disable=too-few-public-methods
+class MutableWrapper[T]:
+    """
+    Supports in-place modification
+    of (potentially) immutable types
+    given a shared reference
+    """
+
+    value: T
+
+    def __init__(self, value: T) -> None:
+        """
+        :param value: initial value
+        """
+
+        self.value = value
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+    def __repr__(self) -> str:
+        return f"MutableWrapper({self.value!r})"
+
+
 class AttrReferral:
     """
     Read-only .key access to a value via external mapping { key:value }
