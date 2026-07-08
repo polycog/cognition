@@ -9,6 +9,7 @@ from typing import Any, Optional, Protocol, Self, TYPE_CHECKING, cast, runtime_c
 from abc import ABC, abstractmethod
 
 from collections.abc import (
+    Generator,
     Iterable,
     Mapping,
 )
@@ -16,6 +17,8 @@ from collections.abc import (
 from types import MappingProxyType
 
 from enum import IntEnum
+
+from contextlib import contextmanager
 
 from functools import cmp_to_key
 
@@ -28,6 +31,7 @@ from .functypes import (
 )
 
 from .utility import (
+    AttrReferral,
     ImplementsLessThan,
     optionally_name,
     stringify,
@@ -52,6 +56,9 @@ if TYPE_CHECKING:
 OPERATOR_SELF_PARAM: str = "_op"
 """Default :class:`NamedAction` parameter key to access source operator"""
 
+ARGS_ATTR: str = "args"
+"""io.i.name for run arguments"""
+
 
 class Rank(IntEnum):
     """
@@ -66,6 +73,25 @@ class Rank(IntEnum):
 
     LOW = 3
     """Low importance"""
+
+
+#
+
+
+@contextmanager
+def args_added[S](
+    t: Task[S], namespace: str = ARGS_ATTR, **info: Any
+) -> Generator[Task[S], None, None]:
+    """
+    Provides `io.i.namespace` temporarily
+
+    :param t: task for which to provide arguments
+    :param info: io.i.namespace.key=value
+    """
+
+    t.set_sensor(namespace, AttrReferral(info))
+    yield t
+    t.set_sensor(namespace, None)
 
 
 def create_elaborator[S](

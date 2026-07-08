@@ -28,6 +28,7 @@ from cognition import (
     Phase,
     Rank,
     Task,
+    args_added,
     create_named_action,
     create_elaborator,
     operator_sorting_key,
@@ -166,6 +167,43 @@ class TestEnhancements(unittest.TestCase):
         self.mock_io = IOContainer(
             AttrReferral(self.io_source), AttrReferral(self.io_source)
         )
+
+    def test_args(self) -> None:
+        """Confirming arguments context manager"""
+
+        state_start = 0
+
+        t = EnhancedTask(lambda: state_start, enable_terminal_check=True)
+
+        self.assertEqual(t.state, state_start)
+
+        #
+
+        namespace = "foo"
+        arg_name = "bar"
+        arg_val = 42
+
+        # pylint: disable=unused-variable
+        @t.operator("copy", terminal=True, arg_name=arg_name)
+        class ArgCopy(NamedOperator[int]):
+            """Copies the arg"""
+
+            def __init__(self, name: str, arg_name: str, **kwargs: Any) -> None:
+                super().__init__(name, **kwargs)
+                self._arg = arg_name
+
+            def can_perform(self, _state: int, _io: IOContainer) -> bool:
+                return True
+
+            def perform(self, _state: int, io: IOContainer) -> int:
+                args = getattr(io.i, namespace)
+                return cast(int, getattr(args, self._arg))
+
+        with args_added(t, namespace=namespace, **{arg_name: arg_val}):
+            t.run_until_done()
+
+        self.assertTrue(t.done)
+        self.assertEqual(t.state, arg_val)
 
     def test_named_op_decorator(self) -> None:
         """Confirming named operator decorator"""
