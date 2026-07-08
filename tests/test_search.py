@@ -16,16 +16,187 @@ from collections.abc import (
 import unittest
 
 from cognition import (
+    Frontier,
+    FrontierNode,
     PriorityQueue,
     Queue,
     SearchOption,
+    SearchState,
     Stack,
+    Task,
     create_search_task,
     stringify,
     succession_via_options,
 )
 
 #
+
+
+class TestFrontier(unittest.TestCase):
+    """Tests for search data structures"""
+
+    def setUp(self) -> None:
+        """Common testing info"""
+
+        self.nodes = [
+            FrontierNode(3, ("three",), 5),
+            FrontierNode(2, ("two",), 3),
+            FrontierNode(0, ("zero",), 4),
+        ]
+
+    def test_stack(self) -> None:
+        """testing stack code"""
+
+        ds: Frontier[int, str] = Stack()
+
+        #
+
+        self.assertEqual(str(ds), "Stack(items=[])")
+        self.assertTrue(ds.empty)
+
+        #
+
+        for n in self.nodes:
+            ds.add(n)
+
+        self.assertEqual(
+            str(ds), f"Stack(items=[{self.nodes[0]}, {self.nodes[1]}, {self.nodes[2]}])"
+        )
+        self.assertFalse(ds.empty)
+
+        #
+
+        n = ds.remove()
+
+        self.assertEqual(n, self.nodes[2])
+        self.assertEqual(str(ds), f"Stack(items=[{self.nodes[0]}, {self.nodes[1]}])")
+        self.assertFalse(ds.empty)
+
+        #
+
+        n = ds.remove()
+
+        self.assertEqual(n, self.nodes[1])
+        self.assertEqual(str(ds), f"Stack(items=[{self.nodes[0]}])")
+        self.assertFalse(ds.empty)
+
+        #
+
+        n = ds.remove()
+
+        self.assertEqual(n, self.nodes[0])
+        self.assertEqual(str(ds), "Stack(items=[])")
+        self.assertTrue(ds.empty)
+
+    def test_queue(self) -> None:
+        """testing queue code"""
+
+        ds: Frontier[int, str] = Queue()
+
+        #
+
+        self.assertEqual(str(ds), "Queue(items=deque([]))")
+        self.assertTrue(ds.empty)
+
+        #
+
+        for n in self.nodes:
+            ds.add(n)
+
+        self.assertEqual(
+            str(ds),
+            f"Queue(items=deque([{self.nodes[2]}, {self.nodes[1]}, {self.nodes[0]}]))",
+        )
+        self.assertFalse(ds.empty)
+
+        #
+
+        n = ds.remove()
+
+        self.assertEqual(n, self.nodes[0])
+        self.assertEqual(
+            str(ds),
+            f"Queue(items=deque([{self.nodes[2]}, {self.nodes[1]}]))",
+        )
+        self.assertFalse(ds.empty)
+
+        #
+
+        n = ds.remove()
+
+        self.assertEqual(n, self.nodes[1])
+        self.assertEqual(
+            str(ds),
+            f"Queue(items=deque([{self.nodes[2]}]))",
+        )
+        self.assertFalse(ds.empty)
+
+        #
+
+        n = ds.remove()
+
+        self.assertEqual(n, self.nodes[2])
+        self.assertEqual(
+            str(ds),
+            "Queue(items=deque([]))",
+        )
+        self.assertTrue(ds.empty)
+
+    def test_pq(self) -> None:
+        """testing priority queue code"""
+
+        ds: Frontier[int, str] = PriorityQueue()
+
+        #
+
+        self.assertEqual(str(ds), "PriorityQueue(heuristic=None, items=[])")
+        self.assertTrue(ds.empty)
+
+        #
+
+        for n in self.nodes:
+            ds.add(n)
+
+        def _seq(indices: list[int]) -> str:
+            return ", ".join(
+                str((self.nodes[idx].path_cost, self.nodes[idx])) for idx in indices
+            )
+
+        self.assertEqual(
+            str(ds),
+            f"PriorityQueue(heuristic=None, items=[{ _seq([1, 0, 2]) }])",
+        )
+        self.assertFalse(ds.empty)
+
+        #
+
+        n = ds.remove()
+
+        self.assertEqual(n, self.nodes[1])
+        self.assertEqual(
+            str(ds),
+            f"PriorityQueue(heuristic=None, items=[{ _seq([2, 0]) }])",
+        )
+        self.assertFalse(ds.empty)
+
+        #
+
+        n = ds.remove()
+
+        self.assertEqual(n, self.nodes[2])
+        self.assertEqual(
+            str(ds),
+            f"PriorityQueue(heuristic=None, items=[{ _seq([0]) }])",
+        )
+        self.assertFalse(ds.empty)
+
+        #
+
+        n = ds.remove()
+
+        self.assertEqual(n, self.nodes[0])
+        self.assertEqual(str(ds), "PriorityQueue(heuristic=None, items=[])")
+        self.assertTrue(ds.empty)
 
 
 def navigate_romania(city: str) -> Iterable[tuple[str, str, int]]:
@@ -281,27 +452,54 @@ class AddCoin(SearchOption[int, USCoin]):
 class TestSearchConvenience(unittest.TestCase):
     """Tests for search convenience code"""
 
+    @staticmethod
+    def _solve_coins(goal_cents: int) -> Task[SearchState[int, USCoin]]:
+        """produces + runs the coin-solving task"""
+
+        return create_search_task(
+            0,
+            lambda s: s == goal_cents,
+            succession_via_options(*(AddCoin(c) for c in USCoin)),
+            Queue,
+            # each coin is a single action
+            # and queue = BFS, so...
+            # produces sum with fewest coins
+        ).run_until_done()
+
+    def test_search_state(self) -> None:
+        """
+        Smaller problem to confirm state representation
+        """
+
+        t = TestSearchConvenience._solve_coins(25)
+
+        frontier: Frontier[int, USCoin] = Queue()
+        frontier.add(FrontierNode(10, (USCoin.DIME,), 1))
+        frontier.add(FrontierNode(5, (USCoin.NICKLE,), 1))
+        frontier.add(FrontierNode(1, (USCoin.PENNY,), 1))
+
+        self.assertEqual(
+            str(t.state),
+            "SearchState("
+            f"explored={ { 0 } }, "
+            f"frontier={ frontier }, "
+            f"done={ True }, "
+            f"final_state={ 25 }, "
+            f"action_path={ (USCoin.QUARTER,) }, "
+            f"path_cost={ 1 }"
+            ")",
+        )
+
     def test_fewest_coins(self) -> None:
         """
         Use planning to solve smallest
         change via coins
         """
 
-        us_coins: Sequence[AddCoin] = [AddCoin(c) for c in USCoin]
-
         goal_cents: int = 119
+        t_puzzle = TestSearchConvenience._solve_coins(goal_cents)
 
-        t_puzzle = create_search_task(
-            0,
-            lambda s: s == goal_cents,
-            succession_via_options(*us_coins),
-            Queue,
-            # each coin is a single action
-            # and queue = BFS, so...
-            # produces sum with fewest coins
-        )
-
-        t_puzzle.run_until_done()
+        #
 
         self.assertTrue(t_puzzle.done)
         self.assertTrue(t_puzzle.state.done)

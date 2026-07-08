@@ -56,7 +56,7 @@ class FrontierNode[SS, SA]:
 
 class Frontier[SS, SA](ABC):
     """
-    Manages of graph search options
+    Data structure to manage the search frontier
     """
 
     @property
@@ -92,8 +92,8 @@ class Stack[SS, SA](Frontier[SS, SA]):
     def __init__(self) -> None:
         self._items = []
 
-    def __str__(self) -> str:  # pragma: no cover
-        return f"Stack(items=[{self._items}])"
+    def __str__(self) -> str:
+        return f"Stack(items={self._items})"
 
     @property
     def empty(self) -> bool:
@@ -116,8 +116,8 @@ class Queue[SS, SA](Frontier[SS, SA]):
     def __init__(self) -> None:
         self._items = deque()
 
-    def __str__(self) -> str:  # pragma: no cover
-        return f"Queue(items=[{self._items}])"
+    def __str__(self) -> str:
+        return f"Queue(items={self._items})"
 
     @property
     def empty(self) -> bool:
@@ -146,12 +146,9 @@ class PriorityQueue[SS, SA](Frontier[SS, SA]):
         self._items = []
         self._heuristic = heuristic
 
-    def __str__(self) -> str:  # pragma: no cover
+    def __str__(self) -> str:
         return (
-            "PriorityQueue("
-            f"heuristic=[{self._heuristic}], "
-            f"items=[{self._items}]"
-            ")"
+            "PriorityQueue(" f"heuristic={self._heuristic}, " f"items={self._items}" ")"
         )
 
     @property
@@ -214,15 +211,15 @@ class SearchState[SS: Hashable, SA]:
         self.action_path = node.path
         self.path_cost = node.path_cost
 
-    def __str__(self) -> str:  # pragma: no cover
+    def __str__(self) -> str:
         return (
             "SearchState("
-            f"explored=[{self.explored}], "
-            f"frontier=[{str(self.frontier)}], "
-            f"done=[{self.done}], "
-            f"final_state=[{self.final_state}], "
-            f"action_path=[{self.action_path}], "
-            f"path_cost=[{self.path_cost}]"
+            f"explored={self.explored}, "
+            f"frontier={str(self.frontier)}, "
+            f"done={self.done}, "
+            f"final_state={self.final_state}, "
+            f"action_path={self.action_path}, "
+            f"path_cost={self.path_cost}"
             ")"
         )
 
@@ -232,7 +229,6 @@ def create_search_task[SS: Hashable, SA](
     is_goal: Predicate[SS],
     successors: Succession[SS, SA],
     frontier_factory: Supplier[Frontier[SS, SA]] = PriorityQueue,
-    debug: bool = False,
 ) -> Task[SearchState[SS, SA]]:
     """
     Produce a search-based planner
@@ -241,7 +237,6 @@ def create_search_task[SS: Hashable, SA](
     :param is_goal: goal predicate
     :param successors: function to produce node transitions
     :param frontier_factory: function to produce prioritize frontier nodes
-    :param debug: if ``True`` outputs search info
     :return: graph-search task
     """
 
@@ -273,36 +268,21 @@ def create_search_task[SS: Hashable, SA](
         """Always propose searching"""
 
         @stringify("search")
-        def search_action(sa: SearchState[SS, SA], io: IOContainer) -> None:
+        def search_action(sa: SearchState[SS, SA], _io: IOContainer) -> None:
             """Graph search step"""
 
             if sa.frontier.empty:
                 return sa.failure()
 
             node = sa.frontier.remove()
-            if debug:  # pragma: no cover
-                print(f"Graph Search: remove ({node})", file=io.o.log)
 
             if is_goal(node.state):
-                if debug:  # pragma: no cover
-                    print(f"Graph Search: goal achieved ({node})", file=io.o.log)
                 return sa.success(node)
 
             if node.state not in sa.explored:
                 sa.explored.add(node.state)
-                if debug:  # pragma: no cover
-                    print(
-                        "Graph Search: unexplored "
-                        f"({node.state}) -> |{len(sa.explored)}|",
-                        file=io.o.log,
-                    )
 
                 for state_p, action, cost in successors(node.state):
-                    if debug:  # pragma: no cover
-                        print(
-                            f"Graph Search: add ({state_p}, {action}, {cost})",
-                            file=io.o.log,
-                        )
                     sa.frontier.add(
                         FrontierNode(
                             state=state_p,
