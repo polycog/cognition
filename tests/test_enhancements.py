@@ -205,6 +205,20 @@ class TestEnhancements(unittest.TestCase):
         self.assertTrue(t.done)
         self.assertEqual(t.state, arg_val)
 
+        #
+
+        t.reinit()
+
+        self.assertEqual(t.state, state_start)
+        self.assertEqual(
+            t(max_cycles=2, args_namespace=namespace, **{arg_name: arg_val}), arg_val
+        )
+
+        t.reinit()
+        self.assertEqual(t.state, state_start)
+        self.assertIsNone(t())
+        self.assertFalse(t.done)
+
     def test_named_op_decorator(self) -> None:
         """Confirming named operator decorator"""
 

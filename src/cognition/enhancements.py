@@ -18,7 +18,7 @@ from types import MappingProxyType
 
 from enum import IntEnum
 
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 
 from functools import cmp_to_key
 
@@ -78,6 +78,24 @@ class Rank(IntEnum):
 #
 
 
+def _add_args[S](
+    t: Task[S], namespace: str, **info: Any
+) -> Generator[Task[S], None, None]:
+    """
+    Provides `io.i.namespace` temporarily
+
+    :param t: task for which to provide arguments
+    :param namespace: sensor name
+    :param info: io.i.namespace.key=value
+    """
+
+    try:
+        t.set_sensor(namespace, AttrReferral(info))
+        yield t
+    finally:
+        t.set_sensor(namespace, None)
+
+
 @contextmanager
 def args_added[S](
     t: Task[S], namespace: str = ARGS_ATTR, **info: Any
@@ -86,12 +104,11 @@ def args_added[S](
     Provides `io.i.namespace` temporarily
 
     :param t: task for which to provide arguments
+    :param namespace: sensor name
     :param info: io.i.namespace.key=value
     """
 
-    t.set_sensor(namespace, AttrReferral(info))
-    yield t
-    t.set_sensor(namespace, None)
+    yield from _add_args(t, namespace, **info)
 
 
 def create_elaborator[S](
@@ -375,6 +392,18 @@ class EnhancedTask[S](Task[S]):
         if enable_terminal_check:
             self._phase_handlers[Phase.GOALCHECK] = self._terminal_goal_check
 
+    @contextmanager
+    def args_added(
+        self, namespace: str = ARGS_ATTR, **info: Any
+    ) -> Generator[Task[S], None, None]:
+        """
+        Pass-thru to :func:`args_added`
+
+        :param info: io.i.namespace.key=value
+        """
+
+        yield from _add_args(self, namespace, **info)
+
     def add_operator(
         self, op: Operator[S], self_param: Optional[str] = OPERATOR_SELF_PARAM
     ) -> tuple[ActionFactory[S], Action[S], Self]:
@@ -445,3 +474,31 @@ class EnhancedTask[S](Task[S]):
                 self._goal_achieved = TERMINAL_ACTION_ATTR in self._chosen.params
 
         return super()._goal_check()
+
+    def __call__(
+        self,
+        max_cycles: Optional[int] = None,
+        args_namespace: str = ARGS_ATTR,
+        **args: Any,
+    ) -> Optional[S]:
+        """
+        Execute the task, function-style
+
+        :param max_cycles: maximum steps to execute
+        :param args_namespace: argument sensor name
+        :param args: arguments to supply
+        :return: the final state if the task completed without
+                 any exceptions; None otherwise
+        """
+
+        with self.args_added(namespace=args_namespace, **args):
+            with suppress(Exception):
+                if max_cycles is None:
+                    self.run_until_done()
+                else:
+                    self.run_cycles(max_cycles)
+
+        if not self.done:
+            return None
+
+        return self.state
