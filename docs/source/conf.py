@@ -24,7 +24,7 @@ autoapi_options = [
     # 'private-members',
     'show-inheritance',
     'show-module-summary',
-    # 'special-members',
+    'special-members',
     # 'imported-members',
 ]
 
