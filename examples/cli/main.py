@@ -10,10 +10,9 @@ from collections.abc import Callable
 
 from dataclasses import dataclass
 
-from enum import IntEnum
-
 from cognition import (
     AttrReferral,
+    AutoDocEnum,
     EnhancedTask,
     IOContainer,
     NamedOperator,
@@ -34,16 +33,11 @@ class CommandLogEntry:
     result: CommandReturn
 
 
-class CLIStage(IntEnum):
+class CLIStage(AutoDocEnum):
     """Step of CLI processing"""
 
-    GET_CMD = 0
-    EXEC_CMD = 1
-
-    def next(self) -> CLIStage:
-        """Next stage"""
-
-        return CLIStage((self + 1) % len(CLIStage))
+    GET_CMD = "get the command"
+    EXEC_CMD = "execute the command"
 
 
 @dataclass
@@ -57,12 +51,6 @@ class CLIState:
     stage: CLIStage
     log: list[CommandLogEntry]
 
-
-#
-
-# shared reference to
-# command input buffer
-cli_status: dict[str, str] = {}
 
 #
 
@@ -140,8 +128,13 @@ def cmd_history() -> CommandReturn:
 
 #
 
-t = EnhancedTask(lambda: CLIState(CLIStage.GET_CMD, [])).set_sensor(
-    "cli", AttrReferral(cli_status)
+# shared reference across IO
+_cli_status: dict[str, str] = {}
+
+t = (
+    EnhancedTask(lambda: CLIState(CLIStage.GET_CMD, []))
+    .set_sensor("cli", AttrReferral(_cli_status))
+    .set_actuator("cli_set_command", lambda c: _cli_status.update(command=c))
 )
 
 
@@ -152,9 +145,10 @@ class GetCommand(NamedOperator[CLIState]):
     def can_perform(self, state: CLIState, _io: IOContainer) -> bool:
         return state.stage == CLIStage.GET_CMD
 
-    def perform(self, state: CLIState, _io: IOContainer) -> None:
-        cli_status["command"] = Prompt.ask("[bold blue]$[/]")
-        state.stage = state.stage.next()
+    def perform(self, state: CLIState, io: IOContainer) -> None:
+        io.o.cli_set_command(Prompt.ask(f"[bold blue]{ io.i.args.shell_sym }[/]"))
+
+        state.stage = CLIStage.EXEC_CMD
 
 
 @t.operator("exec_command")
@@ -182,7 +176,7 @@ class ExecCommand(NamedOperator[CLIState]):
             rprint(log_entry.result.text)
         print()
 
-        state.stage = state.stage.next()
+        state.stage = CLIStage.GET_CMD
 
 
 @t.goal_check
@@ -205,7 +199,7 @@ def main() -> None:
     rprint("Enter [code]help[/] to see available commands.")
     rprint()
 
-    t.run_until_done()
+    t(shell_sym="$")
 
 
 if __name__ == "__main__":
