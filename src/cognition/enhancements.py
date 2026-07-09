@@ -18,7 +18,7 @@ from types import MappingProxyType
 
 from enum import IntEnum
 
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 
 from functools import cmp_to_key
 
@@ -478,6 +478,7 @@ class EnhancedTask[S](Task[S]):
     def __call__(
         self,
         max_cycles: Optional[int] = None,
+        suppress_errors: bool = True,
         args_namespace: str = ARGS_ATTR,
         **args: Any,
     ) -> Optional[S]:
@@ -485,6 +486,7 @@ class EnhancedTask[S](Task[S]):
         Execute the task, function-style
 
         :param max_cycles: maximum steps to execute
+        :param suppress_errors: if `True`, does not raise any errors from execution
         :param args_namespace: argument sensor name
         :param args: arguments to supply
         :return: the final state if the task completed without
@@ -492,11 +494,16 @@ class EnhancedTask[S](Task[S]):
         """
 
         with self.args_added(namespace=args_namespace, **args):
-            with suppress(Exception):
+            try:
                 if max_cycles is None:
                     self.run_until_done()
                 else:
                     self.run_cycles(max_cycles)
+            except Exception as err:  # pylint: disable=broad-exception-caught
+                if not suppress_errors:
+                    raise RuntimeError("Failed to run") from err
+
+                return None
 
         if not self.done:
             return None

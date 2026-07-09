@@ -168,8 +168,8 @@ class TestEnhancements(unittest.TestCase):
             AttrReferral(self.io_source), AttrReferral(self.io_source)
         )
 
-    def test_args(self) -> None:
-        """Confirming arguments context manager"""
+    def test_args_call(self) -> None:
+        """Confirming arguments context manager with __call__"""
 
         state_start = 0
 
@@ -211,13 +211,38 @@ class TestEnhancements(unittest.TestCase):
 
         self.assertEqual(t.state, state_start)
         self.assertEqual(
-            t(max_cycles=2, args_namespace=namespace, **{arg_name: arg_val}), arg_val
+            t(
+                max_cycles=2,
+                suppress_errors=True,
+                args_namespace=namespace,
+                **{arg_name: arg_val},
+            ),
+            arg_val,
         )
+
+        t.reinit()
+
+        self.assertEqual(t.state, state_start)
+        self.assertIsNone(
+            t(
+                max_cycles=0,
+                suppress_errors=True,
+                args_namespace=namespace,
+                **{arg_name: arg_val},
+            ),
+            arg_val,
+        )
+        self.assertFalse(t.done)
 
         t.reinit()
         self.assertEqual(t.state, state_start)
         self.assertIsNone(t())
         self.assertFalse(t.done)
+
+        t.reinit()
+        self.assertEqual(t.state, state_start)
+        with self.assertRaises(RuntimeError):
+            self.assertIsNone(t(suppress_errors=False))
 
     def test_named_op_decorator(self) -> None:
         """Confirming named operator decorator"""
