@@ -10,6 +10,7 @@ import unittest
 
 from cognition import (
     ChainState,
+    EnumDispatch,
     Task,
     create_chain_task,
 )
@@ -42,9 +43,8 @@ class TestChain(unittest.TestCase):
                 range(n),
                 lambda link, _io: cast(int, link.accumulator) * (link.value + 1),
                 1,
-            )
+            ).run_until_done()
 
-            t.run_until_done()
             self.assertIsNone(t.state.current_link)
 
             return cast(int, t.state.accumulator)
@@ -70,3 +70,47 @@ class TestChain(unittest.TestCase):
         t.run_until_done()
 
         self.assertEqual(t.log, "dftba")
+
+    def test_dftba_dispatch(self) -> None:
+        """
+        Chaining to dispatch -> values
+        """
+
+        class Project(EnumDispatch[NerdFighter]):
+            """
+            Segmenting operations by enum value
+            """
+
+            def __init__(self) -> None:
+                self._result: list[str] = []
+
+            @property
+            def result(self) -> str:
+                """put it together"""
+                return " + ".join(self._result)
+
+            def don_t(self) -> None:
+                """d"""
+                self._result.append("care")
+
+            def forget(self) -> None:
+                """f"""
+                self._result.append("create")
+
+            def to(self) -> None:
+                """t"""
+                self._result.append("cultivate")
+
+            def be(self) -> None:
+                """b"""
+                self._result.append("empower")
+
+            def awesome(self) -> None:
+                """a"""
+                self._result.append("learn")
+
+        pfa = Project()
+        create_chain_task(
+            NerdFighter, lambda link, _io: pfa(link.value)
+        ).run_until_done()
+        self.assertEqual(pfa.result, "care + create + cultivate + empower + learn")
