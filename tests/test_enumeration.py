@@ -1,5 +1,5 @@
 """
-Tests for chain code
+Tests for enumeration code
 """
 
 import unittest
@@ -47,7 +47,7 @@ class PhraseDispatch(EnumDispatch[DocPhrase]):
 
 
 class TestEnumeration(unittest.TestCase):
-    """Tests for chain code"""
+    """Tests for enumeration code"""
 
     def test_doc(self) -> None:
         """
