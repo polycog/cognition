@@ -15,6 +15,8 @@ from collections.abc import (
 
 from functools import wraps
 
+import time
+
 #
 
 
@@ -149,3 +151,22 @@ def optionally_name[**P, R](f: Callable[P, R], name: Optional[str]) -> Callable[
         return stringify(name)(f)
 
     return f
+
+
+def timed[**P, R](f: Callable[P, R]) -> Callable[P, tuple[R, float]]:
+    """
+    Decorator to time the execution of the supplied function
+
+    :param f: function to decorate
+    :return: function that times each invocation
+    """
+
+    @wraps(f)
+    def _wrapped(*args: P.args, **kwargs: P.kwargs) -> tuple[R, float]:
+        start_t = time.perf_counter()
+        result = f(*args, **kwargs)
+        end_t = time.perf_counter()
+
+        return (result, end_t - start_t)
+
+    return _wrapped

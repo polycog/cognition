@@ -11,6 +11,7 @@ from cognition import (
     MutableWrapper,
     optionally_name,
     stringify,
+    timed,
 )
 
 #
@@ -18,6 +19,21 @@ from cognition import (
 
 class TestUtility(unittest.TestCase):
     """Tests for utility code"""
+
+    def test_timed(self) -> None:
+        """Confirming @timed"""
+
+        @timed
+        def _inc(x: int) -> int:
+            return x + 1
+
+        result1, time1 = _inc(42)  # pylint: disable=unpacking-non-sequence
+        self.assertEqual(result1, 43)
+        self.assertGreater(time1, 0)
+
+        result2, time2 = _inc(51)  # pylint: disable=unpacking-non-sequence
+        self.assertEqual(result2, 52)
+        self.assertGreater(time2, 0)
 
     def test_mutable_wrapper(self) -> None:
         """Confirming MutableWrapper"""
