@@ -119,6 +119,7 @@ class BinaryRelation(TypedSchema):
 #
 
 type Fact = Entity | BinaryRelation
+"""Hashable typed schema for concepts and relationships"""
 
 
 @dataclass(frozen=True)
@@ -128,37 +129,69 @@ class WorldSnapshot:
     """
 
     items: frozenset[Fact]
+    """Fixed set of facts"""
 
     #
 
     def __str__(self) -> str:
+        """
+        :return: facts in ascending order
+        """
+
         return "\n".join(str(f) for f in sorted(self.items, key=str))
 
     def __len__(self) -> int:
+        """
+        :return: number of facts
+        """
+
         return len(self.items)
 
     def __contains__(self, item: Fact) -> bool:
+        """
+        :param item: fact of interest
+        :return: `True` if supplied fact is in this set
+        """
         return item in self.items
 
     def __eq__(self, other: object) -> bool:
+        """
+        :param other: some object
+        :return: `True` if the object is of this type and has the same facts
+        """
+
         if not isinstance(other, WorldSnapshot):
             return NotImplemented
 
         return self.items == other.items
 
     def __lt__(self, other: object) -> bool:
+        """
+        :param other: some object
+        :return: `True` if the object is of this type and has a strict subset of the facts
+        """
+
         if not isinstance(other, WorldSnapshot):
             return NotImplemented
 
         return self.items < other.items
 
     def __le__(self, other: object) -> bool:
+        """
+        :param other: some object
+        :return: `True` if the object is of this type and has a subset of the facts
+        """
+
         if not isinstance(other, WorldSnapshot):
             return NotImplemented
 
         return self.items <= other.items
 
     def __iter__(self) -> Iterator[Fact]:
+        """
+        :return: iterator over the facts
+        """
+
         yield from self.items
 
     @classmethod
@@ -193,6 +226,7 @@ class WorldSnapshot:
         Cached access by fact type
 
         :param cls_t: filter type
+        :return: facts matching the filter
         """
 
         return tuple(item for item in self.items if isinstance(item, cls_t))
