@@ -1,5 +1,5 @@
 """
-Tests for task code
+Tests for core code
 """
 
 from typing import Any, cast
