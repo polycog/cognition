@@ -4,11 +4,15 @@ Knowledge representation
 
 from __future__ import annotations
 
-from typing import Any, Self
+from typing import Any, Optional, Self, cast
 
-from collections.abc import Iterable
+from collections.abc import Hashable, Iterable, Iterator
 
-from functools import singledispatchmethod
+from dataclasses import dataclass
+
+from functools import lru_cache, singledispatchmethod
+
+from itertools import chain
 
 from pydantic import (
     BaseModel,
@@ -16,6 +20,8 @@ from pydantic import (
 )
 
 import networkx as nx
+
+from .functypes import Predicate
 
 #
 
@@ -110,6 +116,147 @@ class BinaryRelation(TypedSchema):
         )
 
 
+#
+
+type Fact = Entity | BinaryRelation
+
+
+@dataclass(frozen=True)
+class WorldSnapshot:
+    """
+    A fixed set of entities and/or relations
+    """
+
+    items: frozenset[Fact]
+
+    #
+
+    def __str__(self) -> str:
+        return "\n".join(str(f) for f in sorted(self.items, key=str))
+
+    def __len__(self) -> int:
+        return len(self.items)
+
+    def __contains__(self, item: Fact) -> bool:
+        return item in self.items
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, WorldSnapshot):
+            return NotImplemented
+
+        return self.items == other.items
+
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, WorldSnapshot):
+            return NotImplemented
+
+        return self.items < other.items
+
+    def __le__(self, other: object) -> bool:
+        if not isinstance(other, WorldSnapshot):
+            return NotImplemented
+
+        return self.items <= other.items
+
+    def __iter__(self) -> Iterator[Fact]:
+        yield from self.items
+
+    @classmethod
+    def click(cls, *facts: Fact) -> Self:
+        """
+        Convenience method for producing
+        a snapshot from a supplied source
+
+        :param facts: source of facts
+        :return: resulting snapshot
+        """
+
+        return cls(frozenset(facts))
+
+    def copy(self, add: Iterable[Fact] = (), remove: Iterable[Fact] = ()) -> Self:
+        """
+        Convenience method for producing
+        a new snapshot from the contents
+        of this snapshot + some added facts
+        - some removed facts.
+
+        :param add: fact(s) to add
+        :param remove: fact(s) to remove
+        :return: resulting snapshot
+        """
+
+        return self.click(*(self.items - set(remove) | set(add)))
+
+    @lru_cache
+    def by[T: Hashable](self, cls_t: type[T]) -> Iterable[T]:
+        """
+        Cached access by fact type
+
+        :param cls_t: filter type
+        """
+
+        return tuple(item for item in self.items if isinstance(item, cls_t))
+
+    def find_first[T: Hashable](
+        self, cls_t: type[T], check: Predicate[T] = lambda _: True
+    ) -> T:
+        """
+        Finds the first typed fact that satisfies the check
+
+        :param cls_t: filter type
+        :param check: return gate
+        :return: first found fact
+        :raises ValueError: no fact of the supplied type satisfies the check
+        """
+
+        for item in self.by(cls_t):
+            item = cast(T, item)
+            if check(item):
+                return item
+
+        raise ValueError("Could not find a satisfying fact")
+
+    def entity_by_name(self, entity_name: str) -> Optional[Entity]:
+        """
+        Finds the first entity with the supplied name
+
+        :param entity_name: target name
+        :return: entity, or None if unused name
+        """
+
+        try:
+            return self.find_first(Entity, lambda e: e.name == entity_name)
+        except ValueError:
+            return None
+
+    def filter_relations[T: BinaryRelation](
+        self,
+        cls_t: Optional[type[T]] = None,
+        e1: Optional[Entity] = None,
+        e2: Optional[Entity] = None,
+    ) -> Iterable[T]:
+        """
+        Finds all relation(s) that match the supplied criteria
+
+        :param cls_t: relation type criterion (or None for unconstrained)
+        :param e1: first entity (or None for unconstrained)
+        :param e2: second entity (or None for unconstrained)
+        :return: any matching relations
+        """
+
+        def _p(r: BinaryRelation) -> bool:
+            return all(
+                (
+                    True if e1 is None else r.entity1 == e1,
+                    True if e2 is None else r.entity2 == e2,
+                )
+            )
+
+        yield from (
+            r for r in self.by(cls_t if cls_t is not None else BinaryRelation) if _p(r)
+        )
+
+
 class WorldGraph:
     """
     Graph of binary relations (edges) between entities (nodes)
@@ -133,7 +280,7 @@ class WorldGraph:
         self.g = nx.MultiDiGraph()
 
     @singledispatchmethod
-    def add(self, data: Entity | BinaryRelation) -> Self:
+    def add(self, data: Fact) -> Self:
         """
         Base method for adding graph data.
 
@@ -301,6 +448,36 @@ class WorldGraph:
             self.produce_relation(self.get_entity(u), self.get_entity(v), d)
             for u, v, d in self.g.edges(data=True)
         )
+
+    @property
+    def snapshot(self) -> WorldSnapshot:
+        """
+        Produces a snapshot of this graph
+
+        :return: static snapshot of all entities and relations
+        """
+
+        return WorldSnapshot.click(
+            *cast(Iterable[Fact], chain(self.entities, self.relations))
+        )
+
+    @classmethod
+    def from_snapshot(cls, snap: WorldSnapshot) -> Self:
+        """
+        Create a graph from a snapshot
+
+        :param snap: set of entities/relations
+        :return: resulting graph
+        """
+
+        wg = cls()
+        for e in snap.by(Entity):
+            wg.add_entity(e)
+
+        for r in snap.by(BinaryRelation):
+            wg.add_relation(r)
+
+        return wg
 
     def remove_node(self, entity_name: str) -> Self:
         """

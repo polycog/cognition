@@ -4,9 +4,11 @@ Tests for knowledge code
 
 import unittest
 
+from typing import cast
+
 from networkx import NetworkXError
 
-from cognition import BinaryRelation, Entity, WorldGraph
+from cognition import BinaryRelation, Entity, WorldGraph, WorldSnapshot
 
 #
 
@@ -61,6 +63,12 @@ class TestKnowledge(unittest.TestCase):
             entity1=self.f2, entity2=self.f1, ra1=self.r2_ra1, ra2=self.r2_ra2
         )
 
+        #
+
+        self.all_entities = (self.f1, self.f2)
+        self.all_relations = (self.r1, self.r2)
+        self.all_facts = self.all_entities + self.all_relations
+
     def test_entity_relation(self) -> None:
         """Tests for entities and relations"""
 
@@ -105,6 +113,96 @@ class TestKnowledge(unittest.TestCase):
             ),
         )
 
+    def test_snapshot(self) -> None:
+        """Tests for snapshot"""
+
+        snap_empty = WorldSnapshot.click()
+
+        self.assertEqual(str(snap_empty), "")
+        self.assertEqual(len(snap_empty), 0)
+
+        self.assertFalse(self.f1 in snap_empty)
+        self.assertFalse(self.f2 in snap_empty)
+        self.assertFalse(self.r1 in snap_empty)
+        self.assertFalse(self.r2 in snap_empty)
+
+        self.assertEqual(snap_empty, snap_empty)
+        self.assertLessEqual(snap_empty, snap_empty)
+        self.assertFalse(
+            snap_empty < snap_empty  # pylint: disable=comparison-with-itself
+        )
+        self.assertTrue(snap_empty != "foo")
+
+        with self.assertRaises(TypeError):
+            self.assertLess(snap_empty, 42)
+
+        with self.assertRaises(TypeError):
+            self.assertLessEqual(snap_empty, 3.14)
+
+        self.assertListEqual(list(snap_empty), [])
+
+        with self.assertRaises(ValueError):
+            snap_empty.find_first(Entity)
+
+        #
+
+        snap_all = WorldSnapshot.click(*self.all_facts)
+
+        self.assertEqual(str(snap_all), "\n".join(str(f) for f in self.all_facts))
+        self.assertEqual(len(snap_all), 4)
+
+        for f in self.all_facts:
+            self.assertTrue(f in snap_all)
+
+        self.assertEqual(snap_all, snap_all)
+        self.assertNotEqual(snap_empty, snap_all)
+        self.assertLess(snap_empty, snap_all)
+        self.assertLessEqual(snap_empty, snap_all)
+        self.assertLessEqual(WorldSnapshot.click(self.f1), snap_all)
+
+        self.assertSetEqual(set(self.all_facts), set(snap_all))
+        self.assertSetEqual(
+            set(self.all_facts), set(snap_all.by(Entity | BinaryRelation))
+        )
+        self.assertSetEqual(set(self.all_entities), set(snap_all.by(Entity)))
+        self.assertSetEqual(set(self.all_relations), set(snap_all.by(BinaryRelation)))
+
+        self.assertEqual(
+            self.f1,
+            snap_all.entity_by_name(self.f1.name),
+        )
+
+        self.assertIsNone(snap_all.entity_by_name("--BADBADNAMENAME++"))
+
+        self.assertSetEqual(set(snap_all.filter_relations()), set(self.all_relations))
+        self.assertSetEqual(
+            set(
+                snap_all.filter_relations(
+                    cls_t=cast(type[BinaryRelation], (Relation1 | Relation2))
+                )
+            ),
+            set(self.all_relations),
+        )
+
+        self.assertSetEqual(
+            set(snap_all.filter_relations(cls_t=Relation1)), set((self.r1,))
+        )
+        self.assertSetEqual(
+            set(snap_all.filter_relations(e2=self.f1)), set(self.all_relations)
+        )
+        self.assertSetEqual(
+            set(snap_all.filter_relations(cls_t=Relation2, e1=self.f2, e2=self.f1)),
+            set((self.r2,)),
+        )
+
+        self.assertEqual(
+            snap_empty.copy(add=self.all_entities),
+            snap_all.copy(remove=self.all_relations),
+        )
+        self.assertEqual(
+            snap_all.copy(remove=(self.f1, self.r2), add=(self.r2, self.f1)), snap_all
+        )
+
     def test_graph(self) -> None:
         """Tests for graph"""
 
@@ -112,6 +210,8 @@ class TestKnowledge(unittest.TestCase):
 
         self.assertEqual(len(list(wg.entities)), 0)
         self.assertEqual(len(list(wg.relations)), 0)
+        self.assertEqual(wg.snapshot, WorldSnapshot.click())
+        self.assertEqual(wg.snapshot, WorldGraph.from_snapshot(wg.snapshot).snapshot)
 
         with self.assertRaises(NotImplementedError):
             wg.add("foo")
@@ -129,6 +229,8 @@ class TestKnowledge(unittest.TestCase):
 
         self.assertSetEqual(set(wg.entities), {self.f1, self.f2})
         self.assertEqual(len(list(wg.relations)), 0)
+        self.assertEqual(wg.snapshot, WorldSnapshot.click(self.f1, self.f2))
+        self.assertEqual(wg.snapshot, WorldGraph.from_snapshot(wg.snapshot).snapshot)
 
         wg.add(self.r1).add(self.r2)
 
@@ -144,11 +246,17 @@ class TestKnowledge(unittest.TestCase):
 
         self.assertSetEqual(set(wg.entities), {self.f1, self.f2})
         self.assertSetEqual(set(wg.relations), {self.r1, self.r2})
+        self.assertEqual(
+            wg.snapshot, WorldSnapshot.click(self.f1, self.f2, self.r1, self.r2)
+        )
+        self.assertEqual(wg.snapshot, WorldGraph.from_snapshot(wg.snapshot).snapshot)
 
         wg.remove_edge(self.r1.entity1.name, self.r1.entity2.name, self.r1.type)
 
         self.assertSetEqual(set(wg.entities), {self.f1, self.f2})
         self.assertSetEqual(set(wg.relations), {self.r2})
+        self.assertEqual(wg.snapshot, WorldSnapshot.click(self.f1, self.f2, self.r2))
+        self.assertEqual(wg.snapshot, WorldGraph.from_snapshot(wg.snapshot).snapshot)
 
         with self.assertRaises(NetworkXError):
             wg.remove_edge(self.r1.entity1.name, self.r1.entity2.name, self.r1.type)
@@ -166,6 +274,8 @@ class TestKnowledge(unittest.TestCase):
 
         self.assertSetEqual(set(wg.entities), {self.f2})
         self.assertEqual(len(list(wg.relations)), 0)
+        self.assertEqual(wg.snapshot, WorldSnapshot.click(self.f2))
+        self.assertEqual(wg.snapshot, WorldGraph.from_snapshot(wg.snapshot).snapshot)
 
         with self.assertRaises(NetworkXError):
             wg.remove_node(self.f1.name)
