@@ -585,7 +585,7 @@ class Task[S]:
 
     #
 
-    def phases(self) -> Iterator[Task[S]]:
+    def phases(self) -> Iterator[Self]:
         """
         Facilitates iteration by phase
 
@@ -594,7 +594,7 @@ class Task[S]:
 
         return TaskIterator(self, True)
 
-    def cycles(self) -> Iterator[Task[S]]:
+    def cycles(self) -> Iterator[Self]:
         """
         Facilitates iteration by cycle
 
@@ -672,21 +672,21 @@ class TimeSensor[S]:
 
 
 # pylint: disable=too-few-public-methods
-class TaskIterator[S](Iterator[Task[S]]):
+class TaskIterator[S, T: Task[S]](Iterator[T]):  # type: ignore[name-defined]
     """
     Custom iterator to facilitate easy task iteration via phase or cycle
     """
 
-    def __init__(self, t: Task[S], by_phase: bool = True) -> None:
+    def __init__(self, t: T, by_phase: bool = True) -> None:
         """
         :param t: associated task
         :param by_phase: ``True`` if iteration by phase; by cycle otherwise
         """
 
-        self._task: Task[S] = t
+        self._task: T = t
         self._by_phase: bool = by_phase
 
-    def __next__(self) -> Task[S]:
+    def __next__(self) -> T:
         """
         Provides the next phase/cycle
         if the task is not complete
