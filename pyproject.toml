@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "polycog-cognition"
 dynamic = ["version"]
 dependencies = [
-    "pydantic ~= 2.13.0",
+    "pydantic-ai-slim ~= 2.9.1",
     "networkx ~= 3.6.1",
     "types-networkx ~= 3.6.1.0",
 ]

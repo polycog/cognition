@@ -15,3 +15,5 @@ from .chain import *  # noqa: F403
 
 from .planning import *  # noqa: F403
 from .knowledge import *  # noqa: F403
+
+from .language import *  # noqa: F403
