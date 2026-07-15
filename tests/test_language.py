@@ -2,18 +2,22 @@
 Tests for language code
 """
 
-from typing import Optional, cast
+from typing import Any, Optional, Self, cast
 
 from enum import StrEnum, auto
 
 import unittest
 
 from pydantic import BaseModel
+from pydantic_ai.messages import ModelResponse, TextPart
+from pydantic_ai.models.function import FunctionModel
 
 from cognition import (
     AutoDocEnum,
     DocEnum,
     EmpiricalConfidence,
+    EnumClassifier,
+    Function,
     enum_description,
     enum_item_doc,
     enum_name_doc,
@@ -108,8 +112,90 @@ def _base_model_info(t: type[BaseModel]) -> dict[str, type]:
     return {k: cast(type, v.annotation) for k, v in t.model_fields.items()}
 
 
-class TestLanguage(unittest.TestCase):
-    """Tests for language code"""
+# pylint: disable=too-few-public-methods
+class CountingModelFunc:
+    """
+    Function that returns json
+    based upon a function over
+    the number of requests
+    """
+
+    def __init__(self, response_func: Function[int, BaseModel]) -> None:
+        """
+        :param response_func: function that indicates which data to return
+                              based upon the request count
+        """
+
+        self._count = 0
+        self._f = response_func
+        self.__name__ = response_func.__name__
+
+    def __call__(self, *args: Any, **kwargs: Any) -> ModelResponse:
+        self._count += 1
+        return ModelResponse(parts=(TextPart(self._f(self._count).model_dump_json()),))
+
+    @classmethod
+    def always(cls, data: BaseModel) -> Self:
+        """
+        Shorthand to produce the same response
+
+        :param data: model to always return
+        """
+
+        return cls(lambda _: data)
+
+
+class TestLanguage(unittest.IsolatedAsyncioTestCase):
+    """Tests for language code (async for pydantic language agents)"""
+
+    def test_enum_classification(self) -> None:
+        """Tests for enum classification"""
+
+        model_apple = FunctionModel(
+            CountingModelFunc.always(FruitSchema(value=Fruit.APPLE))
+        )
+        model_first_none_then_banana = FunctionModel(
+            CountingModelFunc(
+                lambda ct: FruitSchema(value=Fruit.BANANA if ct != 1 else None)
+            )
+        )
+        model_first_none_then_banana = FunctionModel(
+            CountingModelFunc(
+                lambda ct: FruitSchema(value=Fruit.BANANA if ct != 1 else None)
+            )
+        )
+        model_mod = FunctionModel(
+            CountingModelFunc(
+                lambda ct: FruitSchema(
+                    value=(
+                        None
+                        if (_mod := ct % (len(Fruit) + 1)) == 0
+                        else list(Fruit)[_mod - 1]
+                    )
+                )
+            )
+        )
+
+        classifier = EnumClassifier(Fruit, "Interpreting a shopping list")
+        num_trials = len(Fruit) + 2
+
+        with self.assertRaises(ValueError):
+            classifier("🧑‍💻", model_apple, num_trials=0)
+
+        self.assertEqual(
+            classifier("🧑‍💻", model_apple, num_trials=num_trials),
+            (Fruit.APPLE, EmpiricalConfidence(num_trials, num_trials)),
+        )
+
+        self.assertEqual(
+            classifier("🍌", model_first_none_then_banana, num_trials=num_trials),
+            (Fruit.BANANA, EmpiricalConfidence(num_trials - 1, num_trials)),
+        )
+
+        self.assertEqual(
+            classifier("make the doctor happy", model_mod, num_trials=num_trials),
+            (list(Fruit)[0], EmpiricalConfidence(2, num_trials)),
+        )
 
     def test_empirical_confidence(self) -> None:
         """Tests for empirical confidence"""

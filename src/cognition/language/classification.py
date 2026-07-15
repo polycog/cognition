@@ -160,9 +160,6 @@ class EnumClassifier[T: Enum]:
         )
 
         prompt = self.prompt(utterance)
-        print()
-        print(prompt)
-        print()
 
         results = []
         for _ in range(num_trials):
