@@ -9,6 +9,7 @@ from enum import StrEnum, auto
 import unittest
 
 from pydantic import BaseModel
+from pydantic.fields import Field, FieldInfo
 from pydantic_ai.messages import ModelResponse, TextPart
 from pydantic_ai.models.function import FunctionModel
 
@@ -18,6 +19,8 @@ from cognition import (
     EmpiricalConfidence,
     EnumClassifier,
     Function,
+    basemodel_field_doc,
+    basemodel_name_doc,
     enum_description,
     enum_item_doc,
     enum_name_doc,
@@ -55,6 +58,10 @@ class FruitSchema(BaseModel):
     value: Optional[Fruit]
 
 
+DOC_FRUIT_SCHEMA: str = f"{FruitSchema.__name__} ({ FruitSchema.__doc__ })"
+DOC_FRUIT_VALUE: str = "value (Fruit | NoneType)"
+
+
 class BinaryResponse(DocEnum):
     """Responding to a question with two possible responses"""
 
@@ -78,6 +85,12 @@ class BinaryResponseSchema(BaseModel):
     """Response schema for BinaryResponse with custom name"""
 
     yn: Optional[BinaryResponse]
+
+
+DOC_BINARYRESPONSE_SCHEMA: str = (
+    f"{BinaryResponseSchema.__name__} ({ BinaryResponseSchema.__doc__ })"
+)
+DOC_BINARYRESPONSE_YN: str = "yn (BinaryResponse | NoneType)"
 
 
 class UserRole(AutoDocEnum):
@@ -106,6 +119,28 @@ class UserRoleSchema(BaseModel):
     """Response schema for UserRole"""
 
     value: Optional[UserRole]
+
+
+DOC_USERROLE_SCHEMA: str = f"{UserRoleSchema.__name__} ({ UserRoleSchema.__doc__ })"
+DOC_USERROLE_VALUE: str = "value (UserRole | NoneType)"
+
+
+class ComplexSchema(BaseModel):
+    """Multiple pieces"""
+
+    a: int = Field(description="apple")
+    b: Optional[str]
+    e: BinaryResponse = Field(description="binary")
+    q: FruitSchema | BinaryResponseSchema | UserRoleSchema = Field(
+        description="ternary"
+    )
+
+
+DOC_COMPLEX_SCHEMA: str = f"{ComplexSchema.__name__} ({ ComplexSchema.__doc__ })"
+DOC_COMPLEX_A: str = "a (int; apple)"
+DOC_COMPLEX_B: str = "b (str | NoneType)"
+DOC_COMPLEX_E: str = "e (BinaryResponse; binary)"
+DOC_COMPLEX_Q: str = "q (FruitSchema | BinaryResponseSchema | UserRoleSchema; ternary)"
 
 
 def _base_model_info(t: type[BaseModel]) -> dict[str, type]:
@@ -240,3 +275,58 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(enum_description(Fruit), DESC_FRUIT)
         self.assertEqual(enum_description(BinaryResponse), DESC_BINARYRESPONSE)
         self.assertEqual(enum_description(UserRole), DESC_USERROLE)
+
+    def test_bm_description(self) -> None:
+        """Tests for base model description"""
+
+        self.assertEqual(basemodel_name_doc(FruitSchema), DOC_FRUIT_SCHEMA)
+        self.assertEqual(
+            basemodel_field_doc(
+                "value", cast(FieldInfo, FruitSchema.model_fields.get("value"))
+            ),
+            DOC_FRUIT_VALUE,
+        )
+
+        self.assertEqual(
+            basemodel_name_doc(BinaryResponseSchema), DOC_BINARYRESPONSE_SCHEMA
+        )
+        self.assertEqual(
+            basemodel_field_doc(
+                "yn", cast(FieldInfo, BinaryResponseSchema.model_fields.get("yn"))
+            ),
+            DOC_BINARYRESPONSE_YN,
+        )
+
+        self.assertEqual(basemodel_name_doc(UserRoleSchema), DOC_USERROLE_SCHEMA)
+        self.assertEqual(
+            basemodel_field_doc(
+                "value", cast(FieldInfo, UserRoleSchema.model_fields.get("value"))
+            ),
+            DOC_USERROLE_VALUE,
+        )
+
+        self.assertEqual(basemodel_name_doc(ComplexSchema), DOC_COMPLEX_SCHEMA)
+        self.assertEqual(
+            basemodel_field_doc(
+                "a", cast(FieldInfo, ComplexSchema.model_fields.get("a"))
+            ),
+            DOC_COMPLEX_A,
+        )
+        self.assertEqual(
+            basemodel_field_doc(
+                "b", cast(FieldInfo, ComplexSchema.model_fields.get("b"))
+            ),
+            DOC_COMPLEX_B,
+        )
+        self.assertEqual(
+            basemodel_field_doc(
+                "e", cast(FieldInfo, ComplexSchema.model_fields.get("e"))
+            ),
+            DOC_COMPLEX_E,
+        )
+        self.assertEqual(
+            basemodel_field_doc(
+                "q", cast(FieldInfo, ComplexSchema.model_fields.get("q"))
+            ),
+            DOC_COMPLEX_Q,
+        )

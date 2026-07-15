@@ -2,18 +2,24 @@
 Describing data types
 """
 
-from typing import Optional
+from typing import Optional, Union, cast, get_args, get_origin
+from types import UnionType
+
+from collections.abc import Sequence
 
 from string import Template
 
 from enum import Enum
+
+from pydantic import BaseModel
+from pydantic.fields import FieldInfo
 
 from ..util.enumeration import AutoDocEnum, DocEnum
 
 #
 
 _t_paren = Template(" ($s)")
-# _t_sc = Template("; $s")
+_t_sc = Template("; $s")
 
 
 def _sub_if(t: Template, s: Optional[str]) -> str:
@@ -67,3 +73,41 @@ def enum_description(enum_type: type[Enum]) -> str:
         lines.append(f"* { enum_item_doc(item) }")
 
     return "\n".join(lines)
+
+
+def basemodel_name_doc(schema_type: type[BaseModel]) -> str:
+    """
+    A base model's name and description
+
+    :param schema_type: type to describe
+    :return: "{name}[ ({desc})]"
+    """
+
+    schema_json = schema_type.model_json_schema()
+
+    return (
+        f"{schema_json['title']}{ _sub_if(_t_paren, schema_json.get('description')) }"
+    )
+
+
+def basemodel_field_doc(field_name: str, field_info: FieldInfo) -> str:
+    """
+    An base model field's name, type, and description
+
+    :param field_name: field name
+    :param field_info: field annotation information
+    :return: "{name} ({type}[; {desc}])"
+    """
+
+    field_types: Sequence[type]
+    if (
+        isinstance(field_info.annotation, UnionType)
+        or get_origin(field_info.annotation) is Union
+    ):
+        field_types = get_args(field_info.annotation)
+    else:
+        field_types = [cast(type, field_info.annotation)]
+
+    types_names = " | ".join(t.__name__ for t in field_types)
+
+    return f"{field_name} ({types_names}{ _sub_if(_t_sc, field_info.description) })"
