@@ -26,14 +26,14 @@ from io import StringIO
 
 import random
 
-from .util.functypes import (
+from ..util.functypes import (
     BiFunction,
     BiPredicate,
     Supplier,
     TriFunction,
 )
 
-from .util.misc import (
+from ..util.misc import (
     AttrReferral,
     ImplementsLessThan,
     stringify,

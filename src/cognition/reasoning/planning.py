@@ -25,7 +25,7 @@ from ..util.functypes import (
 
 from ..util.misc import stringify
 
-from ..core import (
+from ..decision.core import (
     Action,
     IOContainer,
     Task,

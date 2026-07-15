@@ -22,7 +22,7 @@ from contextlib import contextmanager
 
 from functools import cmp_to_key
 
-from .util.functypes import (
+from ..util.functypes import (
     BiFunction,
     Function,
     Predicate,
@@ -30,7 +30,7 @@ from .util.functypes import (
     TriFunction,
 )
 
-from .util.misc import (
+from ..util.misc import (
     AttrReferral,
     ImplementsLessThan,
     optionally_name,
