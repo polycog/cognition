@@ -17,13 +17,13 @@ from collections.abc import (
 
 import heapq
 
-from ..functypes import (
+from ..util.functypes import (
     Function,
     Predicate,
     Supplier,
 )
 
-from ..utility import stringify
+from ..util.misc import stringify
 
 from ..core import (
     Action,

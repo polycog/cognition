@@ -26,17 +26,17 @@ from io import StringIO
 
 import random
 
-from .utility import (
-    AttrReferral,
-    ImplementsLessThan,
-    stringify,
-)
-
-from .functypes import (
+from .util.functypes import (
     BiFunction,
     BiPredicate,
     Supplier,
     TriFunction,
+)
+
+from .util.misc import (
+    AttrReferral,
+    ImplementsLessThan,
+    stringify,
 )
 
 #

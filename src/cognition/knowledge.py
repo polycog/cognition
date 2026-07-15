@@ -21,7 +21,7 @@ from pydantic import (
 
 import networkx as nx
 
-from .functypes import Predicate
+from .util.functypes import Predicate
 
 #
 

@@ -8,7 +8,7 @@ from string import Template
 
 from enum import Enum
 
-from ..enumeration import AutoDocEnum, DocEnum
+from ..util.enumeration import AutoDocEnum, DocEnum
 
 #
 

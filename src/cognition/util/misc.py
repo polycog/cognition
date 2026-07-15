@@ -1,5 +1,5 @@
 """
-Utility code
+Misc utility code
 """
 
 from typing import (

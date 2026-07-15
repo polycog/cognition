@@ -14,9 +14,9 @@ from collections.abc import (
 
 from dataclasses import dataclass
 
-from .functypes import BiFunction
+from .util.functypes import BiFunction
 
-from .utility import stringify
+from .util.misc import stringify
 
 from .core import (
     Action,
