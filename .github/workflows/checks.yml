@@ -28,7 +28,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
-      run: pip install mypy pylint ruff black validate-pyproject packaging coverage
+      run: pip install -r dev-requirements.txt
     
     - name: Run checks
       run: source checks.sh

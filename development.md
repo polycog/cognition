@@ -2,7 +2,7 @@
 
 [![Checks](https://github.com/polycog/cognition/actions/workflows/checks.yml/badge.svg)](https://github.com/polycog/cognition/actions/workflows/checks.yml)
 
-Run below (stopping on errors) via `source checks.sh`
+Run below (stopping on errors) via `source checks.sh` (given installs via `dev-requirements.txt`).
 
 ## Testing
 

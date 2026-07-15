@@ -13,7 +13,8 @@ from .enhancements import *  # noqa: F403
 
 from .chain import *  # noqa: F403
 
-from .planning import *  # noqa: F403
 from .knowledge import *  # noqa: F403
+
+from .reasoning import *  # noqa: F403
 
 from .language import *  # noqa: F403

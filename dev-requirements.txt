@@ -1,0 +1,10 @@
+mypy
+pylint
+ruff
+black
+validate-pyproject
+packaging
+coverage
+
+# adding cognition
+-e .

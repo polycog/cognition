@@ -17,15 +17,15 @@ from collections.abc import (
 
 import heapq
 
-from .functypes import (
+from ..functypes import (
     Function,
     Predicate,
     Supplier,
 )
 
-from .utility import stringify
+from ..utility import stringify
 
-from .core import (
+from ..core import (
     Action,
     IOContainer,
     Task,
