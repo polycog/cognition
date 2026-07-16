@@ -5,7 +5,7 @@ Describing data types
 from typing import Optional, Union, cast, get_args, get_origin
 from types import UnionType
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 
 from string import Template
 
@@ -90,9 +90,13 @@ def basemodel_name_doc(schema_type: type[BaseModel]) -> str:
     )
 
 
+def _is_union(annotation: Optional[type]) -> bool:
+    return isinstance(annotation, UnionType) or (get_origin(annotation) is Union)
+
+
 def basemodel_field_doc(field_name: str, field_info: FieldInfo) -> str:
     """
-    An base model field's name, type, and description
+    A base model field's name, type, and description
 
     :param field_name: field name
     :param field_info: field annotation information
@@ -100,10 +104,7 @@ def basemodel_field_doc(field_name: str, field_info: FieldInfo) -> str:
     """
 
     field_types: Sequence[type]
-    if (
-        isinstance(field_info.annotation, UnionType)
-        or get_origin(field_info.annotation) is Union
-    ):
+    if _is_union(field_info.annotation):
         field_types = get_args(field_info.annotation)
     else:
         field_types = [cast(type, field_info.annotation)]
@@ -111,3 +112,51 @@ def basemodel_field_doc(field_name: str, field_info: FieldInfo) -> str:
     types_names = " | ".join(t.__name__ for t in field_types)
 
     return f"{field_name} ({types_names}{ _sub_if(_t_sc, field_info.description) })"
+
+
+def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> set[type]:
+    """
+    Accounts for a base model's dependent types
+
+    :param schema_type: source type
+    :param deep: if `True`, recursively includes base model fields
+    :return: Enum and BaseModel types needed to understand the schema (including itself)
+    """
+
+    def _supported_type(t: type) -> bool:
+        return issubclass(t, BaseModel) or issubclass(t, Enum)
+
+    def _basemodel_field_types(schema_type: type[BaseModel]) -> Iterable[type]:
+        for f_a in (
+            f_i.annotation
+            for f_i in schema_type.model_fields.values()
+            if f_i.annotation is not None
+        ):
+
+            candidates: Iterable[type]
+            if _is_union(f_a):
+                candidates = get_args(f_a)
+            else:
+                candidates = [f_a]
+
+            yield from (t for t in candidates if _supported_type(t))
+
+    #
+
+    todo: list[type] = [start_schema]
+    done: set[type] = set()
+    result: set[type] = set()
+
+    while todo:
+        t = todo.pop(0)
+        if t not in done:
+            done.add(t)
+            result.add(t)
+
+            for field_type in _basemodel_field_types(t):
+                result.add(field_type)
+
+                if deep and issubclass(field_type, BaseModel):
+                    todo.append(field_type)
+
+    return result

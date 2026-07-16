@@ -19,6 +19,7 @@ from cognition import (
     EmpiricalConfidence,
     EnumClassifier,
     Function,
+    basemodel_dep_types,
     basemodel_field_doc,
     basemodel_name_doc,
     enum_description,
@@ -286,6 +287,12 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
             ),
             DOC_FRUIT_VALUE,
         )
+        self.assertSetEqual(
+            basemodel_dep_types(FruitSchema, False), {FruitSchema, Fruit}
+        )
+        self.assertSetEqual(
+            basemodel_dep_types(FruitSchema, True), {FruitSchema, Fruit}
+        )
 
         self.assertEqual(
             basemodel_name_doc(BinaryResponseSchema), DOC_BINARYRESPONSE_SCHEMA
@@ -296,6 +303,14 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
             ),
             DOC_BINARYRESPONSE_YN,
         )
+        self.assertSetEqual(
+            basemodel_dep_types(BinaryResponseSchema, False),
+            {BinaryResponseSchema, BinaryResponse},
+        )
+        self.assertSetEqual(
+            basemodel_dep_types(BinaryResponseSchema, True),
+            {BinaryResponseSchema, BinaryResponse},
+        )
 
         self.assertEqual(basemodel_name_doc(UserRoleSchema), DOC_USERROLE_SCHEMA)
         self.assertEqual(
@@ -303,6 +318,14 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
                 "value", cast(FieldInfo, UserRoleSchema.model_fields.get("value"))
             ),
             DOC_USERROLE_VALUE,
+        )
+        self.assertSetEqual(
+            basemodel_dep_types(UserRoleSchema, False),
+            {UserRoleSchema, UserRole},
+        )
+        self.assertSetEqual(
+            basemodel_dep_types(UserRoleSchema, True),
+            {UserRoleSchema, UserRole},
         )
 
         self.assertEqual(basemodel_name_doc(ComplexSchema), DOC_COMPLEX_SCHEMA)
@@ -329,4 +352,27 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
                 "q", cast(FieldInfo, ComplexSchema.model_fields.get("q"))
             ),
             DOC_COMPLEX_Q,
+        )
+        self.assertSetEqual(
+            basemodel_dep_types(ComplexSchema, False),
+            {
+                ComplexSchema,
+                BinaryResponse,
+                FruitSchema,
+                BinaryResponseSchema,
+                UserRoleSchema,
+            },
+        )
+        self.assertSetEqual(
+            basemodel_dep_types(ComplexSchema, True),
+            {
+                ComplexSchema,
+                BinaryResponse,
+                FruitSchema,
+                Fruit,
+                BinaryResponseSchema,
+                BinaryResponse,
+                UserRoleSchema,
+                UserRole,
+            },
         )
