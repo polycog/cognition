@@ -24,7 +24,7 @@ from cognition import (
     EnhancedTask,
     IOContainer,
     NamedAction,
-    NamedOperator,
+    Operator,
     Phase,
     Rank,
     Task,
@@ -48,7 +48,7 @@ class OpStage(StrEnum):
     DONE = auto()
 
 
-class HiOp(NamedOperator[OpStage]):
+class HiOp(Operator[OpStage]):
     """Says hi"""
 
     def can_perform(self, state: OpStage, io: IOContainer) -> bool:
@@ -59,7 +59,7 @@ class HiOp(NamedOperator[OpStage]):
         return OpStage.SAY_BYE
 
 
-class ByeOp(NamedOperator[OpStage]):
+class ByeOp(Operator[OpStage]):
     """Says bye"""
 
     def can_perform(self, state: OpStage, io: IOContainer) -> bool:
@@ -88,7 +88,7 @@ class PrioritizedMathOperation(Enum):
         return self.f(a, b)
 
 
-class ChangeOp(NamedOperator[int]):
+class ChangeOp(Operator[int]):
     """Modify state via a simple math operation"""
 
     def __init__(self, op: PrioritizedMathOperation, amt: int) -> None:
@@ -185,7 +185,7 @@ class TestEnhancements(unittest.TestCase):
 
         # pylint: disable=unused-variable
         @t.operator("copy", terminal=True, arg_name=arg_name)
-        class ArgCopy(NamedOperator[int]):
+        class ArgCopy(Operator[int]):
             """Copies the arg"""
 
             def __init__(self, name: str, arg_name: str, **kwargs: Any) -> None:
@@ -253,7 +253,7 @@ class TestEnhancements(unittest.TestCase):
         act_name = f"{op_name}[terminal=True]"
 
         @t.operator(op_name, terminal=True)
-        class Done(NamedOperator[bool]):  # pylint: disable=unused-variable
+        class Done(Operator[bool]):  # pylint: disable=unused-variable
             """one and only op"""
 
             def can_perform(self, state: bool, _io: IOContainer) -> bool:

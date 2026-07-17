@@ -17,7 +17,7 @@ from ..util.enumeration import EnumDispatch
 
 from ..decision.core import IOContainer
 
-from ..decision.enhancements import EnhancedTask, NamedOperator
+from ..decision.enhancements import EnhancedTask, Operator
 
 #
 
@@ -85,7 +85,7 @@ def staged_operator[SE: Enum, SS: StagedState[SE]](  # type: ignore[name-defined
     def _decorator(ss: StageSupporter[SE, SS]) -> StageSupporter[SE, SS]:
 
         @t.operator(stage.name, **kwargs)
-        class _StagedOperator(NamedOperator[SS]):
+        class _StagedOperator(Operator[SS]):
 
             def can_perform(self, state: SS, _io: IOContainer) -> bool:
                 return state.stage == stage

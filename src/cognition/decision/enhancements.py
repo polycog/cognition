@@ -178,7 +178,7 @@ def create_named_action[S](name: str, f: Action[S], **kwargs: Any) -> Action[S]:
     return new_f
 
 
-class Operator[S](Protocol):
+class BaseOperator[S](Protocol):
     """
     Pattern to support a predicate gating a single action
     """
@@ -210,7 +210,7 @@ class Operator[S](Protocol):
         """
 
 
-class NamedOperator[S](ABC, Operator[S]):
+class Operator[S](ABC, BaseOperator[S]):
     """
     Operator interface
     """
@@ -226,11 +226,11 @@ class NamedOperator[S](ABC, Operator[S]):
 
     @abstractmethod
     def can_perform(self, state: S, io: IOContainer) -> bool:
-        """See :meth:`Operator.can_perform`"""
+        """See :meth:`BaseOperator.can_perform`"""
 
     @abstractmethod
     def perform(self, state: S, io: IOContainer) -> Optional[S]:
-        """See :meth:`Operator.perform`"""
+        """See :meth:`BaseOperator.perform`"""
 
     @property
     def name(self) -> str:
@@ -250,7 +250,7 @@ class NamedOperator[S](ABC, Operator[S]):
 
 
 def add_operator[S](
-    task: Task[S], op: Operator[S], self_param: Optional[str] = OPERATOR_SELF_PARAM
+    task: Task[S], op: BaseOperator[S], self_param: Optional[str] = OPERATOR_SELF_PARAM
 ) -> tuple[ActionFactory[S], Action[S]]:
     """
     Instantiates the operator within a task
@@ -405,7 +405,7 @@ class EnhancedTask[S](Task[S]):
         yield from _add_args(self, namespace, **info)
 
     def add_operator(
-        self, op: Operator[S], self_param: Optional[str] = OPERATOR_SELF_PARAM
+        self, op: BaseOperator[S], self_param: Optional[str] = OPERATOR_SELF_PARAM
     ) -> tuple[ActionFactory[S], Action[S], Self]:
         """
         Pass-thru to :func:`add_operator`.
@@ -419,7 +419,7 @@ class EnhancedTask[S](Task[S]):
         return af, a, self
 
     def add_operator_c(
-        self, op: Operator[S], self_param: Optional[str] = OPERATOR_SELF_PARAM
+        self, op: BaseOperator[S], self_param: Optional[str] = OPERATOR_SELF_PARAM
     ) -> Self:
         """
         Pass-thru to :meth:`EnhancedTask.add_operator`.
@@ -437,7 +437,7 @@ class EnhancedTask[S](Task[S]):
         op_name: str,
         self_param: Optional[str] = OPERATOR_SELF_PARAM,
         **kwargs: Any,
-    ) -> Function[type[NamedOperator[S]], type[NamedOperator[S]]]:
+    ) -> Function[type[Operator[S]], type[Operator[S]]]:
         """
         Decorator version of :meth:`EnhancedTask.add_operator`
         that assumes instantiation takes a positional name
@@ -449,7 +449,7 @@ class EnhancedTask[S](Task[S]):
         :return: parameterized named-object decorator
         """
 
-        def cls_dec(cls: type[NamedOperator[S]]) -> type[NamedOperator[S]]:
+        def cls_dec(cls: type[Operator[S]]) -> type[Operator[S]]:
             """
             Parameterized named-object decorator that adds an
             operator instance to this task.
