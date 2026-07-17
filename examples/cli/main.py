@@ -6,7 +6,7 @@ cognition library
 
 from __future__ import annotations
 
-from typing import Any, Self
+from typing import Self
 
 from collections.abc import Callable
 
@@ -18,9 +18,10 @@ from cognition import (
     AttrReferral,
     AutoDocEnum,
     EnhancedTask,
-    EnumDispatch,
     IOContainer,
-    NamedOperator,
+    KWArgs,
+    StagedState,
+    staged_operator,
     stringify,
 )
 
@@ -157,33 +158,34 @@ class CommandLogEntry:
 
 
 @dataclass
-class CLIState(EnumDispatch[CLIStage]):
+class CLIState(StagedState[CLIStage]):
     """
-    Current stage (get/exec)
-    +
-    Log of past commands
+    State of the CLI program
     """
 
     stage: CLIStage = CLIStage.INIT
+    """INIT -> (GET <-> EXEC)"""
+
     log: list[CommandLogEntry] = field(default_factory=list)
+    """Log of command executions"""
 
-    def transition(self, *args: Any, **kwargs: Any) -> None:
-        """update state (per stage)"""
-
-        self.stage = self(self.stage, *args, **kwargs)
+    #
 
     def init(self) -> CLIStage:
-        """proceed to getting the first command"""
+        """transition to... getting the (first) command"""
 
         return CLIStage.GET_CMD
 
     def get_cmd(self) -> CLIStage:
-        """proceed to execution"""
+        """transition to... command execution"""
 
         return CLIStage.EXEC_CMD
 
     def exec_cmd(self, log_entry: CommandLogEntry) -> CLIStage:
-        """process the log entry and proceed to getting the next command"""
+        """
+        process the log entry;
+        then transition to... getting the (next) command
+        """
 
         self.log.append(log_entry)
         log_entry.result.print()
@@ -208,42 +210,27 @@ with nullcontext[dict[str, str]]({}) as cli_status:
     )
 
 
-@t.operator(CLIStage.INIT.name)
-class Init(NamedOperator[CLIState]):
-    """welcome the user"""
+@staged_operator(t, CLIStage.INIT)
+def perform_init(_s: CLIState, _io: IOContainer) -> None:
+    """init action"""
 
-    def can_perform(self, state: CLIState, _io: IOContainer) -> bool:
-        return state.stage == CLIStage.INIT
-
-    def perform(self, state: CLIState, io: IOContainer) -> None:
-        rprint("Welcome to SimpleCLI")
-        rprint("Enter [code]help[/] to see available commands.")
-        rprint()
-
-        state.transition()
+    rprint("Welcome to SimpleCLI")
+    rprint("Enter [code]help[/] to see available commands.")
+    rprint()
 
 
-@t.operator(CLIStage.GET_CMD.name)
-class GetCommand(NamedOperator[CLIState]):
-    """show the prompt + get user input"""
+@staged_operator(t, CLIStage.GET_CMD)
+def perform_get(_s: CLIState, io: IOContainer) -> None:
+    """get action"""
 
-    def can_perform(self, state: CLIState, _io: IOContainer) -> bool:
-        return state.stage == CLIStage.GET_CMD
-
-    def perform(self, state: CLIState, io: IOContainer) -> None:
-        io.o.cli_set_command(Prompt.ask(f"[bold blue]{ io.i.args.shell_sym }[/]"))
-        state.transition()
+    io.o.cli_set_command(Prompt.ask(f"[bold blue]{ io.i.args.shell_sym }[/]"))
 
 
-@t.operator(CLIStage.EXEC_CMD.name)
-class ExecCommand(NamedOperator[CLIState]):
-    """try to execute the command + log the result"""
+@staged_operator(t, CLIStage.EXEC_CMD)
+def perform_exec(_s: CLIState, io: IOContainer) -> KWArgs:
+    """exec action"""
 
-    def can_perform(self, state: CLIState, _io: IOContainer) -> bool:
-        return state.stage == CLIStage.EXEC_CMD
-
-    def perform(self, state: CLIState, io: IOContainer) -> None:
-        state.transition(CommandLogEntry.attempt_exec(io.i.cli.command))
+    return {"log_entry": CommandLogEntry.attempt_exec(io.i.cli.command)}
 
 
 @t.goal_check
