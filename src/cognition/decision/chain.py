@@ -20,8 +20,8 @@ from ..util.misc import stringify
 
 from .core import (
     Action,
+    BaseDecisionProcess,
     IOContainer,
-    Task,
 )
 
 #
@@ -106,7 +106,7 @@ def create_chain_task[CV, CA](
     chain: Iterable[CV],
     link_handler: BiFunction[Link[CV, CA], IOContainer, Optional[CA]],
     init_accumulator: Optional[CA] = None,
-) -> Task[ChainState[CV, CA]]:
+) -> BaseDecisionProcess[ChainState[CV, CA]]:
     """
     Task sequence via an iterable that with a handler at each value accumulating a result
 
@@ -116,7 +116,7 @@ def create_chain_task[CV, CA](
     :return: produced task
     """
 
-    t: Task[ChainState[CV, CA]] = Task(
+    t: BaseDecisionProcess[ChainState[CV, CA]] = BaseDecisionProcess(
         lambda: ChainState[CV, CA](chain, init_accumulator)
     )
 

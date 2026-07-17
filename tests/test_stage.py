@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 
 from cognition import (
     AutoDocEnum,
-    EnhancedTask,
+    DecisionProcess,
     IOContainer,
     KWArgs,
     StagedState,
@@ -60,7 +60,7 @@ class TestStage(unittest.TestCase):
     """Tests for stage code"""
 
     def setUp(self) -> None:
-        self.t = EnhancedTask(AuthState, enable_terminal_check=True)
+        self.t = DecisionProcess(AuthState, enable_terminal_check=True)
 
         @staged_operator(self.t, AuthStage.INIT)
         def _perform_init(_s: AuthState, io: IOContainer) -> None:

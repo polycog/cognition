@@ -27,8 +27,8 @@ from ..util.misc import stringify
 
 from ..decision.core import (
     Action,
+    BaseDecisionProcess,
     IOContainer,
-    Task,
 )
 
 #
@@ -238,7 +238,7 @@ class SearchPlanner[PS: Hashable, PA]:
         is_goal: Predicate[PS],
         successors: Succession[PS, PA],
         frontier_factory: Supplier[FrontierManager[PS, PA]],
-    ) -> Task[SearchState[PS, PA]]:
+    ) -> BaseDecisionProcess[SearchState[PS, PA]]:
         """
         Produce a search-based planner task
 
@@ -265,7 +265,9 @@ class SearchPlanner[PS: Hashable, PA]:
                 path_cost=None,
             )
 
-        t: Task[SearchState[PS, PA]] = Task(init_task_state)
+        t: BaseDecisionProcess[SearchState[PS, PA]] = BaseDecisionProcess(
+            init_task_state
+        )
 
         #
 

@@ -17,7 +17,7 @@ from contextlib import nullcontext
 from cognition import (
     AttrReferral,
     AutoDocEnum,
-    EnhancedTask,
+    DecisionProcess,
     IOContainer,
     KWArgs,
     StagedState,
@@ -200,7 +200,7 @@ with nullcontext[dict[str, str]]({}) as cli_status:
     # used to represent the user-entered command
 
     t = (
-        EnhancedTask(CLIState)
+        DecisionProcess(CLIState)
         .set_sensor(
             "cli", AttrReferral(cli_status)
         )  # expose the current command via io.i.cli

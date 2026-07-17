@@ -17,7 +17,7 @@ from ..util.enumeration import EnumDispatch
 
 from ..decision.core import IOContainer
 
-from ..decision.enhancements import EnhancedTask, Operator
+from ..decision.dp import DecisionProcess, Operator
 
 #
 
@@ -70,7 +70,7 @@ type StageSupporter[E: Enum, S: StagedState[E]] = BiFunction[S, IOContainer, Opt
 
 
 def staged_operator[SE: Enum, SS: StagedState[SE]](  # type: ignore[name-defined]
-    t: EnhancedTask[SS], stage: SE, **kwargs: Any
+    t: DecisionProcess[SS], stage: SE, **kwargs: Any
 ) -> Function[StageSupporter[SE, SS], StageSupporter[SE, SS]]:
     """
     Given that a task is using a staged state,

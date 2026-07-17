@@ -9,9 +9,9 @@ from enum import StrEnum, auto
 import unittest
 
 from cognition import (
+    BaseDecisionProcess,
     ChainState,
     EnumDispatch,
-    Task,
     create_chain_task,
 )
 
@@ -39,7 +39,7 @@ class TestChain(unittest.TestCase):
         def my_fact(n: int) -> int:
             """factorial via chaining"""
 
-            t: Task[ChainState[int, int]] = create_chain_task(
+            t: BaseDecisionProcess[ChainState[int, int]] = create_chain_task(
                 range(n),
                 lambda link, _io: cast(int, link.accumulator) * (link.value + 1),
                 1,
@@ -62,7 +62,7 @@ class TestChain(unittest.TestCase):
         Chaining without accumulator
         """
 
-        t: Task[ChainState[NerdFighter, None]] = create_chain_task(
+        t: BaseDecisionProcess[ChainState[NerdFighter, None]] = create_chain_task(
             NerdFighter,
             lambda link, io: print(link.value.value[0].lower(), end="", file=io.o.log),
         )

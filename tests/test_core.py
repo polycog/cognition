@@ -17,12 +17,12 @@ from cognition import (
     ActionFactory,
     ActionRank,
     AttrReferral,
+    BaseDecisionProcess,
+    DecisionProcessErrorMessage,
+    DecisionProcessExecutionError,
     IOContainer,
     Phase,
     Rank,
-    Task,
-    TaskErrorMessage,
-    TaskExecutionError,
     TerminationCheck,
     TimeSensor,
     create_elaborator,
@@ -113,7 +113,7 @@ class TestTask(unittest.TestCase):
     def test_func_vs_imp(self) -> None:
         """Confirms flexible action execution"""
 
-        tf: Task[list[str]] = Task(lambda: ["hi"])
+        tf: BaseDecisionProcess[list[str]] = BaseDecisionProcess(lambda: ["hi"])
 
         self.assertEqual(tf.state, ["hi"])
 
@@ -123,7 +123,7 @@ class TestTask(unittest.TestCase):
 
         #
 
-        ti: Task[list[str]] = Task(lambda: ["hi"])
+        ti: BaseDecisionProcess[list[str]] = BaseDecisionProcess(lambda: ["hi"])
 
         self.assertEqual(ti.state, ["hi"])
 
@@ -138,7 +138,7 @@ class TestTask(unittest.TestCase):
         """Confirms elaborator decoration"""
 
         word = "test"
-        t: Task[str] = Task(lambda: word)
+        t: BaseDecisionProcess[str] = BaseDecisionProcess(lambda: word)
 
         self.assertEqual(
             str(t),
@@ -154,8 +154,11 @@ class TestTask(unittest.TestCase):
                     "Rankings=",
                     "Termination Checks=",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
@@ -183,8 +186,11 @@ class TestTask(unittest.TestCase):
                     "Rankings=",
                     "Termination Checks=",
                     f"Elaborators={e_name}",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
@@ -199,7 +205,11 @@ class TestTask(unittest.TestCase):
             e_result = cast(
                 str,
                 getattr(
-                    cast(AttrReferral, getattr(io.i, Task.SENSOR_ELABORATION)), e_name
+                    cast(
+                        AttrReferral,
+                        getattr(io.i, BaseDecisionProcess.SENSOR_ELABORATION),
+                    ),
+                    e_name,
                 ),
             )
 
@@ -219,8 +229,11 @@ class TestTask(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={g_name}",
                     f"Elaborators={e_name}",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
@@ -241,8 +254,11 @@ class TestTask(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={g_name}",
                     f"Elaborators={e_name}",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
@@ -282,16 +298,18 @@ class TestTask(unittest.TestCase):
 
         starting_point: int = 100
 
-        t: Task[int] = Task(lambda: starting_point)
+        t: BaseDecisionProcess[int] = BaseDecisionProcess(lambda: starting_point)
 
         # no actions yet!
-        with self.assertRaises(TaskExecutionError) as cm:
+        with self.assertRaises(DecisionProcessExecutionError) as cm:
             for _ in t.phases():
                 pass
 
-        self.assertEqual(cm.exception.msg, TaskErrorMessage.NO_PROPOSAL)
+        self.assertEqual(cm.exception.msg, DecisionProcessErrorMessage.NO_PROPOSAL)
 
-        self.assertEqual(str(cm.exception), TaskErrorMessage.NO_PROPOSAL.value)
+        self.assertEqual(
+            str(cm.exception), DecisionProcessErrorMessage.NO_PROPOSAL.value
+        )
 
         t.reinit()
 
@@ -300,13 +318,13 @@ class TestTask(unittest.TestCase):
         t.add_action_factory(lambda _s, _io: [a_inc, a_dec])
 
         # no evaluation of multiple possibilities
-        with self.assertRaises(TaskExecutionError) as cm:
+        with self.assertRaises(DecisionProcessExecutionError) as cm:
             for _ in t.cycles():
                 pass
 
-        self.assertEqual(cm.exception.msg, TaskErrorMessage.NO_RANK)
+        self.assertEqual(cm.exception.msg, DecisionProcessErrorMessage.NO_RANK)
 
-        self.assertEqual(str(cm.exception), TaskErrorMessage.NO_RANK.value)
+        self.assertEqual(str(cm.exception), DecisionProcessErrorMessage.NO_RANK.value)
 
         #
 
@@ -349,7 +367,7 @@ class TestTask(unittest.TestCase):
         lst_name: str = "lst"
         lst: ListSensorActuator = ListSensorActuator()
 
-        task_io: Task[int] = Task(lambda: starting_point)
+        task_io: BaseDecisionProcess[int] = BaseDecisionProcess(lambda: starting_point)
 
         self.assertEqual(
             str(task_io),
@@ -365,8 +383,11 @@ class TestTask(unittest.TestCase):
                     "Rankings=",
                     "Termination Checks=",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
@@ -389,8 +410,11 @@ class TestTask(unittest.TestCase):
                     "Rankings=",
                     "Termination Checks=",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}, {lst_name}",
-                    f"Actuators={Task.ACTUATOR_LOG}, {lst_name}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}, {lst_name}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}, {lst_name}",
                 )
             ),
         )
@@ -405,8 +429,12 @@ class TestTask(unittest.TestCase):
             sensed: str = str(cast(ListSensorActuator, getattr(io.i, lst_name)).data)
             cast(ListSensorActuator, getattr(io.o, lst_name)).add(str(s))
 
-            log: StringIO = cast(StringIO, getattr(io.o, Task.ACTUATOR_LOG))
-            cycle: int = cast(TimeSensor[int], getattr(io.i, Task.SENSOR_TIME)).cycles
+            log: StringIO = cast(
+                StringIO, getattr(io.o, BaseDecisionProcess.ACTUATOR_LOG)
+            )
+            cycle: int = cast(
+                TimeSensor[int], getattr(io.i, BaseDecisionProcess.SENSOR_TIME)
+            ).cycles
 
             print(f"@{cycle}: data={sensed}", file=log)
 
@@ -453,8 +481,11 @@ class TestTask(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
@@ -477,8 +508,8 @@ class TestTask(unittest.TestCase):
 
         #
 
-        task_count_until: Task[int] = (
-            Task(lambda: starting_point)
+        task_count_until: BaseDecisionProcess[int] = (
+            BaseDecisionProcess(lambda: starting_point)
             .add_termination_check(_make_term(e_perfect, e_prime))
             .add_elaborator(
                 create_elaborator(
@@ -516,8 +547,11 @@ class TestTask(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={TERMINATION_NAME}",
                     f"Elaborators={ELAB_NAME}",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
@@ -548,8 +582,11 @@ class TestTask(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={TERMINATION_NAME}",
                     f"Elaborators={ELAB_NAME}",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )

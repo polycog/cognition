@@ -42,10 +42,10 @@ from .core import (
     ActionEvaluator,
     ActionFactory,
     ActionRank,
+    BaseDecisionProcess,
     Elaborator,
     IOContainer,
     Phase,
-    Task,
 )
 
 if TYPE_CHECKING:
@@ -79,8 +79,8 @@ class Rank(IntEnum):
 
 
 def _add_args[S](
-    t: Task[S], namespace: str, **info: Any
-) -> Generator[Task[S], None, None]:
+    t: BaseDecisionProcess[S], namespace: str, **info: Any
+) -> Generator[BaseDecisionProcess[S], None, None]:
     """
     Provides `io.i.namespace` temporarily
 
@@ -98,8 +98,8 @@ def _add_args[S](
 
 @contextmanager
 def args_added[S](
-    t: Task[S], namespace: str = ARGS_ATTR, **info: Any
-) -> Generator[Task[S], None, None]:
+    t: BaseDecisionProcess[S], namespace: str = ARGS_ATTR, **info: Any
+) -> Generator[BaseDecisionProcess[S], None, None]:
     """
     Provides `io.i.namespace` temporarily
 
@@ -250,7 +250,9 @@ class Operator[S](ABC, BaseOperator[S]):
 
 
 def add_operator[S](
-    task: Task[S], op: BaseOperator[S], self_param: Optional[str] = OPERATOR_SELF_PARAM
+    task: BaseDecisionProcess[S],
+    op: BaseOperator[S],
+    self_param: Optional[str] = OPERATOR_SELF_PARAM,
 ) -> tuple[ActionFactory[S], Action[S]]:
     """
     Instantiates the operator within a task
@@ -370,9 +372,9 @@ TERMINAL_ACTION_ATTR: str = "terminal"
 """Attribute name to trigger termination for a selected action"""
 
 
-class EnhancedTask[S](Task[S]):
+class DecisionProcess[S](BaseDecisionProcess[S]):
     """
-    Support for optional task enhancements
+    Support for optional decision process add-ons
     """
 
     def __init__(
@@ -395,7 +397,7 @@ class EnhancedTask[S](Task[S]):
     @contextmanager
     def args_added(
         self, namespace: str = ARGS_ATTR, **info: Any
-    ) -> Generator[Task[S], None, None]:
+    ) -> Generator[BaseDecisionProcess[S], None, None]:
         """
         Pass-thru to :func:`args_added`
 
@@ -422,7 +424,7 @@ class EnhancedTask[S](Task[S]):
         self, op: BaseOperator[S], self_param: Optional[str] = OPERATOR_SELF_PARAM
     ) -> Self:
         """
-        Pass-thru to :meth:`EnhancedTask.add_operator`.
+        Pass-thru to :meth:`DecisionProcess.add_operator`.
 
         :param op: operator with factory/action info
         :param self_param: if not ``None``, action param referring to the op
@@ -439,7 +441,7 @@ class EnhancedTask[S](Task[S]):
         **kwargs: Any,
     ) -> Function[type[Operator[S]], type[Operator[S]]]:
         """
-        Decorator version of :meth:`EnhancedTask.add_operator`
+        Decorator version of :meth:`DecisionProcess.add_operator`
         that assumes instantiation takes a positional name
         and arbitrary keywords
 

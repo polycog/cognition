@@ -1,5 +1,5 @@
 """
-Tests for enhancement code
+Tests for dp code
 """
 
 from typing import (
@@ -21,13 +21,13 @@ from cognition import (
     AttrReferral,
     BiFunction,
     Elaborator,
-    EnhancedTask,
+    DecisionProcess,
     IOContainer,
     NamedAction,
     Operator,
     Phase,
     Rank,
-    Task,
+    BaseDecisionProcess,
     args_added,
     create_named_action,
     create_elaborator,
@@ -144,8 +144,8 @@ class ChangeOp(Operator[int]):
 #
 
 
-class TestEnhancements(unittest.TestCase):
-    """Tests for enhancement code"""
+class TestDP(unittest.TestCase):
+    """Tests for dp code"""
 
     def setUp(self) -> None:
         self.vote_yay = create_named_action(
@@ -173,7 +173,7 @@ class TestEnhancements(unittest.TestCase):
 
         state_start = 0
 
-        t = EnhancedTask(lambda: state_start, enable_terminal_check=True)
+        t = DecisionProcess(lambda: state_start, enable_terminal_check=True)
 
         self.assertEqual(t.state, state_start)
 
@@ -247,7 +247,9 @@ class TestEnhancements(unittest.TestCase):
     def test_named_op_decorator(self) -> None:
         """Confirming named operator decorator"""
 
-        t: EnhancedTask[bool] = EnhancedTask(lambda: False, enable_terminal_check=True)
+        t: DecisionProcess[bool] = DecisionProcess(
+            lambda: False, enable_terminal_check=True
+        )
 
         op_name = "done"
         act_name = f"{op_name}[terminal=True]"
@@ -278,8 +280,11 @@ class TestEnhancements(unittest.TestCase):
                     "Rankings=",
                     "Termination Checks=",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
@@ -287,11 +292,13 @@ class TestEnhancements(unittest.TestCase):
     def test_terminal(self) -> None:
         """Confirming terminal check"""
 
-        t1: EnhancedTask[str] = EnhancedTask(
+        t1: DecisionProcess[str] = DecisionProcess(
             lambda: "",
         )
 
-        t2: EnhancedTask[str] = EnhancedTask(lambda: "", enable_terminal_check=True)
+        t2: DecisionProcess[str] = DecisionProcess(
+            lambda: "", enable_terminal_check=True
+        )
 
         do_regular = create_named_action(
             "do",
@@ -346,8 +353,8 @@ class TestEnhancements(unittest.TestCase):
         bye_name: str = "bye"
         done_name: str = "done_yet?"
 
-        t: EnhancedTask[OpStage] = (
-            EnhancedTask(lambda: OpStage.SAY_HI)
+        t: DecisionProcess[OpStage] = (
+            DecisionProcess(lambda: OpStage.SAY_HI)
             .add_operator_c(HiOp(hi_name))
             .add_operator_c(ByeOp(bye_name))
         )
@@ -373,8 +380,11 @@ class TestEnhancements(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={done_name}",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
@@ -395,8 +405,11 @@ class TestEnhancements(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={done_name}",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
@@ -419,8 +432,11 @@ class TestEnhancements(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={done_name}",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
@@ -443,8 +459,11 @@ class TestEnhancements(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={done_name}",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
@@ -595,7 +614,7 @@ class TestEnhancements(unittest.TestCase):
         """Checks sorting_evaluator"""
 
         init_state: int = 3
-        t: EnhancedTask[int] = EnhancedTask(lambda: init_state)
+        t: DecisionProcess[int] = DecisionProcess(lambda: init_state)
 
         final_val: int = 10
         goal_name: str = f"at{final_val}"
@@ -624,7 +643,7 @@ class TestEnhancements(unittest.TestCase):
         # confirming tie-breaking
         op_param_tie: str = "foo"
 
-        t2: EnhancedTask[int] = EnhancedTask(lambda: 42)
+        t2: DecisionProcess[int] = DecisionProcess(lambda: 42)
         _, a2, _ = t2.add_operator(mult2, op_param_tie)
         _, a2b, _ = t2.add_operator(mult2b, op_param_tie)
 
@@ -664,8 +683,11 @@ class TestEnhancements(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
@@ -697,8 +719,11 @@ class TestEnhancements(unittest.TestCase):
                 }",
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
@@ -732,8 +757,11 @@ class TestEnhancements(unittest.TestCase):
                 }",
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
@@ -758,8 +786,11 @@ class TestEnhancements(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
@@ -793,8 +824,11 @@ class TestEnhancements(unittest.TestCase):
                 }",
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
                 )
             ),
         )
