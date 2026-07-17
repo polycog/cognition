@@ -268,7 +268,7 @@ class TestEnhancements(unittest.TestCase):
             str(t),
             "\n".join(
                 (
-                    f"Phase={Phase.GOALCHECK.name}",
+                    f"Phase={Phase.TERMINATIONCHECK.name}",
                     f"State={True}",
                     f"Done?={True}",
                     f"Chosen={act_name}",
@@ -276,7 +276,7 @@ class TestEnhancements(unittest.TestCase):
                     f"Potential Actions={act_name}",
                     "Action Evaluators=",
                     "Rankings=",
-                    "Goal Checks=",
+                    "Termination Checks=",
                     "Elaborators=",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",
@@ -285,7 +285,7 @@ class TestEnhancements(unittest.TestCase):
         )
 
     def test_terminal(self) -> None:
-        """Confirming terminal goal check"""
+        """Confirming terminal check"""
 
         t1: EnhancedTask[str] = EnhancedTask(
             lambda: "",
@@ -352,7 +352,7 @@ class TestEnhancements(unittest.TestCase):
             .add_operator_c(ByeOp(bye_name))
         )
 
-        @t.goal_check
+        @t.termination_check
         @stringify(done_name)
         def check_done(s: OpStage, _io: IOContainer) -> bool:
             "done yet?"
@@ -371,7 +371,7 @@ class TestEnhancements(unittest.TestCase):
                     "Potential Actions=",
                     "Action Evaluators=",
                     "Rankings=",
-                    f"Goal Checks={done_name}",
+                    f"Termination Checks={done_name}",
                     "Elaborators=",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",
@@ -393,7 +393,7 @@ class TestEnhancements(unittest.TestCase):
                     f"Potential Actions={hi_name}",
                     "Action Evaluators=",
                     "Rankings=",
-                    f"Goal Checks={done_name}",
+                    f"Termination Checks={done_name}",
                     "Elaborators=",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",
@@ -417,7 +417,7 @@ class TestEnhancements(unittest.TestCase):
                     f"Potential Actions={bye_name}",
                     "Action Evaluators=",
                     "Rankings=",
-                    f"Goal Checks={done_name}",
+                    f"Termination Checks={done_name}",
                     "Elaborators=",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",
@@ -433,7 +433,7 @@ class TestEnhancements(unittest.TestCase):
             str(t),
             "\n".join(
                 (
-                    f"Phase={Phase.GOALCHECK.name}",
+                    f"Phase={Phase.TERMINATIONCHECK.name}",
                     f"State={OpStage.DONE}",
                     f"Done?={True}",
                     f"Chosen={bye_name}",
@@ -441,7 +441,7 @@ class TestEnhancements(unittest.TestCase):
                     f"Potential Actions={bye_name}",
                     "Action Evaluators=",
                     "Rankings=",
-                    f"Goal Checks={done_name}",
+                    f"Termination Checks={done_name}",
                     "Elaborators=",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",
@@ -600,7 +600,7 @@ class TestEnhancements(unittest.TestCase):
         final_val: int = 10
         goal_name: str = f"at{final_val}"
 
-        @t.goal_check
+        @t.termination_check
         @stringify(goal_name)
         def atval(num: int, _io: IOContainer) -> bool:
             """achieved value!"""
@@ -662,7 +662,7 @@ class TestEnhancements(unittest.TestCase):
                     "Potential Actions=",
                     f"Action Evaluators={eval_name}",
                     "Rankings=",
-                    f"Goal Checks={goal_name}",
+                    f"Termination Checks={goal_name}",
                     "Elaborators=",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",
@@ -695,7 +695,7 @@ class TestEnhancements(unittest.TestCase):
                         )
                     )
                 }",
-                    f"Goal Checks={goal_name}",
+                    f"Termination Checks={goal_name}",
                     "Elaborators=",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",
@@ -730,7 +730,7 @@ class TestEnhancements(unittest.TestCase):
                         )
                     )
                 }",
-                    f"Goal Checks={goal_name}",
+                    f"Termination Checks={goal_name}",
                     "Elaborators=",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",
@@ -756,7 +756,7 @@ class TestEnhancements(unittest.TestCase):
                     f"{", ".join(str(ov[1]) for o,ov in ops.items() if o.enabled)}",
                     f"Action Evaluators={eval_name}",
                     "Rankings=",
-                    f"Goal Checks={goal_name}",
+                    f"Termination Checks={goal_name}",
                     "Elaborators=",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",
@@ -773,7 +773,7 @@ class TestEnhancements(unittest.TestCase):
             str(t),
             "\n".join(
                 (
-                    f"Phase={Phase.GOALCHECK.name}",
+                    f"Phase={Phase.TERMINATIONCHECK.name}",
                     f"State={final_val}",
                     f"Done?={True}",
                     f"Chosen={str(ops[add1][1])}",
@@ -791,7 +791,7 @@ class TestEnhancements(unittest.TestCase):
                         )
                     )
                 }",
-                    f"Goal Checks={goal_name}",
+                    f"Termination Checks={goal_name}",
                     "Elaborators=",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",

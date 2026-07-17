@@ -304,7 +304,7 @@ class SearchPlanner[PS: Hashable, PA]:
 
             return search_action
 
-        @t.goal_check
+        @t.termination_check
         @stringify("search_complete")
         def search_complete(
             s: SearchState[PS, PA],

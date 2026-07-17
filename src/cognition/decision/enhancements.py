@@ -367,7 +367,7 @@ def operator_sorting_key[S](
 
 
 TERMINAL_ACTION_ATTR: str = "terminal"
-"""Attribute name to trigger goal completion for a selected action"""
+"""Attribute name to trigger termination for a selected action"""
 
 
 class EnhancedTask[S](Task[S]):
@@ -384,13 +384,13 @@ class EnhancedTask[S](Task[S]):
         :param state_initializer: produces state initially (and on ``reinit``)
         :param enable_terminal_check: if True, a selected :class:`NamedAction` with a
                                       :const:`TERMINAL_ACTION_ATTR` parameter
-                                      triggers goal completion during goal check
+                                      triggers termination during check
         """
 
         super().__init__(state_initializer)
 
         if enable_terminal_check:
-            self._phase_handlers[Phase.GOALCHECK] = self._terminal_goal_check
+            self._phase_handlers[Phase.TERMINATIONCHECK] = self._terminal_check
 
     @contextmanager
     def args_added(
@@ -464,16 +464,16 @@ class EnhancedTask[S](Task[S]):
 
         return cls_dec
 
-    def _terminal_goal_check(self) -> bool:
+    def _terminal_check(self) -> bool:
         """
-        Custom goal check, adding possibility of terminal actions
+        Custom termination check, adding possibility of terminal actions
         """
 
-        if not self._goal_achieved:
+        if not self._terminated:
             if isinstance(self._chosen, NamedAction):
-                self._goal_achieved = TERMINAL_ACTION_ATTR in self._chosen.params
+                self._terminated = TERMINAL_ACTION_ATTR in self._chosen.params
 
-        return super()._goal_check()
+        return super()._termination_check()
 
     def __call__(
         self,

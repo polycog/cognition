@@ -17,13 +17,13 @@ from cognition import (
     ActionFactory,
     ActionRank,
     AttrReferral,
-    GoalCheck,
     IOContainer,
     Phase,
     Rank,
     Task,
     TaskErrorMessage,
     TaskExecutionError,
+    TerminationCheck,
     TimeSensor,
     create_elaborator,
     create_named_action,
@@ -32,19 +32,19 @@ from cognition import (
 
 #
 
-GOAL_NAME: str = "prime_or_perfect"
+TERMINATION_NAME: str = "prime_or_perfect"
 FACTORY_NAME: str = "always_inc"
 ELAB_NAME: str = "prime_and_perfect"
 
 
-def _make_goal(a_perfect: str, a_prime: str) -> GoalCheck[int]:
+def _make_term(a_perfect: str, a_prime: str) -> TerminationCheck[int]:
     """
-    Create the perfect/prime goal check
+    Create the perfect/prime termination check
     given the supplied elaboration
     attributes
     """
 
-    @stringify(GOAL_NAME)
+    @stringify(TERMINATION_NAME)
     def pred(_: int, io: IOContainer) -> bool:
         v_perfect = cast(bool, getattr(io.i.elaboration, a_perfect))
 
@@ -152,7 +152,7 @@ class TestTask(unittest.TestCase):
                     "Potential Actions=",
                     "Action Evaluators=",
                     "Rankings=",
-                    "Goal Checks=",
+                    "Termination Checks=",
                     "Elaborators=",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",
@@ -181,7 +181,7 @@ class TestTask(unittest.TestCase):
                     "Potential Actions=",
                     "Action Evaluators=",
                     "Rankings=",
-                    "Goal Checks=",
+                    "Termination Checks=",
                     f"Elaborators={e_name}",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",
@@ -193,7 +193,7 @@ class TestTask(unittest.TestCase):
 
         g_name = f"check_{e_name}"
 
-        @t.goal_check
+        @t.termination_check
         @stringify(g_name)
         def check_echo(_s: str, io: IOContainer) -> bool:
             e_result = cast(
@@ -217,7 +217,7 @@ class TestTask(unittest.TestCase):
                     "Potential Actions=",
                     "Action Evaluators=",
                     "Rankings=",
-                    f"Goal Checks={g_name}",
+                    f"Termination Checks={g_name}",
                     f"Elaborators={e_name}",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",
@@ -231,7 +231,7 @@ class TestTask(unittest.TestCase):
             str(t),
             "\n".join(
                 (
-                    f"Phase={Phase.GOALCHECK.name}",
+                    f"Phase={Phase.TERMINATIONCHECK.name}",
                     f"State={word}",
                     f"Done?={True}",
                     f"Chosen={None}",
@@ -239,7 +239,7 @@ class TestTask(unittest.TestCase):
                     "Potential Actions=",
                     "Action Evaluators=",
                     "Rankings=",
-                    f"Goal Checks={g_name}",
+                    f"Termination Checks={g_name}",
                     f"Elaborators={e_name}",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",
@@ -250,9 +250,9 @@ class TestTask(unittest.TestCase):
     def test_phase(self) -> None:
         """Confirms phase sequencing"""
 
-        self.assertEqual(Phase.ELABORATION.next, Phase.GOALCHECK)
+        self.assertEqual(Phase.ELABORATION.next, Phase.TERMINATIONCHECK)
 
-        self.assertEqual(Phase.GOALCHECK.next, Phase.PROPOSE)
+        self.assertEqual(Phase.TERMINATIONCHECK.next, Phase.PROPOSE)
 
         self.assertEqual(Phase.PROPOSE.next, Phase.RANK)
 
@@ -333,7 +333,7 @@ class TestTask(unittest.TestCase):
 
         #
 
-        t.add_goal_check(lambda s, _io: s == starting_point - 2)
+        t.add_termination_check(lambda s, _io: s == starting_point - 2)
 
         for _ in t.cycles():
             pass
@@ -363,7 +363,7 @@ class TestTask(unittest.TestCase):
                     "Potential Actions=",
                     "Action Evaluators=",
                     "Rankings=",
-                    "Goal Checks=",
+                    "Termination Checks=",
                     "Elaborators=",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",
@@ -387,7 +387,7 @@ class TestTask(unittest.TestCase):
                     "Potential Actions=",
                     "Action Evaluators=",
                     "Rankings=",
-                    "Goal Checks=",
+                    "Termination Checks=",
                     "Elaborators=",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}, {lst_name}",
                     f"Actuators={Task.ACTUATOR_LOG}, {lst_name}",
@@ -434,7 +434,7 @@ class TestTask(unittest.TestCase):
 
             return s == starting_point + goal_diff
 
-        task_io.add_goal_check(go_goal).run_until_done()
+        task_io.add_termination_check(go_goal).run_until_done()
 
         # confirm ability to remove sensors/actuators
         task_io.set_sensor(lst_name, None).set_actuator(lst_name, None)
@@ -443,7 +443,7 @@ class TestTask(unittest.TestCase):
             str(task_io),
             "\n".join(
                 (
-                    f"Phase={Phase.GOALCHECK.name}",
+                    f"Phase={Phase.TERMINATIONCHECK.name}",
                     f"State={starting_point + goal_diff}",
                     f"Done?={True}",
                     f"Chosen={a_name}",
@@ -451,7 +451,7 @@ class TestTask(unittest.TestCase):
                     f"Potential Actions={a_name}",
                     "Action Evaluators=",
                     "Rankings=",
-                    f"Goal Checks={goal_name}",
+                    f"Termination Checks={goal_name}",
                     "Elaborators=",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",
@@ -479,7 +479,7 @@ class TestTask(unittest.TestCase):
 
         task_count_until: Task[int] = (
             Task(lambda: starting_point)
-            .add_goal_check(_make_goal(e_perfect, e_prime))
+            .add_termination_check(_make_term(e_perfect, e_prime))
             .add_elaborator(
                 create_elaborator(
                     ELAB_NAME,
@@ -514,7 +514,7 @@ class TestTask(unittest.TestCase):
                     "Potential Actions=",
                     "Action Evaluators=",
                     "Rankings=",
-                    f"Goal Checks={GOAL_NAME}",
+                    f"Termination Checks={TERMINATION_NAME}",
                     f"Elaborators={ELAB_NAME}",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",
@@ -530,7 +530,7 @@ class TestTask(unittest.TestCase):
 
         self.assertTrue(task_count_until.done)
 
-        self.assertEqual(task_count_until.phase, Phase.GOALCHECK)
+        self.assertEqual(task_count_until.phase, Phase.TERMINATIONCHECK)
 
         self.assertEqual(task_count_until.chosen_action, a_inc)
 
@@ -538,7 +538,7 @@ class TestTask(unittest.TestCase):
             str(task_count_until),
             "\n".join(
                 (
-                    f"Phase={Phase.GOALCHECK.name}",
+                    f"Phase={Phase.TERMINATIONCHECK.name}",
                     f"State={next_perfect_prime}",
                     f"Done?={True}",
                     f"Chosen={a_inc}",
@@ -546,7 +546,7 @@ class TestTask(unittest.TestCase):
                     f"Potential Actions={a_inc}",
                     "Action Evaluators=",
                     "Rankings=",
-                    f"Goal Checks={GOAL_NAME}",
+                    f"Termination Checks={TERMINATION_NAME}",
                     f"Elaborators={ELAB_NAME}",
                     f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
                     f"Actuators={Task.ACTUATOR_LOG}",

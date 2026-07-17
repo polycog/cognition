@@ -63,7 +63,7 @@ class Phase(IntEnum):
     ELABORATION = 0
     """Monotonic summarization of state"""
 
-    GOALCHECK = 1
+    TERMINATIONCHECK = 1
     """Detect task completion"""
 
     PROPOSE = 2
@@ -89,7 +89,7 @@ class Phase(IntEnum):
 type Elaborator[S] = BiFunction[S, IOContainer, dict[str, Any]]
 """Monotonically summarizes current state"""
 
-type GoalCheck[S] = BiPredicate[S, IOContainer]
+type TerminationCheck[S] = BiPredicate[S, IOContainer]
 """Detects task completion based upon current state"""
 
 type Action[S] = BiFunction[S, IOContainer, S | None]
@@ -193,12 +193,14 @@ class Task[S]:
     _state: S  # arbitrary representation
     _state_init: Supplier[S]  # state start
     _elaborators: list[Elaborator[S]]  # elaborates state each cycle
-    _goal_checks: list[GoalCheck[S]]  # determines if the task been completed
+    _termination_checks: list[
+        TerminationCheck[S]
+    ]  # determines if the task been completed
     _action_factories: list[ActionFactory[S]]  # identifying potential next task steps
     _action_evaluators: list[ActionEvaluator[S]] = []  # ranking for supplied tasks
 
     # Internal task state...
-    _goal_achieved: bool  # is the current task complete?
+    _terminated: bool  # is the current task complete?
     _phase: Phase  # current phase of task operation
     _potential_actions: list[Action[S]]  # last computed set of potential actions
     _ranking: list[ActionRank[S]]  # last computed set of action ranking
@@ -223,7 +225,7 @@ class Task[S]:
 
         self._state_init = state_initializer
         self._elaborators = []
-        self._goal_checks = []
+        self._termination_checks = []
         self._action_factories = []
         self._action_evaluators = []
 
@@ -244,7 +246,7 @@ class Task[S]:
         _f = stringify(_bad_name)(lambda: False)
         self._phase_handlers = [_f] * len(Phase)
         self._phase_handlers[Phase.ELABORATION] = self._elaborate
-        self._phase_handlers[Phase.GOALCHECK] = self._goal_check
+        self._phase_handlers[Phase.TERMINATIONCHECK] = self._termination_check
         self._phase_handlers[Phase.PROPOSE] = self._propose
         self._phase_handlers[Phase.RANK] = self._rank
         self._phase_handlers[Phase.APPLY] = self._apply
@@ -261,7 +263,7 @@ class Task[S]:
         """
         self._state = self._state_init()
 
-        self._goal_achieved = False
+        self._terminated = False
         self._phase = Phase.ELABORATION
         self._potential_actions = []
         self._ranking = []
@@ -285,7 +287,9 @@ class Task[S]:
                     str(ae) for ae in self._action_evaluators
                 ),
                 "Rankings": ", ".join(str(ar) for ar in self._ranking),
-                "Goal Checks": ", ".join(str(p) for p in self._goal_checks),
+                "Termination Checks": ", ".join(
+                    str(p) for p in self._termination_checks
+                ),
                 "Elaborators": ", ".join(str(e) for e in self._elaborators),
                 "Sensors": ", ".join(s for s in self._sensors),
                 "Actuators": ", ".join(a for a in self._actuators),
@@ -303,10 +307,10 @@ class Task[S]:
     @property
     def done(self) -> bool:
         """
-        :return: ``True`` if any goal check has returned ``True``
+        :return: ``True`` if any termination check has returned ``True``
         """
 
-        return self._goal_achieved
+        return self._terminated
 
     @property
     def state(self) -> S:
@@ -371,7 +375,7 @@ class Task[S]:
 
     #
 
-    def add_goal_check(self, p: GoalCheck[S]) -> Self:
+    def add_termination_check(self, p: TerminationCheck[S]) -> Self:
         """
         Add a task-state predicate to identify a cause of task completion
 
@@ -379,33 +383,33 @@ class Task[S]:
         :return: this task (for chaining)
         """
 
-        self._goal_checks.append(p)
+        self._termination_checks.append(p)
 
         return self
 
-    def goal_check(self, p: GoalCheck[S]) -> GoalCheck[S]:
+    def termination_check(self, p: TerminationCheck[S]) -> TerminationCheck[S]:
         """
-        Decorator version of :meth:`Task.add_goal_check`
+        Decorator version of :meth:`Task.add_termination_check`
 
         :param p: predicate to add
         :return: added predicate
         """
 
-        self.add_goal_check(p)
+        self.add_termination_check(p)
         return p
 
-    def _goal_check(self) -> bool:
+    def _termination_check(self) -> bool:
         """
-        GoalCheck phase: task is complete if any goal check returns True
-                         (and if so shifts to Propose phase)
+        TerminationCheck phase: task is complete if any termination check returns True
+                                (and if so shifts to Propose phase)
         """
-        if not self._goal_achieved:
+        if not self._terminated:
             self._step_count += 1
-            self._goal_achieved = any(
-                p(self._state, self._io) for p in self._goal_checks
+            self._terminated = any(
+                p(self._state, self._io) for p in self._termination_checks
             )
 
-        return not self._goal_achieved
+        return not self._terminated
 
     #
 

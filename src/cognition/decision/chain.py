@@ -146,7 +146,7 @@ def create_chain_task[CV, CA](
 
         return link_action
 
-    @t.goal_check
+    @t.termination_check
     @stringify("is_exhausted")
     def goal_check(cs: ChainState[CV, CA], _io: IOContainer) -> bool:
         """Checks if the chain is exhausted"""

@@ -233,7 +233,7 @@ def perform_exec(_s: CLIState, io: IOContainer) -> KWArgs:
     return {"log_entry": CommandLogEntry.attempt_exec(io.i.cli.command)}
 
 
-@t.goal_check
+@t.termination_check
 @stringify("exit_flag")
 def exit_flag(s: CLIState, _: IOContainer) -> bool:
     """Exit if told to!"""
