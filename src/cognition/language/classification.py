@@ -17,7 +17,7 @@ from contextlib import suppress
 
 from pydantic import BaseModel, create_model
 
-from pydantic_ai import Agent
+from pydantic_ai import Agent as LanguageConvo
 from pydantic_ai.models import Model
 
 from .description import enum_name_doc, enum_item_doc
@@ -152,7 +152,7 @@ class EnumClassifier[T: Enum]:
         if num_trials < 1:
             raise ValueError("Must perform at least one trial")
 
-        agent = Agent(
+        convo = LanguageConvo(
             model=llm,
             output_type=self._schema,
             system_prompt="You are a helpful assistant.",
@@ -166,7 +166,7 @@ class EnumClassifier[T: Enum]:
             result = None
 
             with suppress(Exception):
-                result = agent.run_sync(prompt).output.value  # type: ignore
+                result = convo.run_sync(prompt).output.value  # type: ignore
 
             results.append(result)
 

@@ -1,5 +1,5 @@
 """
-Support for a task sequence generated via an iterable value.
+Support for a decision process generated via an iterable value.
 """
 
 from typing import (
@@ -18,11 +18,9 @@ from ..util.functypes import BiFunction
 
 from ..util.misc import stringify
 
-from .core import (
-    Action,
-    BaseDecisionProcess,
-    IOContainer,
-)
+from .core import Action, IOContainer
+
+from .dp import DecisionProcess
 
 #
 
@@ -30,7 +28,7 @@ from .core import (
 @dataclass(frozen=True)
 class Link[CV, CA]:
     """
-    A link in a chained task
+    A link in a chained decision process
     """
 
     value: CV
@@ -42,7 +40,7 @@ class Link[CV, CA]:
 
 class ChainState[CV, CA]:
     """
-    State of a chained task
+    State of a chained decision process
 
     Parameters represent...
 
@@ -102,27 +100,27 @@ class ChainState[CV, CA]:
         self._value = next(self._iterator, None)
 
 
-def create_chain_task[CV, CA](
+def create_chain_dp[CV, CA](
     chain: Iterable[CV],
     link_handler: BiFunction[Link[CV, CA], IOContainer, Optional[CA]],
     init_accumulator: Optional[CA] = None,
-) -> BaseDecisionProcess[ChainState[CV, CA]]:
+) -> DecisionProcess[ChainState[CV, CA]]:
     """
-    Task sequence via an iterable that with a handler at each value accumulating a result
+    Decision process via an iterable that with a handler at each value accumulating a result
 
     :param chain: sequence of values
     :param link_handler: function called at each chain link that can update the accumulator
     :param init_accumulator: initial (optional) accumulator value
-    :return: produced task
+    :return: produced decision process
     """
 
-    t: BaseDecisionProcess[ChainState[CV, CA]] = BaseDecisionProcess(
+    dp: DecisionProcess[ChainState[CV, CA]] = DecisionProcess(
         lambda: ChainState[CV, CA](chain, init_accumulator)
     )
 
     #
 
-    @t.action_factory
+    @dp.action_factory
     @stringify("always_chaining")
     def action_factory(
         _s: ChainState[CV, CA], _io: IOContainer
@@ -146,7 +144,7 @@ def create_chain_task[CV, CA](
 
         return link_action
 
-    @t.termination_check
+    @dp.termination_check
     @stringify("is_exhausted")
     def goal_check(cs: ChainState[CV, CA], _io: IOContainer) -> bool:
         """Checks if the chain is exhausted"""
@@ -155,4 +153,4 @@ def create_chain_task[CV, CA](
 
     #
 
-    return t
+    return dp

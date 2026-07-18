@@ -1,5 +1,5 @@
 """
-Decision process
+Base decision process
 """
 
 from __future__ import annotations
@@ -669,11 +669,11 @@ class TimeSensor[S]:
     Sensor (:attr:`DecisionProcess.SENSOR_TIME`) of the cycle count
     (via :attr:`DecisionProcess.SENSOR_TIME_ATTR`)
 
-    :param t: associated decision process
+    :param dp: associated decision process
     """
 
-    def __init__(self, t: BaseDecisionProcess[S]):
-        self._t: BaseDecisionProcess[S] = t
+    def __init__(self, dp: BaseDecisionProcess[S]):
+        self._dp: BaseDecisionProcess[S] = dp
 
     @property
     def cycles(self) -> int:
@@ -681,7 +681,7 @@ class TimeSensor[S]:
         :return: associated decision process' cycle count
         """
 
-        return self._t.num_cycles
+        return self._dp.num_cycles
 
 
 # pylint: disable=too-few-public-methods

@@ -107,41 +107,41 @@ class ListSensorActuator:
         self._data.append(item)
 
 
-class TestTask(unittest.TestCase):
-    """Tests for task code"""
+class TestCore(unittest.TestCase):
+    """Tests for core code"""
 
     def test_func_vs_imp(self) -> None:
         """Confirms flexible action execution"""
 
-        tf: BaseDecisionProcess[list[str]] = BaseDecisionProcess(lambda: ["hi"])
+        dp_f: BaseDecisionProcess[list[str]] = BaseDecisionProcess(lambda: ["hi"])
 
-        self.assertEqual(tf.state, ["hi"])
+        self.assertEqual(dp_f.state, ["hi"])
 
-        tf.add_action_factory(lambda _s, _io: [lambda s, _: s[1:]]).run_cycles()
+        dp_f.add_action_factory(lambda _s, _io: [lambda s, _: s[1:]]).run_cycles()
 
-        self.assertEqual(tf.state, [])
+        self.assertEqual(dp_f.state, [])
 
         #
 
-        ti: BaseDecisionProcess[list[str]] = BaseDecisionProcess(lambda: ["hi"])
+        dp_i: BaseDecisionProcess[list[str]] = BaseDecisionProcess(lambda: ["hi"])
 
-        self.assertEqual(ti.state, ["hi"])
+        self.assertEqual(dp_i.state, ["hi"])
 
         def a(s: list[str], _io: IOContainer) -> None:
             del s[0]
 
-        ti.add_action_factory(lambda _s, _io: a).run_cycles()
+        dp_i.add_action_factory(lambda _s, _io: a).run_cycles()
 
-        self.assertEqual(ti.state, [])
+        self.assertEqual(dp_i.state, [])
 
     def test_elab_dec(self) -> None:
         """Confirms elaborator decoration"""
 
         word = "test"
-        t: BaseDecisionProcess[str] = BaseDecisionProcess(lambda: word)
+        dp: BaseDecisionProcess[str] = BaseDecisionProcess(lambda: word)
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -167,13 +167,13 @@ class TestTask(unittest.TestCase):
 
         e_name = "echo"
 
-        @t.elaborator
+        @dp.elaborator
         @stringify(e_name)
         def echo(s: str, _io: IOContainer) -> dict[str, Any]:
             return {e_name: s}
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -199,7 +199,7 @@ class TestTask(unittest.TestCase):
 
         g_name = f"check_{e_name}"
 
-        @t.termination_check
+        @dp.termination_check
         @stringify(g_name)
         def check_echo(_s: str, io: IOContainer) -> bool:
             e_result = cast(
@@ -216,7 +216,7 @@ class TestTask(unittest.TestCase):
             return e_result == word
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -238,10 +238,10 @@ class TestTask(unittest.TestCase):
             ),
         )
 
-        t.run_until_done()
+        dp.run_until_done()
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.TERMINATIONCHECK.name}",
@@ -277,7 +277,7 @@ class TestTask(unittest.TestCase):
         self.assertEqual(Phase.APPLY.next, Phase.ELABORATION)
 
     def test_basics(self) -> None:
-        """Confirms some task basics"""
+        """Confirms some decision process basics"""
 
         a_inc = create_named_action("inc", lambda s, _io: s + 1)
 
@@ -298,11 +298,11 @@ class TestTask(unittest.TestCase):
 
         starting_point: int = 100
 
-        t: BaseDecisionProcess[int] = BaseDecisionProcess(lambda: starting_point)
+        dp: BaseDecisionProcess[int] = BaseDecisionProcess(lambda: starting_point)
 
         # no actions yet!
         with self.assertRaises(DecisionProcessExecutionError) as cm:
-            for _ in t.phases():
+            for _ in dp.phases():
                 pass
 
         self.assertEqual(cm.exception.msg, DecisionProcessErrorMessage.NO_PROPOSAL)
@@ -311,15 +311,15 @@ class TestTask(unittest.TestCase):
             str(cm.exception), DecisionProcessErrorMessage.NO_PROPOSAL.value
         )
 
-        t.reinit()
+        dp.reinit()
 
         #
 
-        t.add_action_factory(lambda _s, _io: [a_inc, a_dec])
+        dp.add_action_factory(lambda _s, _io: [a_inc, a_dec])
 
         # no evaluation of multiple possibilities
         with self.assertRaises(DecisionProcessExecutionError) as cm:
-            for _ in t.cycles():
+            for _ in dp.cycles():
                 pass
 
         self.assertEqual(cm.exception.msg, DecisionProcessErrorMessage.NO_RANK)
@@ -328,11 +328,11 @@ class TestTask(unittest.TestCase):
 
         #
 
-        t.add_action_evaluator(lambda _s, _io, _actions: [])
+        dp.add_action_evaluator(lambda _s, _io, _actions: [])
 
         #
 
-        @t.action_evaluator
+        @dp.action_evaluator
         def dec_over_inc(
             _s: int, _io: IOContainer, actions: Iterable[Action[int]]
         ) -> Iterable[ActionRank[int]]:
@@ -344,20 +344,20 @@ class TestTask(unittest.TestCase):
                 if a in (a_dec, a_inc)
             ]
 
-        t.run_cycles()
+        dp.run_cycles()
 
-        self.assertEqual(t.state, starting_point - 1)
-        self.assertEqual(t.num_cycles, 2)
+        self.assertEqual(dp.state, starting_point - 1)
+        self.assertEqual(dp.num_cycles, 2)
 
         #
 
-        t.add_termination_check(lambda s, _io: s == starting_point - 2)
+        dp.add_termination_check(lambda s, _io: s == starting_point - 2)
 
-        for _ in t.cycles():
+        for _ in dp.cycles():
             pass
 
-        self.assertEqual(t.state, starting_point - 2)
-        self.assertEqual(t.num_cycles, 3)
+        self.assertEqual(dp.state, starting_point - 2)
+        self.assertEqual(dp.num_cycles, 3)
 
     def test_io(self) -> None:
         """Confirming basic io functionality"""
@@ -367,10 +367,10 @@ class TestTask(unittest.TestCase):
         lst_name: str = "lst"
         lst: ListSensorActuator = ListSensorActuator()
 
-        task_io: BaseDecisionProcess[int] = BaseDecisionProcess(lambda: starting_point)
+        dp_io: BaseDecisionProcess[int] = BaseDecisionProcess(lambda: starting_point)
 
         self.assertEqual(
-            str(task_io),
+            str(dp_io),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -393,11 +393,11 @@ class TestTask(unittest.TestCase):
         )
 
         # add as both sensor/actuator
-        task_io.set_sensor(lst_name, lst).set_actuator(lst_name, lst)
+        dp_io.set_sensor(lst_name, lst).set_actuator(lst_name, lst)
 
         # confirm registration
         self.assertEqual(
-            str(task_io),
+            str(dp_io),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -423,7 +423,7 @@ class TestTask(unittest.TestCase):
             """
             * logs a combo of sensed data
             * adds sensed data to another actuator
-            * progresses the task
+            * progresses the decision process
             """
 
             sensed: str = str(cast(ListSensorActuator, getattr(io.i, lst_name)).data)
@@ -451,7 +451,7 @@ class TestTask(unittest.TestCase):
 
             return a_go
 
-        task_io.add_action_factory(go_action_factory)
+        dp_io.add_action_factory(go_action_factory)
 
         goal_diff: int = 3
         goal_name: str = f"{a_name} check {goal_diff}"
@@ -462,13 +462,13 @@ class TestTask(unittest.TestCase):
 
             return s == starting_point + goal_diff
 
-        task_io.add_termination_check(go_goal).run_until_done()
+        dp_io.add_termination_check(go_goal).run_until_done()
 
         # confirm ability to remove sensors/actuators
-        task_io.set_sensor(lst_name, None).set_actuator(lst_name, None)
+        dp_io.set_sensor(lst_name, None).set_actuator(lst_name, None)
 
         self.assertEqual(
-            str(task_io),
+            str(dp_io),
             "\n".join(
                 (
                     f"Phase={Phase.TERMINATIONCHECK.name}",
@@ -492,12 +492,12 @@ class TestTask(unittest.TestCase):
 
         # confirm logging
         self.assertEqual(
-            task_io.log,
+            dp_io.log,
             "\n".join(("@1: data=[]", "@2: data=['1']", "@3: data=['1', '2']", "")),
         )
 
     def test_count(self) -> None:
-        """Confirming simple task execution"""
+        """Confirming simple decision process execution"""
 
         starting_point: int = 1_001
         next_perfect_prime: int = 1_009
@@ -508,7 +508,7 @@ class TestTask(unittest.TestCase):
 
         #
 
-        task_count_until: BaseDecisionProcess[int] = (
+        dp_count_until: BaseDecisionProcess[int] = (
             BaseDecisionProcess(lambda: starting_point)
             .add_termination_check(_make_term(e_perfect, e_prime))
             .add_elaborator(
@@ -523,18 +523,18 @@ class TestTask(unittest.TestCase):
             .add_action_factory(_make_increment_factory(a_inc))
         )
 
-        self.assertEqual(task_count_until.num_cycles, 0)
+        self.assertEqual(dp_count_until.num_cycles, 0)
 
-        self.assertEqual(task_count_until.state, starting_point)
+        self.assertEqual(dp_count_until.state, starting_point)
 
-        self.assertFalse(task_count_until.done)
+        self.assertFalse(dp_count_until.done)
 
-        self.assertEqual(task_count_until.phase, Phase.ELABORATION)
+        self.assertEqual(dp_count_until.phase, Phase.ELABORATION)
 
-        self.assertIsNone(task_count_until.chosen_action)
+        self.assertIsNone(dp_count_until.chosen_action)
 
         self.assertEqual(
-            str(task_count_until),
+            str(dp_count_until),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -556,20 +556,20 @@ class TestTask(unittest.TestCase):
             ),
         )
 
-        task_count_until.run_until_done()
+        dp_count_until.run_until_done()
 
-        self.assertEqual(task_count_until.num_cycles, 9)
+        self.assertEqual(dp_count_until.num_cycles, 9)
 
-        self.assertEqual(task_count_until.state, next_perfect_prime)
+        self.assertEqual(dp_count_until.state, next_perfect_prime)
 
-        self.assertTrue(task_count_until.done)
+        self.assertTrue(dp_count_until.done)
 
-        self.assertEqual(task_count_until.phase, Phase.TERMINATIONCHECK)
+        self.assertEqual(dp_count_until.phase, Phase.TERMINATIONCHECK)
 
-        self.assertEqual(task_count_until.chosen_action, a_inc)
+        self.assertEqual(dp_count_until.chosen_action, a_inc)
 
         self.assertEqual(
-            str(task_count_until),
+            str(dp_count_until),
             "\n".join(
                 (
                     f"Phase={Phase.TERMINATIONCHECK.name}",

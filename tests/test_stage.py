@@ -60,9 +60,9 @@ class TestStage(unittest.TestCase):
     """Tests for stage code"""
 
     def setUp(self) -> None:
-        self.t = DecisionProcess(AuthState, enable_terminal_check=True)
+        self.dp = DecisionProcess(AuthState, enable_terminal_check=True)
 
-        @staged_operator(self.t, AuthStage.INIT)
+        @staged_operator(self.dp, AuthStage.INIT)
         def _perform_init(_s: AuthState, io: IOContainer) -> None:
             print("Howdy!!")
             print(
@@ -70,18 +70,18 @@ class TestStage(unittest.TestCase):
             )
             print("")
 
-        @staged_operator(self.t, AuthStage.ATTEMPT)
+        @staged_operator(self.dp, AuthStage.ATTEMPT)
         def _perform_attempt(_s: AuthState, io: IOContainer) -> KWArgs:
             return {
                 "correct_pw": input("Enter password: ") == io.i.args.secret,
                 "max_attempts": io.i.args.max_attempts,
             }
 
-        @staged_operator(self.t, AuthStage.IN, terminal=True)
+        @staged_operator(self.dp, AuthStage.IN, terminal=True)
         def _perform_in(_s: AuthState, _io: IOContainer) -> None:
             print("Welcome!")
 
-        @staged_operator(self.t, AuthStage.ALARM, terminal=True)
+        @staged_operator(self.dp, AuthStage.ALARM, terminal=True)
         def _perform_alarm(s: AuthState, _io: IOContainer) -> None:
             print(f"Invalid after {s.attempts} attempt(s)!")
 
@@ -91,16 +91,16 @@ class TestStage(unittest.TestCase):
         self, mock_stdout: StringIO, _mock_input: MagicMock
     ) -> None:
         """
-        test staged task
+        test staged decision process
         """
 
         num_attempts: int = 3
         secret: str = "polycog"
 
-        self.t(max_attempts=num_attempts, secret=secret)
+        self.dp(max_attempts=num_attempts, secret=secret)
 
-        self.assertEqual(self.t.state.stage, AuthStage.IN)
-        self.assertEqual(self.t.state.attempts, 1)
+        self.assertEqual(self.dp.state.stage, AuthStage.IN)
+        self.assertEqual(self.dp.state.attempts, 1)
 
         self.assertEqual(
             mock_stdout.getvalue(),
@@ -127,10 +127,10 @@ class TestStage(unittest.TestCase):
         num_attempts: int = 3
         secret: str = "polycog"
 
-        self.t(max_attempts=num_attempts, secret=secret)
+        self.dp(max_attempts=num_attempts, secret=secret)
 
-        self.assertEqual(self.t.state.stage, AuthStage.IN)
-        self.assertEqual(self.t.state.attempts, 3)
+        self.assertEqual(self.dp.state.stage, AuthStage.IN)
+        self.assertEqual(self.dp.state.attempts, 3)
 
         self.assertEqual(
             mock_stdout.getvalue(),
@@ -157,10 +157,10 @@ class TestStage(unittest.TestCase):
         num_attempts: int = 2
         secret: str = "polycog"
 
-        self.t(max_attempts=num_attempts, secret=secret)
+        self.dp(max_attempts=num_attempts, secret=secret)
 
-        self.assertEqual(self.t.state.stage, AuthStage.ALARM)
-        self.assertEqual(self.t.state.attempts, 2)
+        self.assertEqual(self.dp.state.stage, AuthStage.ALARM)
+        self.assertEqual(self.dp.state.attempts, 2)
 
         self.assertEqual(
             mock_stdout.getvalue(),

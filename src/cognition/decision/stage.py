@@ -1,5 +1,5 @@
 """
-Support for task flow housed
+Support for workflow housed
 within a single enumerated field.
 """
 
@@ -70,21 +70,21 @@ type StageSupporter[E: Enum, S: StagedState[E]] = BiFunction[S, IOContainer, Opt
 
 
 def staged_operator[SE: Enum, SS: StagedState[SE]](  # type: ignore[name-defined]
-    t: DecisionProcess[SS], stage: SE, **kwargs: Any
+    dp: DecisionProcess[SS], stage: SE, **kwargs: Any
 ) -> Function[StageSupporter[SE, SS], StageSupporter[SE, SS]]:
     """
-    Given that a task is using a staged state,
-    convenience decorator to add a full
+    Given that a decision process is using a staged
+    state, convenience decorator to add a full
     operator that applies during a supplied stage
 
-    :param t: task to add operator to
+    :param dp: decision process to add operator to
     :param stage: stage when added operator should apply
     :param kwargs: operator params
     """
 
     def _decorator(ss: StageSupporter[SE, SS]) -> StageSupporter[SE, SS]:
 
-        @t.operator(stage.name, **kwargs)
+        @dp.operator(stage.name, **kwargs)
         class _StagedOperator(Operator[SS]):
 
             def can_perform(self, state: SS, _io: IOContainer) -> bool:

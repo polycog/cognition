@@ -9,10 +9,9 @@ from enum import StrEnum, auto
 import unittest
 
 from cognition import (
-    BaseDecisionProcess,
     ChainState,
     EnumDispatch,
-    create_chain_task,
+    create_chain_dp,
 )
 
 #
@@ -39,15 +38,18 @@ class TestChain(unittest.TestCase):
         def my_fact(n: int) -> int:
             """factorial via chaining"""
 
-            t: BaseDecisionProcess[ChainState[int, int]] = create_chain_task(
-                range(n),
-                lambda link, _io: cast(int, link.accumulator) * (link.value + 1),
-                1,
-            ).run_until_done()
-
-            self.assertIsNone(t.state.current_link)
-
-            return cast(int, t.state.accumulator)
+            return cast(
+                int,
+                cast(
+                    ChainState[int, int],
+                    create_chain_dp(
+                        range(n),
+                        lambda link, _io: cast(int, link.accumulator)
+                        * (link.value + 1),
+                        1,
+                    )(),
+                ).accumulator,
+            )
 
         #
 
@@ -62,14 +64,17 @@ class TestChain(unittest.TestCase):
         Chaining without accumulator
         """
 
-        t: BaseDecisionProcess[ChainState[NerdFighter, None]] = create_chain_task(
-            NerdFighter,
-            lambda link, io: print(link.value.value[0].lower(), end="", file=io.o.log),
+        self.assertEqual(
+            create_chain_dp(
+                NerdFighter,
+                lambda link, io: print(
+                    link.value.value[0].lower(), end="", file=io.o.log
+                ),
+            )
+            .run_until_done()
+            .log,
+            "dftba",
         )
-
-        t.run_until_done()
-
-        self.assertEqual(t.log, "dftba")
 
     def test_dftba_dispatch(self) -> None:
         """
@@ -110,7 +115,5 @@ class TestChain(unittest.TestCase):
                 self._result.append("learn")
 
         pfa = Project()
-        create_chain_task(
-            NerdFighter, lambda link, _io: pfa(link.value)
-        ).run_until_done()
+        create_chain_dp(NerdFighter, lambda link, _io: pfa(link.value))()
         self.assertEqual(pfa.result, "care + create + cultivate + empower + learn")

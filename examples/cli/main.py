@@ -120,11 +120,11 @@ def cmd_bye() -> CommandReturn:
 def cmd_history() -> CommandReturn:
     """Log of past interactions"""
 
-    return CommandReturn("\n".join(str(entry) for entry in t.state.log), 0, False)
+    return CommandReturn("\n".join(str(entry) for entry in dp.state.log), 0, False)
 
 
 ###################################################
-# CLI task and state definitions
+# CLI decision process and state definitions
 ###################################################
 
 
@@ -199,7 +199,7 @@ with nullcontext[dict[str, str]]({}) as cli_status:
     # cli_status is a shared reference to a dictionary
     # used to represent the user-entered command
 
-    t = (
+    dp = (
         DecisionProcess(CLIState)
         .set_sensor(
             "cli", AttrReferral(cli_status)
@@ -210,7 +210,7 @@ with nullcontext[dict[str, str]]({}) as cli_status:
     )
 
 
-@staged_operator(t, CLIStage.INIT)
+@staged_operator(dp, CLIStage.INIT)
 def perform_init(_s: CLIState, _io: IOContainer) -> None:
     """init action"""
 
@@ -219,21 +219,21 @@ def perform_init(_s: CLIState, _io: IOContainer) -> None:
     rprint()
 
 
-@staged_operator(t, CLIStage.GET_CMD)
+@staged_operator(dp, CLIStage.GET_CMD)
 def perform_get(_s: CLIState, io: IOContainer) -> None:
     """get action"""
 
     io.o.cli_set_command(Prompt.ask(f"[bold blue]{ io.i.args.shell_sym }[/]"))
 
 
-@staged_operator(t, CLIStage.EXEC_CMD)
+@staged_operator(dp, CLIStage.EXEC_CMD)
 def perform_exec(_s: CLIState, io: IOContainer) -> KWArgs:
     """exec action"""
 
     return {"log_entry": CommandLogEntry.attempt_exec(io.i.cli.command)}
 
 
-@t.termination_check
+@dp.termination_check
 @stringify("exit_flag")
 def exit_flag(s: CLIState, _: IOContainer) -> bool:
     """Exit if told to!"""
@@ -253,7 +253,7 @@ def main() -> None:
     """dispatch the cli agent"""
 
     # argument: prompt symbol (accessed via io.i.args)
-    t(shell_sym="$")
+    dp(shell_sym="$")
 
 
 if __name__ == "__main__":

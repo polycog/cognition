@@ -233,24 +233,24 @@ class SearchPlanner[PS: Hashable, PA]:
     """
 
     @staticmethod
-    def _create_search_task(
+    def _create_search_dp(
         initial_state: PS,
         is_goal: Predicate[PS],
         successors: Succession[PS, PA],
         frontier_factory: Supplier[FrontierManager[PS, PA]],
     ) -> BaseDecisionProcess[SearchState[PS, PA]]:
         """
-        Produce a search-based planner task
+        Produce a search-based planner decision process
 
         :param initial_state: starting node
         :param is_goal: goal predicate
         :param successors: function to produce node transitions
         :param frontier_factory: function to produce prioritize frontier nodes
-        :return: graph-search task
+        :return: graph-search decision process
         """
 
         @stringify("init_search")
-        def init_task_state() -> SearchState[PS, PA]:
+        def init_dp_state() -> SearchState[PS, PA]:
             """Initialize search problem"""
 
             init_frontier = frontier_factory()
@@ -265,13 +265,13 @@ class SearchPlanner[PS: Hashable, PA]:
                 path_cost=None,
             )
 
-        t: BaseDecisionProcess[SearchState[PS, PA]] = BaseDecisionProcess(
-            init_task_state
+        dp: BaseDecisionProcess[SearchState[PS, PA]] = BaseDecisionProcess(
+            init_dp_state
         )
 
         #
 
-        @t.action_factory
+        @dp.action_factory
         @stringify("always_search")
         def search_factory(
             _s: SearchState[PS, PA], _io: IOContainer
@@ -306,7 +306,7 @@ class SearchPlanner[PS: Hashable, PA]:
 
             return search_action
 
-        @t.termination_check
+        @dp.termination_check
         @stringify("search_complete")
         def search_complete(
             s: SearchState[PS, PA],
@@ -316,7 +316,7 @@ class SearchPlanner[PS: Hashable, PA]:
 
             return s.done
 
-        return t
+        return dp
 
     def __init__(
         self,
@@ -332,7 +332,7 @@ class SearchPlanner[PS: Hashable, PA]:
         :param frontier_factory: function to prioritize frontier nodes
         """
 
-        self._t = SearchPlanner._create_search_task(
+        self._dp = SearchPlanner._create_search_dp(
             initial_state, is_goal, successors, frontier_factory
         )
 
@@ -344,7 +344,7 @@ class SearchPlanner[PS: Hashable, PA]:
         :return: `True` if the planner has not concluded search
         """
 
-        return not self._t.done
+        return not self._dp.done
 
     def run(self, max_steps: Optional[int] = None) -> Self:
         """
@@ -355,9 +355,9 @@ class SearchPlanner[PS: Hashable, PA]:
         """
 
         if max_steps is None:
-            self._t.run_until_done()
+            self._dp.run_until_done()
         else:
-            self._t.run_cycles(max_steps)
+            self._dp.run_cycles(max_steps)
 
         return self
 
@@ -369,7 +369,7 @@ class SearchPlanner[PS: Hashable, PA]:
         :return: `True` if the planner was successful
         """
 
-        return self._t.state.final_state is not None
+        return self._dp.state.final_state is not None
 
     @property
     def plan(self) -> Sequence[PA]:
@@ -380,10 +380,10 @@ class SearchPlanner[PS: Hashable, PA]:
         :return: sequence of actions to the final state
         """
 
-        if self._t.state.action_path is None:
+        if self._dp.state.action_path is None:
             raise RuntimeError("Plan not available")
 
-        return self._t.state.action_path
+        return self._dp.state.action_path
 
     @property
     def plan_cost(self) -> PathCost:
@@ -394,10 +394,10 @@ class SearchPlanner[PS: Hashable, PA]:
         :return: cost of path actions
         """
 
-        if self._t.state.path_cost is None:
+        if self._dp.state.path_cost is None:
             raise RuntimeError("Plan not available")
 
-        return self._t.state.path_cost
+        return self._dp.state.path_cost
 
     @property
     def states_explored(self) -> int:
@@ -409,7 +409,7 @@ class SearchPlanner[PS: Hashable, PA]:
         :return: number of states explored
         """
 
-        return len(self._t.state.explored)
+        return len(self._dp.state.explored)
 
 
 class SearchPlannerOption[PS, PA](ABC):

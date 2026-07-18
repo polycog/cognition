@@ -1,5 +1,5 @@
 """
-Practical library additions
+Decision process (with batteries included)
 """
 
 from __future__ import annotations
@@ -79,36 +79,36 @@ class Rank(IntEnum):
 
 
 def _add_args[S](
-    t: BaseDecisionProcess[S], namespace: str, **info: Any
+    dp: BaseDecisionProcess[S], namespace: str, **info: Any
 ) -> Generator[BaseDecisionProcess[S], None, None]:
     """
     Provides `io.i.namespace` temporarily
 
-    :param t: task for which to provide arguments
+    :param dp: decision process for which to provide arguments
     :param namespace: sensor name
     :param info: io.i.namespace.key=value
     """
 
     try:
-        t.set_sensor(namespace, AttrReferral(info))
-        yield t
+        dp.set_sensor(namespace, AttrReferral(info))
+        yield dp
     finally:
-        t.set_sensor(namespace, None)
+        dp.set_sensor(namespace, None)
 
 
 @contextmanager
 def args_added[S](
-    t: BaseDecisionProcess[S], namespace: str = ARGS_ATTR, **info: Any
+    dp: BaseDecisionProcess[S], namespace: str = ARGS_ATTR, **info: Any
 ) -> Generator[BaseDecisionProcess[S], None, None]:
     """
     Provides `io.i.namespace` temporarily
 
-    :param t: task for which to provide arguments
+    :param dp: decision process for which to provide arguments
     :param namespace: sensor name
     :param info: io.i.namespace.key=value
     """
 
-    yield from _add_args(t, namespace, **info)
+    yield from _add_args(dp, namespace, **info)
 
 
 def create_elaborator[S](
@@ -250,14 +250,14 @@ class Operator[S](ABC, BaseOperator[S]):
 
 
 def add_operator[S](
-    task: BaseDecisionProcess[S],
+    dp: BaseDecisionProcess[S],
     op: BaseOperator[S],
     self_param: Optional[str] = OPERATOR_SELF_PARAM,
 ) -> tuple[ActionFactory[S], Action[S]]:
     """
-    Instantiates the operator within a task
+    Instantiates the operator within a decision process
 
-    :param task: task to be added to
+    :param dp: decision process to be added to
     :param op: operator with factory/action info
     :param self_param: if not ``None``, action param referring to the op
     :return: the produced action factory and action
@@ -271,7 +271,7 @@ def add_operator[S](
 
     op_action = create_named_action(op.name, op.perform, **act_params)
 
-    @task.action_factory
+    @dp.action_factory
     @stringify(op.name)
     def action_factory(s: S, io: IOContainer) -> Iterable[Action[S]]:
         """propose performing if can perform"""
@@ -374,7 +374,7 @@ TERMINAL_ACTION_ATTR: str = "terminal"
 
 class DecisionProcess[S](BaseDecisionProcess[S]):
     """
-    Support for optional decision process add-ons
+    Decision process implementation with batteries included
     """
 
     def __init__(
@@ -414,7 +414,7 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
 
         :param op: operator with factory/action info
         :param self_param: if not ``None``, action param referring to the op
-        :return: the produced action factory and action, and this task (for chaining)
+        :return: the produced action factory and action, and this decision process (for chaining)
         """
 
         af, a = add_operator(self, op, self_param)
@@ -428,7 +428,7 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
 
         :param op: operator with factory/action info
         :param self_param: if not ``None``, action param referring to the op
-        :return: this task (for chaining)
+        :return: this decision process (for chaining)
         """
 
         self.add_operator(op, self_param)
@@ -454,7 +454,7 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         def cls_dec(cls: type[Operator[S]]) -> type[Operator[S]]:
             """
             Parameterized named-object decorator that adds an
-            operator instance to this task.
+            operator instance to this decision process.
 
             :param cls: named operator to instantiate
             :return: added class
@@ -485,14 +485,14 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         **args: Any,
     ) -> Optional[S]:
         """
-        Execute the task, function-style
+        Execute the decision process, function-style
 
         :param max_cycles: maximum steps to execute
         :param suppress_errors: if `True`, does not raise any errors from execution
         :param args_namespace: argument sensor name
         :param args: arguments to supply
-        :return: the final state if the task completed without
-                 any exceptions; None otherwise
+        :return: the final state if the decision process completed
+                 without any exceptions; None otherwise
         """
 
         with self.args_added(namespace=args_namespace, **args):

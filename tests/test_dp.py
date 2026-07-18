@@ -173,9 +173,9 @@ class TestDP(unittest.TestCase):
 
         state_start = 0
 
-        t = DecisionProcess(lambda: state_start, enable_terminal_check=True)
+        dp = DecisionProcess(lambda: state_start, enable_terminal_check=True)
 
-        self.assertEqual(t.state, state_start)
+        self.assertEqual(dp.state, state_start)
 
         #
 
@@ -184,7 +184,7 @@ class TestDP(unittest.TestCase):
         arg_val = 42
 
         # pylint: disable=unused-variable
-        @t.operator("copy", terminal=True, arg_name=arg_name)
+        @dp.operator("copy", terminal=True, arg_name=arg_name)
         class ArgCopy(Operator[int]):
             """Copies the arg"""
 
@@ -199,19 +199,19 @@ class TestDP(unittest.TestCase):
                 args = getattr(io.i, namespace)
                 return cast(int, getattr(args, self._arg))
 
-        with args_added(t, namespace=namespace, **{arg_name: arg_val}):
-            t.run_until_done()
+        with args_added(dp, namespace=namespace, **{arg_name: arg_val}):
+            dp.run_until_done()
 
-        self.assertTrue(t.done)
-        self.assertEqual(t.state, arg_val)
+        self.assertTrue(dp.done)
+        self.assertEqual(dp.state, arg_val)
 
         #
 
-        t.reinit()
+        dp.reinit()
 
-        self.assertEqual(t.state, state_start)
+        self.assertEqual(dp.state, state_start)
         self.assertEqual(
-            t(
+            dp(
                 max_cycles=2,
                 suppress_errors=True,
                 args_namespace=namespace,
@@ -220,11 +220,11 @@ class TestDP(unittest.TestCase):
             arg_val,
         )
 
-        t.reinit()
+        dp.reinit()
 
-        self.assertEqual(t.state, state_start)
+        self.assertEqual(dp.state, state_start)
         self.assertIsNone(
-            t(
+            dp(
                 max_cycles=0,
                 suppress_errors=True,
                 args_namespace=namespace,
@@ -232,29 +232,29 @@ class TestDP(unittest.TestCase):
             ),
             arg_val,
         )
-        self.assertFalse(t.done)
+        self.assertFalse(dp.done)
 
-        t.reinit()
-        self.assertEqual(t.state, state_start)
-        self.assertIsNone(t())
-        self.assertFalse(t.done)
+        dp.reinit()
+        self.assertEqual(dp.state, state_start)
+        self.assertIsNone(dp())
+        self.assertFalse(dp.done)
 
-        t.reinit()
-        self.assertEqual(t.state, state_start)
+        dp.reinit()
+        self.assertEqual(dp.state, state_start)
         with self.assertRaises(RuntimeError):
-            self.assertIsNone(t(suppress_errors=False))
+            self.assertIsNone(dp(suppress_errors=False))
 
     def test_named_op_decorator(self) -> None:
         """Confirming named operator decorator"""
 
-        t: DecisionProcess[bool] = DecisionProcess(
+        dp: DecisionProcess[bool] = DecisionProcess(
             lambda: False, enable_terminal_check=True
         )
 
         op_name = "done"
         act_name = f"{op_name}[terminal=True]"
 
-        @t.operator(op_name, terminal=True)
+        @dp.operator(op_name, terminal=True)
         class Done(Operator[bool]):  # pylint: disable=unused-variable
             """one and only op"""
 
@@ -264,10 +264,10 @@ class TestDP(unittest.TestCase):
             def perform(self, _state: bool, _io: IOContainer) -> bool:
                 return True
 
-        t.run_until_done()
+        dp.run_until_done()
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.TERMINATIONCHECK.name}",
@@ -292,11 +292,11 @@ class TestDP(unittest.TestCase):
     def test_terminal(self) -> None:
         """Confirming terminal check"""
 
-        t1: DecisionProcess[str] = DecisionProcess(
+        dp1: DecisionProcess[str] = DecisionProcess(
             lambda: "",
         )
 
-        t2: DecisionProcess[str] = DecisionProcess(
+        dp2: DecisionProcess[str] = DecisionProcess(
             lambda: "", enable_terminal_check=True
         )
 
@@ -315,36 +315,36 @@ class TestDP(unittest.TestCase):
 
             return can_do
 
-        t1.add_action_factory(allow_action(do_regular)).run_cycles(100)
+        dp1.add_action_factory(allow_action(do_regular)).run_cycles(100)
 
-        self.assertFalse(t1.done)
+        self.assertFalse(dp1.done)
 
         (
-            t1.reinit()
+            dp1.reinit()
             .add_action_factory(allow_action(do_terminal))
             .add_action_evaluator(uniform_evaluator(1))
             .run_cycles(100)
         )
 
-        self.assertFalse(t1.done)
+        self.assertFalse(dp1.done)
 
         #
 
-        t2.add_action_factory(allow_action(do_regular)).run_cycles(100)
+        dp2.add_action_factory(allow_action(do_regular)).run_cycles(100)
 
-        self.assertFalse(t2.done)
+        self.assertFalse(dp2.done)
 
-        t2.add_action_factory(allow_action(do_terminal)).add_action_evaluator(
+        dp2.add_action_factory(allow_action(do_terminal)).add_action_evaluator(
             uniform_evaluator(1)
         )
 
         for _ in range(100):
-            t2.reinit()
-            self.assertEqual(t2.state, "")
+            dp2.reinit()
+            self.assertEqual(dp2.state, "")
 
-            t2.run_cycles(100)
-            self.assertTrue(t2.done)
-            self.assertEqual(t2.state, "terminal")
+            dp2.run_cycles(100)
+            self.assertTrue(dp2.done)
+            self.assertEqual(dp2.state, "terminal")
 
     def test_operator(self) -> None:
         """Confirming operators"""
@@ -353,13 +353,13 @@ class TestDP(unittest.TestCase):
         bye_name: str = "bye"
         done_name: str = "done_yet?"
 
-        t: DecisionProcess[OpStage] = (
+        dp: DecisionProcess[OpStage] = (
             DecisionProcess(lambda: OpStage.SAY_HI)
             .add_operator_c(HiOp(hi_name))
             .add_operator_c(ByeOp(bye_name))
         )
 
-        @t.termination_check
+        @dp.termination_check
         @stringify(done_name)
         def check_done(s: OpStage, _io: IOContainer) -> bool:
             "done yet?"
@@ -367,7 +367,7 @@ class TestDP(unittest.TestCase):
             return s == OpStage.DONE
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -389,10 +389,10 @@ class TestDP(unittest.TestCase):
             ),
         )
 
-        t.run_cycles()
+        dp.run_cycles()
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -414,12 +414,12 @@ class TestDP(unittest.TestCase):
             ),
         )
 
-        self.assertEqual(t.log, "hi\n")
+        self.assertEqual(dp.log, "hi\n")
 
-        t.run_cycles()
+        dp.run_cycles()
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -441,12 +441,12 @@ class TestDP(unittest.TestCase):
             ),
         )
 
-        self.assertEqual(t.log, "hi\nbye\n")
+        self.assertEqual(dp.log, "hi\nbye\n")
 
-        t.run_until_done()
+        dp.run_until_done()
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.TERMINATIONCHECK.name}",
@@ -468,7 +468,7 @@ class TestDP(unittest.TestCase):
             ),
         )
 
-        self.assertEqual(t.log, "hi\nbye\n")
+        self.assertEqual(dp.log, "hi\nbye\n")
 
     def test_named_action(self) -> None:
         """Confirming the named actions"""
@@ -614,12 +614,12 @@ class TestDP(unittest.TestCase):
         """Checks sorting_evaluator"""
 
         init_state: int = 3
-        t: DecisionProcess[int] = DecisionProcess(lambda: init_state)
+        dp: DecisionProcess[int] = DecisionProcess(lambda: init_state)
 
         final_val: int = 10
         goal_name: str = f"at{final_val}"
 
-        @t.termination_check
+        @dp.termination_check
         @stringify(goal_name)
         def atval(num: int, _io: IOContainer) -> bool:
             """achieved value!"""
@@ -643,34 +643,35 @@ class TestDP(unittest.TestCase):
         # confirming tie-breaking
         op_param_tie: str = "foo"
 
-        t2: DecisionProcess[int] = DecisionProcess(lambda: 42)
-        _, a2, _ = t2.add_operator(mult2, op_param_tie)
-        _, a2b, _ = t2.add_operator(mult2b, op_param_tie)
+        dp2: DecisionProcess[int] = DecisionProcess(lambda: 42)
+        _, a2, _ = dp2.add_operator(mult2, op_param_tie)
+        _, a2b, _ = dp2.add_operator(mult2b, op_param_tie)
 
         evaluator: ActionEvaluator[int] = sorting_evaluator(
             operator_sorting_key(op_param_tie)
         )
 
         self.assertSequenceEqual(
-            list(ar.rank for ar in evaluator(t2.state, self.mock_io, (a2, a2b))), (1, 1)
+            list(ar.rank for ar in evaluator(dp2.state, self.mock_io, (a2, a2b))),
+            (1, 1),
         )
 
         # proceed with real task
         ops: dict[ChangeOp, tuple[ActionFactory[int], Action[int]]] = {
-            o: t.add_operator(o)[:-1] for o in (add2, sub1, mult2, add1)
+            o: dp.add_operator(o)[:-1] for o in (add2, sub1, mult2, add1)
         }
 
         eval_name: str = "change_op_sort"
         rank_start: int = 100
 
-        t.add_action_evaluator(
+        dp.add_action_evaluator(
             sorting_evaluator(
                 operator_sorting_key(), rank_start=rank_start, name=eval_name
             )
         )
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -693,10 +694,10 @@ class TestDP(unittest.TestCase):
         )
 
         # should increase by 1
-        t.run_cycles()
+        dp.run_cycles()
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -732,10 +733,10 @@ class TestDP(unittest.TestCase):
         add2.flip()
 
         # should decrease by 1
-        t.run_cycles()
+        dp.run_cycles()
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -769,10 +770,10 @@ class TestDP(unittest.TestCase):
         sub1.flip()
 
         # should double
-        t.run_cycles()
+        dp.run_cycles()
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -798,10 +799,10 @@ class TestDP(unittest.TestCase):
         add1.flip()
         add2.flip()
 
-        t.run_until_done()
+        dp.run_until_done()
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.TERMINATIONCHECK.name}",
