@@ -38,18 +38,18 @@ class TestChain(unittest.TestCase):
         def my_fact(n: int) -> int:
             """factorial via chaining"""
 
-            return cast(
-                int,
-                cast(
-                    ChainState[int, int],
-                    create_chain_dp(
-                        range(n),
-                        lambda link, _io: cast(int, link.accumulator)
-                        * (link.value + 1),
-                        1,
-                    )(),
-                ).accumulator,
+            result = cast(
+                ChainState[int, int],
+                create_chain_dp(
+                    range(n),
+                    lambda link, _io: cast(int, link.accumulator) * (link.value + 1),
+                    1,
+                )(),
             )
+
+            self.assertIsNone(result.current_link)
+
+            return cast(int, result.accumulator)
 
         #
 
