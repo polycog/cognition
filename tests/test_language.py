@@ -18,6 +18,7 @@ from cognition import (
     DocEnum,
     EmpiricalConfidence,
     EnumClassifier,
+    FactDescriber,
     Function,
     basemodel_dep_types,
     basemodel_description,
@@ -70,6 +71,66 @@ DESC_FRUIT_SCHEMA: str = (
     "\n"
     f"{DESC_FRUIT}"
 )
+
+DESC_FRUIT_PROMPT__FRUIT_TASK__A_BC: str = """== Context ==
+Fruit Task
+
+== Task Description ==
+Your task is to provide a 1-sentence description of a supplied fact.
+
+== Object to Describe ==
+value=<Fruit.APPLE: 'apple'>
+
+== Other Facts ==
+value=<Fruit.BANANA: 'banana'>
+value=<Fruit.CHERRY: 'cherry'>
+
+== Structural Description ==
+Base Model: FruitSchema (Response schema for Fruit), fields...
+* value (Fruit | NoneType)
+
+Enumeration: Fruit (Available fruits), options...
+* apple
+* banana
+* cherry
+
+== Guiding Style ==
+* Do NOT use any markup or superfluous punctuation.
+* Do NOT reproduce the object in your description, nor its type, nor explicitly refer to words like 'object', 'field', or 'attribute'.
+* Limit factual knowledge to the object and its structural description.
+
+== Example ==
+Given the following structural description...
+
+Base Model: EgOnTop (Represents spatial relations between blocks), fields...
+* entity1 (EgBlock; block on top)
+* entity2 (EgBlock | EgSurface; block or surface below the block)
+
+Base Model: EgBlock (A block), fields...
+* name (str; name of the block)
+* color (EgColor; block color)
+
+Base Model: EgSurface (A surface for blocks), fields...
+* name (str; name of the surface)
+
+Enumeration: EgColor (Example choice of colors), options...
+* 1 (the color red)
+* 2 (the color green)
+* 3 (the color blue)
+
+And the following additional known facts...
+
+EgBlock(name=B1, color=EgColor.BLUE)
+EgBlock(name=B2, color=EgColor.RED)
+EgSurface(name=table)
+EgOnTop(entity1=EgBlock(name=B1, color=EgColor.BLUE), entity2=EgBlock(name=B2, color=EgColor.RED))
+EgOnTop(entity1=EgBlock(name=B2, color=EgColor.RED), entity2=EgSurface(name=table))
+
+Good descriptions include...
+* EgBlock(name=B1, color=EgColor.BLUE)
+  There is a block named 'B1' that has the color 'blue'
+* EgOnTop(entity1=EgBlock(name=B2, color=EgColor.RED), entity2=EgSurface(name=table))
+  The red block named 'B2' is on top of the surface named 'table'"""
 
 
 class BinaryResponse(DocEnum):
@@ -348,6 +409,40 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(basemodel_description(FruitSchema, False), DESC_FRUIT_SCHEMA)
         self.assertEqual(basemodel_description(FruitSchema, True), DESC_FRUIT_SCHEMA)
+
+        #
+
+        target = FruitSchema(value=Fruit.APPLE)
+        f_b = FruitSchema(value=Fruit.BANANA)
+        f_c = FruitSchema(value=Fruit.CHERRY)
+
+        task_desc = "Fruit Task"
+        others = (f_b, f_c)
+
+        describer = FactDescriber(FruitSchema, task_desc)
+        self.assertEqual(
+            describer.prompt(
+                target,
+                others,
+            ),
+            DESC_FRUIT_PROMPT__FRUIT_TASK__A_BC,
+        )
+
+        knights_who_say = "Ni!"
+
+        model_mphg = FunctionModel(
+            lambda *args, **kwargs: ModelResponse(parts=(TextPart(knights_who_say),))
+        )
+
+        self.assertEqual(
+            describer(target, others, model_mphg),
+            knights_who_say,
+        )
+
+        self.assertEqual(
+            FactDescriber.describe(target, task_desc, others, model_mphg),
+            knights_who_say,
+        )
 
         #
 

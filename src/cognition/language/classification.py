@@ -73,13 +73,8 @@ class EnumClassifier[T: Enum]:
 
     def __init__(self, enum_type: type[T], task_desc: Optional[str]) -> None:
         """
-        Generates a function for converting
-        an utterance to a selection from an
-        enumerated type given a language model.
-
         :param enum_type: type representing options
         :param task_desc: textual description of the task
-        :return: classifier
         """
 
         self._schema = enum_schema(enum_type)
