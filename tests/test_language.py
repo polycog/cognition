@@ -20,6 +20,7 @@ from cognition import (
     EnumClassifier,
     Function,
     basemodel_dep_types,
+    basemodel_description,
     basemodel_field_doc,
     basemodel_name_doc,
     enum_description,
@@ -62,6 +63,14 @@ class FruitSchema(BaseModel):
 DOC_FRUIT_SCHEMA: str = f"{FruitSchema.__name__} ({ FruitSchema.__doc__ })"
 DOC_FRUIT_VALUE: str = "value (Fruit | NoneType)"
 
+DESC_FRUIT_SCHEMA: str = (
+    f"Base Model: { DOC_FRUIT_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_FRUIT_VALUE }\n"
+    "\n"
+    f"{DESC_FRUIT}"
+)
+
 
 class BinaryResponse(DocEnum):
     """Responding to a question with two possible responses"""
@@ -92,6 +101,14 @@ DOC_BINARYRESPONSE_SCHEMA: str = (
     f"{BinaryResponseSchema.__name__} ({ BinaryResponseSchema.__doc__ })"
 )
 DOC_BINARYRESPONSE_YN: str = "yn (BinaryResponse | NoneType)"
+
+DESC_BINARYRESPONSE_SCHEMA: str = (
+    f"Base Model: { DOC_BINARYRESPONSE_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_BINARYRESPONSE_YN }\n"
+    "\n"
+    f"{DESC_BINARYRESPONSE}"
+)
 
 
 class UserRole(AutoDocEnum):
@@ -125,6 +142,14 @@ class UserRoleSchema(BaseModel):
 DOC_USERROLE_SCHEMA: str = f"{UserRoleSchema.__name__} ({ UserRoleSchema.__doc__ })"
 DOC_USERROLE_VALUE: str = "value (UserRole | NoneType)"
 
+DESC_USERROLE_SCHEMA: str = (
+    f"Base Model: { DOC_USERROLE_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_USERROLE_VALUE }\n"
+    "\n"
+    f"{DESC_USERROLE}"
+)
+
 
 class ComplexSchema(BaseModel):
     """Multiple pieces"""
@@ -142,6 +167,33 @@ DOC_COMPLEX_A: str = "a (int; apple)"
 DOC_COMPLEX_B: str = "b (str | NoneType)"
 DOC_COMPLEX_E: str = "e (BinaryResponse; binary)"
 DOC_COMPLEX_Q: str = "q (FruitSchema | BinaryResponseSchema | UserRoleSchema; ternary)"
+
+DESC_COMPLEX_SCHEMA_SHALLOW: str = (
+    f"Base Model: { DOC_COMPLEX_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_COMPLEX_A }\n"
+    f"* { DOC_COMPLEX_B }\n"
+    f"* { DOC_COMPLEX_E }\n"
+    f"* { DOC_COMPLEX_Q }\n"
+    "\n"
+    f"{DESC_BINARYRESPONSE}\n"
+    "\n"
+    f"Base Model: { DOC_FRUIT_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_FRUIT_VALUE }\n"
+    "\n"
+    f"Base Model: { DOC_BINARYRESPONSE_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_BINARYRESPONSE_YN }\n"
+    "\n"
+    f"Base Model: { DOC_USERROLE_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_USERROLE_VALUE }"
+)
+
+DESC_COMPLEX_SCHEMA_DEEP: str = (
+    f"{DESC_COMPLEX_SCHEMA_SHALLOW}\n\n{DESC_FRUIT}\n\n{DESC_USERROLE}"
+)
 
 
 def _base_model_info(t: type[BaseModel]) -> dict[str, type]:
@@ -287,12 +339,17 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
             ),
             DOC_FRUIT_VALUE,
         )
-        self.assertSetEqual(
-            basemodel_dep_types(FruitSchema, False), {FruitSchema, Fruit}
+        self.assertListEqual(
+            list(basemodel_dep_types(FruitSchema, False)), [FruitSchema, Fruit]
         )
-        self.assertSetEqual(
-            basemodel_dep_types(FruitSchema, True), {FruitSchema, Fruit}
+        self.assertListEqual(
+            list(basemodel_dep_types(FruitSchema, True)), [FruitSchema, Fruit]
         )
+
+        self.assertEqual(basemodel_description(FruitSchema, False), DESC_FRUIT_SCHEMA)
+        self.assertEqual(basemodel_description(FruitSchema, True), DESC_FRUIT_SCHEMA)
+
+        #
 
         self.assertEqual(
             basemodel_name_doc(BinaryResponseSchema), DOC_BINARYRESPONSE_SCHEMA
@@ -303,14 +360,25 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
             ),
             DOC_BINARYRESPONSE_YN,
         )
-        self.assertSetEqual(
-            basemodel_dep_types(BinaryResponseSchema, False),
-            {BinaryResponseSchema, BinaryResponse},
+        self.assertListEqual(
+            list(basemodel_dep_types(BinaryResponseSchema, False)),
+            [BinaryResponseSchema, BinaryResponse],
         )
-        self.assertSetEqual(
-            basemodel_dep_types(BinaryResponseSchema, True),
-            {BinaryResponseSchema, BinaryResponse},
+        self.assertListEqual(
+            list(basemodel_dep_types(BinaryResponseSchema, True)),
+            [BinaryResponseSchema, BinaryResponse],
         )
+
+        self.assertEqual(
+            basemodel_description(BinaryResponseSchema, False),
+            DESC_BINARYRESPONSE_SCHEMA,
+        )
+        self.assertEqual(
+            basemodel_description(BinaryResponseSchema, True),
+            DESC_BINARYRESPONSE_SCHEMA,
+        )
+
+        #
 
         self.assertEqual(basemodel_name_doc(UserRoleSchema), DOC_USERROLE_SCHEMA)
         self.assertEqual(
@@ -319,14 +387,25 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
             ),
             DOC_USERROLE_VALUE,
         )
-        self.assertSetEqual(
-            basemodel_dep_types(UserRoleSchema, False),
-            {UserRoleSchema, UserRole},
+        self.assertListEqual(
+            list(basemodel_dep_types(UserRoleSchema, False)),
+            [UserRoleSchema, UserRole],
         )
-        self.assertSetEqual(
-            basemodel_dep_types(UserRoleSchema, True),
-            {UserRoleSchema, UserRole},
+        self.assertListEqual(
+            list(basemodel_dep_types(UserRoleSchema, True)),
+            [UserRoleSchema, UserRole],
         )
+
+        self.assertEqual(
+            basemodel_description(BinaryResponseSchema, False),
+            DESC_BINARYRESPONSE_SCHEMA,
+        )
+        self.assertEqual(
+            basemodel_description(BinaryResponseSchema, True),
+            DESC_BINARYRESPONSE_SCHEMA,
+        )
+
+        #
 
         self.assertEqual(basemodel_name_doc(ComplexSchema), DOC_COMPLEX_SCHEMA)
         self.assertEqual(
@@ -353,26 +432,34 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
             ),
             DOC_COMPLEX_Q,
         )
-        self.assertSetEqual(
-            basemodel_dep_types(ComplexSchema, False),
-            {
+        self.assertListEqual(
+            list(basemodel_dep_types(ComplexSchema, False)),
+            [
                 ComplexSchema,
                 BinaryResponse,
                 FruitSchema,
                 BinaryResponseSchema,
                 UserRoleSchema,
-            },
+            ],
         )
-        self.assertSetEqual(
-            basemodel_dep_types(ComplexSchema, True),
-            {
+        self.assertListEqual(
+            list(basemodel_dep_types(ComplexSchema, True)),
+            [
                 ComplexSchema,
                 BinaryResponse,
                 FruitSchema,
-                Fruit,
                 BinaryResponseSchema,
-                BinaryResponse,
                 UserRoleSchema,
+                Fruit,
                 UserRole,
-            },
+            ],
+        )
+
+        self.assertEqual(
+            basemodel_description(ComplexSchema, False),
+            DESC_COMPLEX_SCHEMA_SHALLOW,
+        )
+        self.assertEqual(
+            basemodel_description(ComplexSchema, True),
+            DESC_COMPLEX_SCHEMA_DEEP,
         )

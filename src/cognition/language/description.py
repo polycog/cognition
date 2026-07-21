@@ -114,7 +114,7 @@ def basemodel_field_doc(field_name: str, field_info: FieldInfo) -> str:
     return f"{field_name} ({types_names}{ _sub_if(_t_sc, field_info.description) })"
 
 
-def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> set[type]:
+def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> Iterable[type]:
     """
     Accounts for a base model's dependent types
 
@@ -144,19 +144,51 @@ def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> set[type]:
     #
 
     todo: list[type] = [start_schema]
-    done: set[type] = set()
-    result: set[type] = set()
+    explored: set[type] = set()
+
+    result: list[type] = [start_schema]
+    added: set[type] = {start_schema}
 
     while todo:
         t = todo.pop(0)
-        if t not in done:
-            done.add(t)
-            result.add(t)
+        if t not in explored:
+            explored.add(t)
 
             for field_type in _basemodel_field_types(t):
-                result.add(field_type)
+                if field_type not in added:
+                    result.append(field_type)
+                    added.add(field_type)
 
                 if deep and issubclass(field_type, BaseModel):
                     todo.append(field_type)
 
     return result
+
+
+def basemodel_description(schema_type: type[BaseModel], deep: bool) -> str:
+    """
+    Description of an basemodel type
+    and its members
+
+    :param schema_type: type to describe
+    :param deep: if `True`, recursively includes fields' types
+    :return: type description
+    """
+
+    lines: list[str] = []
+
+    todo = basemodel_dep_types(schema_type, deep)
+
+    for t in todo:
+        if lines:
+            lines.append("")
+
+        if issubclass(t, BaseModel):
+            lines.append(f"Base Model: { basemodel_name_doc(t) }, fields...")
+            for f_n, f_i in t.model_fields.items():
+                lines.append(f"* { basemodel_field_doc(f_n, f_i) }")
+
+        elif issubclass(t, Enum):
+            lines.append(enum_description(t))
+
+    return "\n".join(lines)
