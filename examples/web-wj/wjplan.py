@@ -17,9 +17,9 @@ from math import gcd
 from cognition import (
     Predicate,
     SearchPlanner,
-    SearchPlannerOption,
+    SearchPlannerStaticOption,
     stringify,
-    succession_via_options,
+    static_opts_succession,
 )
 
 ##################################################
@@ -60,7 +60,7 @@ class WhichJug(IntEnum):
         return WhichJug.FIRST if self == WhichJug.SECOND else WhichJug.SECOND
 
 
-class JugPairOption(SearchPlannerOption[JugPair, "JugPairOption"]):
+class JugPairOption(SearchPlannerStaticOption[JugPair, "JugPairOption"]):
     """
     An option on a pair of jugs
     """
@@ -95,7 +95,7 @@ class PourOption(JugPairOption):
 
         return (j_from.contents > 0) and (j_to.contents < j_to.volume)
 
-    def invoke(self, state: JugPair) -> tuple[JugPair, int]:
+    def then(self, state: JugPair) -> tuple[JugPair, int]:
         j_from: Jug = state[self.pour_from.value]
         j_to: Jug = state[self.pour_from.other.value]
 
@@ -140,7 +140,7 @@ class FillOption(JugPairOption):
 
         return j.contents < j.volume
 
-    def invoke(self, state: JugPair) -> tuple[JugPair, int]:
+    def then(self, state: JugPair) -> tuple[JugPair, int]:
         new_jug: Jug = Jug(
             state[self.fill_to.value].volume, state[self.fill_to.value].volume
         )
@@ -175,7 +175,7 @@ class EmptyOption(JugPairOption):
     def available(self, state: JugPair) -> bool:
         return state[self.empty_from.value].contents > 0
 
-    def invoke(self, state: JugPair) -> tuple[JugPair, int]:
+    def then(self, state: JugPair) -> tuple[JugPair, int]:
         new_jug: Jug = Jug(state[self.empty_from.value].volume, 0)
 
         return (
@@ -291,7 +291,7 @@ def run_waterjug(vol1: int, vol2: int, desired: int, max_steps: int) -> WJResult
     planner = SearchPlanner(
         init_jugs,
         create_wj_goal(desired),
-        succession_via_options(
+        static_opts_succession(
             EmptyOption(WhichJug.FIRST),
             EmptyOption(WhichJug.SECOND),
             FillOption(WhichJug.FIRST),
@@ -314,7 +314,7 @@ def run_waterjug(vol1: int, vol2: int, desired: int, max_steps: int) -> WJResult
     plan = [("Initial State", sim_state[0].contents, sim_state[1].contents)]
 
     for a in planner.plan:
-        sim_state, _ = a.invoke(sim_state)
+        sim_state, _ = a.then(sim_state)
         plan.append((str(a), sim_state[0].contents, sim_state[1].contents))
 
     return Success(planner.states_explored, plan)

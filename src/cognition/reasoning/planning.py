@@ -15,6 +15,8 @@ from collections.abc import (
     Sequence,
 )
 
+from itertools import chain
+
 import heapq
 
 from ..util.functypes import (
@@ -34,7 +36,7 @@ from ..decision.core import (
 #
 
 type PathCost = int | float
-"""Cost of an action (can be whole numbers or decimal)"""
+"""Cost of a plan action (can be whole numbers or decimal)"""
 
 
 @dataclass(frozen=True, order=True)
@@ -412,14 +414,14 @@ class SearchPlanner[PS: Hashable, PA]:
         return len(self._dp.state.explored)
 
 
-class SearchPlannerOption[PS, PA](ABC):
+class SearchPlannerStaticOption[PS, PA](ABC):
     """
     A transition applicable to many states
     """
 
     def __init__(self, action: PA) -> None:
         """
-        :param action: action that might be performed in multiple contexts
+        :param action: search action that might be applicable in multiple states
         """
 
         self._action = action
@@ -438,24 +440,68 @@ class SearchPlannerOption[PS, PA](ABC):
         State-gating predicate
 
         :param state: state to consider
-        :return: ``True`` if action applies
+        :return: ``True`` if this search action applies
         """
 
     @abstractmethod
-    def invoke(self, state: PS) -> tuple[PS, PathCost]:
+    def then(self, state: PS) -> tuple[PS, PathCost]:
         """
-        Applies the action
+        Produces the result of applying this search action
+        to a supplied state
 
         :param state: starting state
-        :return: resulting state and cost from applying the action
+        :return: resulting state and cost from applying the search action
         """
 
 
-def succession_via_options[PS, PA](
-    *options: SearchPlannerOption[PS, PA]
+class SearchPlannerDynamicOption[PS, PA](ABC):
+    """
+    A pattern-driven class
+    of transitions
+    """
+
+    def __init__(self, action: PA) -> None:
+        """
+        :param action: search action to be performed
+        """
+
+        self._action = action
+
+    @property
+    def action(self) -> PA:
+        """
+        :return: associated action
+        """
+
+        return self._action
+
+    @classmethod
+    @abstractmethod
+    def when(cls, state: PS) -> Iterable[Self]:
+        """
+        Identifies planning action(s) that
+        do apply in the supplied state
+
+        :param state: state to consider
+        :return: instance(s) that apply
+        """
+
+    @abstractmethod
+    def then(self, state: PS) -> tuple[PS, PathCost]:
+        """
+        Produces the result of applying this search action
+        to a supplied state
+
+        :param state: starting state
+        :return: resulting state and cost from applying the search action
+        """
+
+
+def static_opts_succession[PS, PA](
+    *options: SearchPlannerStaticOption[PS, PA]
 ) -> Succession[PS, PA]:
     """
-    Succession function from options
+    Succession function from static options
 
     :param options: globally available transitions
     :return: resulting succession function for any search state
@@ -472,8 +518,34 @@ def succession_via_options[PS, PA](
 
         for opt in fixed_opts:
             if opt.available(s):
-                state_p, cost = opt.invoke(s)
+                state_p, cost = opt.then(s)
 
                 yield (state_p, opt.action, cost)
+
+    return expand
+
+
+def dynamic_opts_succession[PS, PA](
+    *option_types: type[SearchPlannerDynamicOption[PS, PA]]
+) -> Succession[PS, PA]:
+    """
+    Succession function from dynamic options
+
+    :param options: globally available transition types
+    :return: resulting succession function for any search state
+    """
+
+    opt_generators = tuple(ot.when for ot in option_types)
+
+    def expand(s: PS) -> Iterable[tuple[PS, PA, PathCost]]:
+        """
+        Generic expansion function based
+        upon a supplied fixed set of
+        globally available dynamic options
+        """
+
+        for opt in chain.from_iterable(og(s) for og in opt_generators):
+            new_state, cost = opt.then(s)
+            yield (new_state, opt.action, cost)
 
     return expand

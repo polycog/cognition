@@ -2,6 +2,8 @@
 Tests for planning code
 """
 
+from __future__ import annotations
+
 from typing import cast
 
 from enum import IntEnum
@@ -18,11 +20,14 @@ from cognition import (
     PriorityQueue,
     Queue,
     SearchPlanner,
-    SearchPlannerOption,
+    SearchPlannerDynamicOption,
+    SearchPlannerStaticOption,
     Stack,
+    Succession,
     Supplier,
+    dynamic_opts_succession,
     stringify,
-    succession_via_options,
+    static_opts_succession,
 )
 
 #
@@ -374,7 +379,7 @@ class USCoin(IntEnum):
     PENNY = 1
 
 
-class AddCoin(SearchPlannerOption[int, USCoin]):
+class AddCoinStatic(SearchPlannerStaticOption[int, USCoin]):
     """Option to add a coin"""
 
     def __init__(self, coin: USCoin):
@@ -383,42 +388,75 @@ class AddCoin(SearchPlannerOption[int, USCoin]):
     def available(self, _: int) -> bool:
         return True
 
-    def invoke(self, state: int) -> tuple[int, int]:
+    def then(self, state: int) -> tuple[int, int]:
         return (state + self.action.value, 1)
 
 
-class TestPlanningConvenience(unittest.TestCase):
-    """Tests planning convenience code"""
+class AddCoinDynamic(SearchPlannerDynamicOption[int, USCoin]):
+    """Option to add a coin"""
 
-    def test_fewest_coins(self) -> None:
-        """
-        Use planning to solve smallest
-        change via coins
-        """
+    def __init__(self, coin: USCoin):
+        super().__init__(coin)
+
+    @classmethod
+    def when(cls, _state: int) -> Iterable[AddCoinDynamic]:
+        yield from (AddCoinDynamic(c) for c in USCoin)
+
+    def then(self, state: int) -> tuple[int, int]:
+        return (state + self.action.value, 1)
+
+
+class TestPlanningOptions(unittest.TestCase):
+    """
+    Use planning options
+    to solve smallest change via coins
+    """
+
+    def setUp(self) -> None:
+        """Common testing info"""
+
+        self.init_cents: int = 0
 
         goal_cents: int = 119
-        planner = SearchPlanner(
-            0,
-            lambda s: s == goal_cents,
-            succession_via_options(*(AddCoin(c) for c in USCoin)),
-            Queue,
-            # each coin is a single action
-            # and queue = BFS, so...
-            # produces sum with fewest coins
-        ).run()
+        self.termination_test = lambda s: s == goal_cents
 
-        #
+        self.frontier_factory = Queue
+        # each coin is a single action
+        # and queue = BFS, so...
+        # produces sum with fewest coins
+
+        self.opt_plan_cost: int = 10
+        self.opt_plan = {
+            USCoin.QUARTER: 4,  # 100 +
+            USCoin.DIME: 1,  #     10 +
+            USCoin.NICKLE: 1,  #    5 +
+            USCoin.PENNY: 4,  #     4
+        }  #                    = 119
+
+    def _test_planner(self, sf: Succession[int, USCoin]) -> None:
+        """Common assertions"""
+
+        planner = SearchPlanner(
+            self.init_cents,
+            self.termination_test,
+            sf,
+            self.frontier_factory,
+        )
+
+        planner.run()
 
         self.assertFalse(planner.still_searching)
 
         self.assertTrue(planner.plan_found)
-        self.assertEqual(planner.plan_cost, 10)
-        self.assertDictEqual(
-            dict(Counter(planner.plan)),
-            {
-                USCoin.QUARTER: 4,  # 100 +
-                USCoin.DIME: 1,  #     10 +
-                USCoin.NICKLE: 1,  #    5 +
-                USCoin.PENNY: 4,  #     4
-            },  #                   = 119
-        )
+        self.assertEqual(planner.plan_cost, self.opt_plan_cost)
+        self.assertDictEqual(dict(Counter(planner.plan)), self.opt_plan)
+
+    def test_static(self) -> None:
+        """Static options"""
+
+        self._test_planner(static_opts_succession(*(AddCoinStatic(c) for c in USCoin)))
+
+    def test_dynamic(self) -> None:
+        """Dynamic options"""
+
+        self._test_planner(dynamic_opts_succession(AddCoinDynamic))
