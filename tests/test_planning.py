@@ -385,7 +385,7 @@ class AddCoinStatic(SearchPlannerStaticOption[int, USCoin]):
     def __init__(self, coin: USCoin):
         super().__init__(coin)
 
-    def available(self, _: int) -> bool:
+    def is_available(self, _: int) -> bool:
         return True
 
     def then(self, state: int) -> tuple[int, int]:

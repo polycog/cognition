@@ -435,7 +435,7 @@ class SearchPlannerStaticOption[PS, PA](ABC):
         return self._action
 
     @abstractmethod
-    def available(self, state: PS) -> bool:
+    def is_available(self, state: PS) -> bool:
         """
         State-gating predicate
 
@@ -517,7 +517,7 @@ def static_opts_succession[PS, PA](
         """
 
         for opt in fixed_opts:
-            if opt.available(s):
+            if opt.is_available(s):
                 state_p, cost = opt.then(s)
 
                 yield (state_p, opt.action, cost)

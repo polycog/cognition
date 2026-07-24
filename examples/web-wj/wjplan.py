@@ -89,7 +89,7 @@ class PourOption(JugPairOption):
     def __str__(self) -> str:
         return f"Pour from {self.pour_from.name} to {self.pour_from.other.name}"
 
-    def available(self, state: JugPair) -> bool:
+    def is_available(self, state: JugPair) -> bool:
         j_from: Jug = state[self.pour_from.value]
         j_to: Jug = state[self.pour_from.other.value]
 
@@ -135,7 +135,7 @@ class FillOption(JugPairOption):
     def __str__(self) -> str:
         return f"Fill {self.fill_to.name}"
 
-    def available(self, state: JugPair) -> bool:
+    def is_available(self, state: JugPair) -> bool:
         j: Jug = state[self.fill_to]
 
         return j.contents < j.volume
@@ -172,7 +172,7 @@ class EmptyOption(JugPairOption):
     def __str__(self) -> str:
         return f"Empty {self.empty_from.name}"
 
-    def available(self, state: JugPair) -> bool:
+    def is_available(self, state: JugPair) -> bool:
         return state[self.empty_from.value].contents > 0
 
     def then(self, state: JugPair) -> tuple[JugPair, int]:
