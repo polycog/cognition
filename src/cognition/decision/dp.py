@@ -360,6 +360,24 @@ def operator_sorting_key[S](
     return lambda a, _s, _io: cmp_to_key(cmp)(a)
 
 
+@runtime_checkable
+class Elaborable[S](Protocol):
+    """
+    Defines a state that supplies an
+    elaborator, to be added to a decision
+    process upon initialization
+    """
+
+    @property
+    @abstractmethod
+    def elaborator(self) -> Elaborator[S]:
+        """
+        Provide the state-specific elaborator
+
+        :return: state-specific elaborator
+        """
+
+
 TERMINAL_ACTION_ATTR: str = "terminal"
 """Attribute name to trigger termination for a selected action"""
 
@@ -382,6 +400,9 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         """
 
         super().__init__(state_initializer)
+
+        if isinstance(self._state, Elaborable):
+            self.add_elaborator(self._state.elaborator)
 
         if enable_terminal_check:
             self._phase_handlers[Phase.TERMINATIONCHECK] = self._terminal_check

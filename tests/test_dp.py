@@ -2,6 +2,8 @@
 Tests for dp code
 """
 
+from __future__ import annotations
+
 import unittest
 from collections.abc import Mapping
 from enum import Enum, StrEnum, auto
@@ -163,6 +165,63 @@ class TestDP(unittest.TestCase):
         self.io_source: Mapping[str, Any] = {}
         self.mock_io = IOContainer(
             AttrReferral(self.io_source), AttrReferral(self.io_source)
+        )
+
+    def test_elaborable(self) -> None:
+        """Confirming elaboration is added upon dp init"""
+
+        s_name = "boring_name"
+        e_name = "crafty_name"
+        t_name = "tautology"
+
+        class MyState:
+            """Example state"""
+
+            def __init__(self) -> None:
+                self._num = 42
+
+            @property
+            def elaborator(self) -> Elaborator[MyState]:
+                """example to combine state + io"""
+
+                @stringify(e_name)
+                def _elab(_state: MyState, io: IOContainer) -> dict[str, Any]:
+                    return {"value": self._num + io.i.clock.cycles}
+
+                return _elab
+
+            def __str__(self) -> str:
+                return s_name
+
+        s = MyState()
+        dp = DecisionProcess(lambda: s)
+
+        @dp.termination_check
+        @stringify(t_name)
+        def _t_check(_state: MyState, _io: IOContainer) -> bool:
+            return True
+
+        self.assertEqual(
+            str(dp),
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={s_name}",
+                    f"Done?={False}",
+                    f"Chosen={None}",
+                    "Action Factories=",
+                    "Potential Actions=",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    f"Termination Checks={t_name}",
+                    f"Elaborators={e_name}",
+                    (
+                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
+                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                    ),
+                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                )
+            ),
         )
 
     def test_args_call(self) -> None:
