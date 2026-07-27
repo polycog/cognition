@@ -315,6 +315,14 @@ class BaseDecisionProcess[S]:
         return self._state
 
     @property
+    def io(self) -> IOContainer:
+        """
+        :return: current decision process io (for debugging)
+        """
+
+        return self._io
+
+    @property
     def num_cycles(self) -> int:
         """
         :return: how many decision process cycles have occurred since last initialization

@@ -391,6 +391,11 @@ class TestCore(unittest.TestCase):
         # add as both sensor/actuator
         dp_io.set_sensor(lst_name, lst).set_actuator(lst_name, lst)
 
+        self.assertIs(getattr(dp_io.io.o, lst_name), lst)
+        self.assertIsNot(getattr(dp_io.io.i, lst_name).data, lst.data)
+        self.assertListEqual(lst.data, [])
+        self.assertListEqual(getattr(dp_io.io.i, lst_name).data, lst.data)
+
         # confirm registration
         self.assertEqual(
             str(dp_io),
@@ -459,6 +464,14 @@ class TestCore(unittest.TestCase):
             return s == starting_point + goal_diff
 
         dp_io.add_termination_check(go_goal).run_until_done()
+
+        self.assertIs(getattr(dp_io.io.o, lst_name), lst)
+        self.assertIsNot(getattr(dp_io.io.i, lst_name).data, lst.data)
+        self.assertListEqual(
+            lst.data,
+            [str(n) for n in range(starting_point, starting_point + goal_diff)],
+        )
+        self.assertListEqual(getattr(dp_io.io.i, lst_name).data, lst.data)
 
         # confirm ability to remove sensors/actuators
         dp_io.set_sensor(lst_name, None).set_actuator(lst_name, None)
