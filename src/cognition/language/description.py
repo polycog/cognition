@@ -2,31 +2,27 @@
 Describing data types
 """
 
-from typing import Optional, Union, cast, get_args, get_origin
-from types import UnionType
-
 from collections.abc import Iterable, Sequence
-
-from string import Template
-
 from enum import Enum
+from string import Template
+from types import UnionType
+from typing import Union, cast, get_args, get_origin
 
 from pydantic import BaseModel
-from pydantic.fields import FieldInfo, Field
-
+from pydantic.fields import Field, FieldInfo
 from pydantic_ai import Agent as LanguageConvo
 from pydantic_ai.models import Model
 
+from ..knowledge.representation import BinaryRelation, Entity
 from ..util.enumeration import AutoDocEnum, DocEnum
-from ..knowledge.representation import Entity, BinaryRelation
 
-#
+# ===
 
 _t_paren = Template(" ($s)")
 _t_sc = Template("; $s")
 
 
-def _sub_if(t: Template, s: Optional[str]) -> str:
+def _sub_if(t: Template, s: str | None) -> str:
     """
     Conditional substitution
 
@@ -94,7 +90,7 @@ def basemodel_name_doc(schema_type: type[BaseModel]) -> str:
     )
 
 
-def _is_union(annotation: Optional[type]) -> bool:
+def _is_union(annotation: type | None) -> bool:
     return isinstance(annotation, UnionType) or (get_origin(annotation) is Union)
 
 
@@ -145,7 +141,7 @@ def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> Iterable[t
 
             yield from (t for t in candidates if _supported_type(t))
 
-    #
+    # ===
 
     todo: list[type] = [start_schema]
     explored: set[type] = set()
@@ -204,7 +200,7 @@ class FactDescriber[T: BaseModel]:
     Describes a category of BaseModel instances.
     """
 
-    def __init__(self, schema_type: type[T], task_desc: Optional[str]) -> None:
+    def __init__(self, schema_type: type[T], task_desc: str | None) -> None:
         """
         :param schema_type: type for this describer
         :param task_desc: textual description of the task
@@ -214,16 +210,14 @@ class FactDescriber[T: BaseModel]:
         if task_desc:
             task_prefix = f"== Context ==\n{ task_desc }\n\n"
 
-        prompt_part1: str = "".join(
-            (
-                task_prefix,
-                "== Task Description ==",
-                "\n",
-                "Your task is to provide a 1-sentence description of a supplied fact.",
-                "\n\n",
-                "== Object to Describe ==",
-                "\n",
-            )
+        prompt_part1: str = (
+            f"{task_prefix}"
+            "== Task Description =="
+            "\n"
+            "Your task is to provide a 1-sentence description of a supplied fact."
+            "\n\n"
+            "== Object to Describe =="
+            "\n"
         )
 
         class EgColor(AutoDocEnum):
@@ -291,11 +285,11 @@ class FactDescriber[T: BaseModel]:
                 "\n\n",
                 "Good descriptions include...",
                 "\n",
-                f"* {str(b1)}",
+                f"* {b1 !s}",
                 "\n",
                 "  There is a block named 'B1' that has the color 'blue'",
                 "\n",
-                f"* {str(ot2)}",
+                f"* {ot2 !s}",
                 "\n",
                 "  The red block named 'B2' is on top of the surface named 'table'",
             )
@@ -344,7 +338,7 @@ class FactDescriber[T: BaseModel]:
     @staticmethod
     def describe(
         instance: T,
-        task_desc: Optional[str],
+        task_desc: str | None,
         others: Iterable[T],
         llm: Model,
         timeout_secs: int = 5,

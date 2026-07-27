@@ -1,10 +1,10 @@
-mypy
-pylint
-ruff
-black
-validate-pyproject
-packaging
-coverage
+mypy==2.3.0
+pylint==4.0.6
+ruff==0.16.0
+black==26.5.1
+validate-pyproject==0.25
+packaging==26.2
+coverage==7.15.2
 
 # adding cognition
 -e .

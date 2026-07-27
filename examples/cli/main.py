@@ -6,13 +6,10 @@ cognition library
 
 from __future__ import annotations
 
-from typing import Self
-
 from collections.abc import Callable
-
-from dataclasses import dataclass, field
-
 from contextlib import nullcontext
+from dataclasses import dataclass, field
+from typing import Self
 
 from cognition import (
     AttrReferral,
@@ -24,7 +21,6 @@ from cognition import (
     staged_operator,
     stringify,
 )
-
 from rich import print as rprint
 from rich.prompt import Prompt
 
@@ -73,7 +69,7 @@ def register_command(dest: dict[str, Command]) -> Callable[[Command], Command]:
     return dec
 
 
-#
+# ===
 
 registered_commands: dict[str, Command] = {}
 """registered as {str(cmd): callable}"""
@@ -169,7 +165,7 @@ class CLIState(StagedState[CLIStage]):
     log: list[CommandLogEntry] = field(default_factory=list)
     """Log of command executions"""
 
-    #
+    # ===
 
     def init(self) -> CLIStage:
         """transition to... getting the (first) command"""
@@ -193,7 +189,7 @@ class CLIState(StagedState[CLIStage]):
         return CLIStage.GET_CMD
 
 
-#
+# ===
 
 with nullcontext[dict[str, str]]({}) as cli_status:
     # cli_status is a shared reference to a dictionary

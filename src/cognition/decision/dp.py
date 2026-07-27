@@ -4,23 +4,17 @@ Decision process (with batteries included)
 
 from __future__ import annotations
 
-from typing import Any, Optional, Protocol, Self, TYPE_CHECKING, cast, runtime_checkable
-
 from abc import ABC, abstractmethod
-
 from collections.abc import (
     Generator,
     Iterable,
     Mapping,
 )
-
-from types import MappingProxyType
-
-from enum import IntEnum
-
 from contextlib import contextmanager
-
+from enum import IntEnum
 from functools import cmp_to_key
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any, Protocol, Self, cast, runtime_checkable
 
 from ..util.functypes import (
     BiFunction,
@@ -29,14 +23,12 @@ from ..util.functypes import (
     Supplier,
     TriFunction,
 )
-
 from ..util.misc import (
     AttrReferral,
     ImplementsLessThan,
     optionally_name,
     stringify,
 )
-
 from .core import (
     Action,
     ActionEvaluator,
@@ -51,7 +43,7 @@ from .core import (
 if TYPE_CHECKING:
     from _typeshed import SupportsAllComparisons
 
-#
+# ===
 
 OPERATOR_SELF_PARAM: str = "_op"
 """Default :class:`NamedAction` parameter key to access source operator"""
@@ -75,12 +67,12 @@ class Rank(IntEnum):
     """Low importance"""
 
 
-#
+# ===
 
 
 def _add_args[S](
     dp: BaseDecisionProcess[S], namespace: str, **info: Any
-) -> Generator[BaseDecisionProcess[S], None, None]:
+) -> Generator[BaseDecisionProcess[S]]:
     """
     Provides `io.i.namespace` temporarily
 
@@ -99,7 +91,7 @@ def _add_args[S](
 @contextmanager
 def args_added[S](
     dp: BaseDecisionProcess[S], namespace: str = ARGS_ATTR, **info: Any
-) -> Generator[BaseDecisionProcess[S], None, None]:
+) -> Generator[BaseDecisionProcess[S]]:
     """
     Provides `io.i.namespace` temporarily
 
@@ -112,7 +104,7 @@ def args_added[S](
 
 
 def create_elaborator[S](
-    name: Optional[str] = None, **kwargs: BiFunction[S, IOContainer, Any]
+    name: str | None = None, **kwargs: BiFunction[S, IOContainer, Any]
 ) -> Elaborator[S]:
     """
     Elaborator generator given association between keywords and value-producing functions
@@ -137,7 +129,7 @@ def _qualified_name(name: str, **kwargs: Any) -> str:
     true_args = {k: v for k, v in kwargs.items() if k[:1] != "_"}
 
     if true_args:
-        params_str = ", ".join(f"{k}={repr(v)}" for k, v in true_args.items())
+        params_str = ", ".join(f"{k}={v !r}" for k, v in true_args.items())
 
         return f"{name}[{params_str}]"
 
@@ -192,7 +184,7 @@ class BaseOperator[S](Protocol):
         :return: ``True`` if the action applies in the current state
         """
 
-    def perform(self, state: S, io: IOContainer) -> Optional[S]:
+    def perform(self, state: S, io: IOContainer) -> S | None:
         """
         Action to perform if selected (see :class:`.core.Action`)
         """
@@ -229,7 +221,7 @@ class Operator[S](ABC, BaseOperator[S]):
         """See :meth:`BaseOperator.can_perform`"""
 
     @abstractmethod
-    def perform(self, state: S, io: IOContainer) -> Optional[S]:
+    def perform(self, state: S, io: IOContainer) -> S | None:
         """See :meth:`BaseOperator.perform`"""
 
     @property
@@ -252,7 +244,7 @@ class Operator[S](ABC, BaseOperator[S]):
 def add_operator[S](
     dp: BaseDecisionProcess[S],
     op: BaseOperator[S],
-    self_param: Optional[str] = OPERATOR_SELF_PARAM,
+    self_param: str | None = OPERATOR_SELF_PARAM,
 ) -> tuple[ActionFactory[S], Action[S]]:
     """
     Instantiates the operator within a decision process
@@ -287,7 +279,7 @@ def add_operator[S](
 def uniform_evaluator[S](
     r: ImplementsLessThan,
     p: Predicate[Action[S]] = lambda _: True,
-    name: Optional[str] = None,
+    name: str | None = None,
 ) -> ActionEvaluator[S]:
     """
     Applies a supplied rank to all potential actions that satisfy a predicate
@@ -307,9 +299,9 @@ def uniform_evaluator[S](
 
 
 def sorting_evaluator[S](
-    sorting_key: TriFunction[Action[S], S, IOContainer, "SupportsAllComparisons"],
+    sorting_key: TriFunction[Action[S], S, IOContainer, SupportsAllComparisons],
     rank_start: int = 1,
-    name: Optional[str] = None,
+    name: str | None = None,
 ) -> ActionEvaluator[S]:
     """
     Associates rankings based upon relative sorting order over actions
@@ -345,7 +337,7 @@ def sorting_evaluator[S](
 
 def operator_sorting_key[S](
     op_param: str = OPERATOR_SELF_PARAM,
-) -> TriFunction[Action[S], S, IOContainer, "SupportsAllComparisons"]:
+) -> TriFunction[Action[S], S, IOContainer, SupportsAllComparisons]:
     """
     Produces an action sorting key for actions derived from named operators
 
@@ -397,7 +389,7 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
     @contextmanager
     def args_added(
         self, namespace: str = ARGS_ATTR, **info: Any
-    ) -> Generator[BaseDecisionProcess[S], None, None]:
+    ) -> Generator[BaseDecisionProcess[S]]:
         """
         Pass-thru to :func:`args_added`
 
@@ -407,7 +399,7 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         yield from _add_args(self, namespace, **info)
 
     def add_operator(
-        self, op: BaseOperator[S], self_param: Optional[str] = OPERATOR_SELF_PARAM
+        self, op: BaseOperator[S], self_param: str | None = OPERATOR_SELF_PARAM
     ) -> tuple[ActionFactory[S], Action[S], Self]:
         """
         Pass-thru to :func:`add_operator`.
@@ -421,7 +413,7 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         return af, a, self
 
     def add_operator_c(
-        self, op: BaseOperator[S], self_param: Optional[str] = OPERATOR_SELF_PARAM
+        self, op: BaseOperator[S], self_param: str | None = OPERATOR_SELF_PARAM
     ) -> Self:
         """
         Pass-thru to :meth:`DecisionProcess.add_operator`.
@@ -437,7 +429,7 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
     def operator(
         self,
         op_name: str,
-        self_param: Optional[str] = OPERATOR_SELF_PARAM,
+        self_param: str | None = OPERATOR_SELF_PARAM,
         **kwargs: Any,
     ) -> Function[type[Operator[S]], type[Operator[S]]]:
         """
@@ -471,19 +463,18 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         Custom termination check, adding possibility of terminal actions
         """
 
-        if not self._terminated:
-            if isinstance(self._chosen, NamedAction):
-                self._terminated = TERMINAL_ACTION_ATTR in self._chosen.params
+        if (not self._terminated) and isinstance(self._chosen, NamedAction):
+            self._terminated = TERMINAL_ACTION_ATTR in self._chosen.params
 
         return super()._termination_check()
 
     def __call__(
         self,
-        max_cycles: Optional[int] = None,
+        max_cycles: int | None = None,
         suppress_errors: bool = True,
         args_namespace: str = ARGS_ATTR,
         **args: Any,
-    ) -> Optional[S]:
+    ) -> S | None:
         """
         Execute the decision process, function-style
 

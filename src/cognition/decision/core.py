@@ -4,27 +4,20 @@ Base decision process
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
-from enum import IntEnum, StrEnum
-
-from typing import (
-    cast,
-    Any,
-    Optional,
-    Self,
-)
-
+import random
 from collections.abc import (
     Iterable,
     Iterator,
 )
-
-from itertools import chain
-
+from dataclasses import dataclass
+from enum import IntEnum, StrEnum
 from io import StringIO
-
-import random
+from itertools import chain
+from typing import (
+    Any,
+    Self,
+    cast,
+)
 
 from ..util.functypes import (
     BiFunction,
@@ -32,14 +25,13 @@ from ..util.functypes import (
     Supplier,
     TriFunction,
 )
-
 from ..util.misc import (
     AttrReferral,
     ImplementsLessThan,
     stringify,
 )
 
-#
+# ===
 
 
 @dataclass(frozen=True)
@@ -110,7 +102,7 @@ class ActionRank[S]:
     """Rank of the action (smaller is better)"""
 
     def __str__(self) -> str:
-        return f"ActionRank(a={str(self.a)}, r={str(self.rank)})"
+        return f"ActionRank(a={self.a !s}, r={self.rank !s})"
 
     def __lt__(self, other: object) -> bool:
         """
@@ -199,14 +191,14 @@ class BaseDecisionProcess[S]:
     _action_factories: list[
         ActionFactory[S]
     ]  # identifying potential next decision process steps
-    _action_evaluators: list[ActionEvaluator[S]] = []  # ranking for supplied actions
+    _action_evaluators: list[ActionEvaluator[S]]  # ranking for supplied actions
 
     # Internal decision process state...
     _terminated: bool  # is the current decision process terminated?
     _phase: Phase  # current phase of decision process
     _potential_actions: list[Action[S]]  # last computed set of potential actions
     _ranking: list[ActionRank[S]]  # last computed set of action ranking
-    _chosen: Optional[Action[S]]  # last selected action
+    _chosen: Action[S] | None  # last selected action
     _step_count: int  # number of decision cycles since last initialization
     _elaboration: dict[str, Any]  # summary description of cycle state/io
 
@@ -218,7 +210,7 @@ class BaseDecisionProcess[S]:
     # Phase handling
     _phase_handlers: list[Supplier[bool]]
 
-    #
+    # ===
 
     def __init__(self, state_initializer: Supplier[S]) -> None:
         """
@@ -331,13 +323,13 @@ class BaseDecisionProcess[S]:
         return self._step_count
 
     @property
-    def chosen_action(self) -> Optional[str]:
+    def chosen_action(self) -> str | None:
         """
         :return: ``str()`` of the most recently chosen action
         """
         return None if self._chosen is None else str(self._chosen)
 
-    #
+    # ===
 
     def add_elaborator(self, e: Elaborator[S]) -> Self:
         """
@@ -375,7 +367,7 @@ class BaseDecisionProcess[S]:
 
         return True
 
-    #
+    # ===
 
     def add_termination_check(self, p: TerminationCheck[S]) -> Self:
         """
@@ -413,7 +405,7 @@ class BaseDecisionProcess[S]:
 
         return not self._terminated
 
-    #
+    # ===
 
     def add_action_factory(self, f: ActionFactory[S]) -> Self:
         """
@@ -467,7 +459,7 @@ class BaseDecisionProcess[S]:
 
         return True
 
-    #
+    # ===
 
     def add_action_evaluator(self, ae: ActionEvaluator[S]) -> Self:
         """
@@ -505,12 +497,10 @@ class BaseDecisionProcess[S]:
             self._ranking = []
 
             if len(self._potential_actions) > 1:
-                self._ranking = list(
-                    sorted(
-                        chain.from_iterable(
-                            ae(self._state, self._io, self._potential_actions)
-                            for ae in self._action_evaluators
-                        )
+                self._ranking = sorted(
+                    chain.from_iterable(
+                        ae(self._state, self._io, self._potential_actions)
+                        for ae in self._action_evaluators
                     )
                 )
 
@@ -530,7 +520,7 @@ class BaseDecisionProcess[S]:
 
         return True
 
-    #
+    # ===
 
     def _apply(self) -> bool:
         """
@@ -543,7 +533,7 @@ class BaseDecisionProcess[S]:
         """
 
         if self._chosen:
-            result: Optional[S] = self._chosen(self._state, self._io)
+            result: S | None = self._chosen(self._state, self._io)
             if result is not None:
                 self._state = result
         else:
@@ -553,7 +543,7 @@ class BaseDecisionProcess[S]:
 
         return True
 
-    #
+    # ===
 
     def run_phase(self) -> Self:
         """
@@ -593,7 +583,7 @@ class BaseDecisionProcess[S]:
 
         return self
 
-    #
+    # ===
 
     def phases(self) -> Iterator[Self]:
         """
@@ -613,15 +603,14 @@ class BaseDecisionProcess[S]:
 
         return DecisionProcessIterator(self, False)
 
-    #
+    # ===
 
     @staticmethod
     def _set_io_buffer(d: dict[str, Any], name: str, buffer: Any) -> None:
         """Abstraction for sensor/actuator setting"""
 
         if buffer is None:
-            if name in d:
-                del d[name]
+            d.pop(name, None)
         else:
             d[name] = buffer
 

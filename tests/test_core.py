@@ -2,15 +2,11 @@
 Tests for core code
 """
 
-from typing import Any, cast
-
-from collections.abc import Iterable
-
-from math import sqrt
-
 import unittest
-
+from collections.abc import Iterable
 from io import StringIO
+from math import sqrt
+from typing import Any, cast
 
 from cognition import (
     Action,
@@ -30,7 +26,7 @@ from cognition import (
     stringify,
 )
 
-#
+# ===
 
 TERMINATION_NAME: str = "prime_or_perfect"
 FACTORY_NAME: str = "always_inc"
@@ -121,7 +117,7 @@ class TestCore(unittest.TestCase):
 
         self.assertEqual(dp_f.state, [])
 
-        #
+        # ===
 
         dp_i: BaseDecisionProcess[list[str]] = BaseDecisionProcess(lambda: ["hi"])
 
@@ -163,7 +159,7 @@ class TestCore(unittest.TestCase):
             ),
         )
 
-        #
+        # ===
 
         e_name = "echo"
 
@@ -195,7 +191,7 @@ class TestCore(unittest.TestCase):
             ),
         )
 
-        #
+        # ===
 
         g_name = f"check_{e_name}"
 
@@ -294,7 +290,7 @@ class TestCore(unittest.TestCase):
         with self.assertRaises(TypeError):
             _ = ar_dec_high < "not an ActionRank"
 
-        #
+        # ===
 
         starting_point: int = 100
 
@@ -313,7 +309,7 @@ class TestCore(unittest.TestCase):
 
         dp.reinit()
 
-        #
+        # ===
 
         dp.add_action_factory(lambda _s, _io: [a_inc, a_dec])
 
@@ -326,11 +322,11 @@ class TestCore(unittest.TestCase):
 
         self.assertEqual(str(cm.exception), DecisionProcessErrorMessage.NO_RANK.value)
 
-        #
+        # ===
 
         dp.add_action_evaluator(lambda _s, _io, _actions: [])
 
-        #
+        # ===
 
         @dp.action_evaluator
         def dec_over_inc(
@@ -349,7 +345,7 @@ class TestCore(unittest.TestCase):
         self.assertEqual(dp.state, starting_point - 1)
         self.assertEqual(dp.num_cycles, 2)
 
-        #
+        # ===
 
         dp.add_termination_check(lambda s, _io: s == starting_point - 2)
 
@@ -493,6 +489,7 @@ class TestCore(unittest.TestCase):
         # confirm logging
         self.assertEqual(
             dp_io.log,
+            # ruff: ignore[FLY002]
             "\n".join(("@1: data=[]", "@2: data=['1']", "@3: data=['1', '2']", "")),
         )
 
@@ -506,7 +503,7 @@ class TestCore(unittest.TestCase):
         e_perfect: str = "perfect"
         a_inc: str = "inc"
 
-        #
+        # ===
 
         dp_count_until: BaseDecisionProcess[int] = (
             BaseDecisionProcess(lambda: starting_point)

@@ -3,26 +3,20 @@ Selecting from amongst enumerated values
 based upon natural language input
 """
 
-from typing import Any, Optional
-
-from enum import Enum
-
-from dataclasses import dataclass
-
-from string import Template
-
 from collections import Counter
-
 from contextlib import suppress
+from dataclasses import dataclass
+from enum import Enum
+from string import Template
+from typing import Any
 
 from pydantic import BaseModel, create_model
-
 from pydantic_ai import Agent as LanguageConvo
 from pydantic_ai.models import Model
 
-from .description import enum_name_doc, enum_item_doc
+from .description import enum_item_doc, enum_name_doc
 
-#
+# ===
 
 DEFAULT_SCHEMA_FIELD_NAME: str = "value"
 """Default field name for response schema"""
@@ -59,7 +53,7 @@ def enum_schema(
     :return: resulting schema
     """
 
-    fields_dict: dict[str, Any] = {field_name: Optional[enum_type]}
+    fields_dict: dict[str, Any] = {field_name: enum_type | None}
 
     return create_model(enum_type.__name__, **fields_dict)
 
@@ -71,7 +65,7 @@ class EnumClassifier[T: Enum]:
     with respect to an enumerated type.
     """
 
-    def __init__(self, enum_type: type[T], task_desc: Optional[str]) -> None:
+    def __init__(self, enum_type: type[T], task_desc: str | None) -> None:
         """
         :param enum_type: type representing options
         :param task_desc: textual description of the task
@@ -79,7 +73,7 @@ class EnumClassifier[T: Enum]:
 
         self._schema = enum_schema(enum_type)
 
-        #
+        # ===
 
         task_prefix = ""
         if task_desc:
@@ -132,7 +126,7 @@ class EnumClassifier[T: Enum]:
 
     def __call__(
         self, utterance: str, llm: Model, num_trials: int = 3, timeout_secs: int = 5
-    ) -> tuple[Optional[T], EmpiricalConfidence]:
+    ) -> tuple[T | None, EmpiricalConfidence]:
         """
         Classifies the utterance (with confidence)
         based upon a timeout budget.

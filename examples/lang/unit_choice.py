@@ -2,18 +2,9 @@
 LLM choices ala unit testing
 """
 
-from typing import Optional
-
 from collections.abc import Sequence
-
 from dataclasses import dataclass
-
 from enum import Enum, StrEnum, auto
-
-from pydantic_ai.models.openai import OpenAIResponsesModel
-from pydantic_ai.providers.openai import OpenAIProvider
-
-from rich import print as rprint
 
 from cognition import (
     AutoDocEnum,
@@ -22,12 +13,14 @@ from cognition import (
     enum_name_doc,
     timed,
 )
-
 from dotenv import load_dotenv
+from pydantic_ai.models.openai import OpenAIResponsesModel
+from pydantic_ai.providers.openai import OpenAIProvider
+from rich import print as rprint
 
 load_dotenv()
 
-#
+# ===
 
 
 class Fruit(StrEnum):
@@ -63,7 +56,7 @@ class PhoneIntent(AutoDocEnum):
     STAFF = "Medical questions, test results, or symptom advice"
 
 
-#
+# ===
 
 
 @dataclass(frozen=True)
@@ -73,7 +66,7 @@ class ChoiceTestCase[T: Enum]:
     in_text: str
     """input"""
 
-    expected_result: Optional[T]
+    expected_result: T | None
     """expected output"""
 
 
@@ -171,7 +164,7 @@ test_suites: Sequence[ChoiceTestSuite[Enum]] = (
     ),
 )
 
-#
+# ===
 
 
 def main() -> None:
@@ -204,6 +197,7 @@ def main() -> None:
             @timed
             def _classify():  # type: ignore
                 # pylint: disable=cell-var-from-loop
+                # ruff: ignore[B023]
                 return classifier(test.in_text, llm_model, num_trials)
 
             (result, confidence), time = _classify()
@@ -214,10 +208,8 @@ def main() -> None:
                 color = "red"
 
             rprint(
-                (
-                    f"    [bold { color }]{result} ({100*float(confidence):.0f}% "
-                    f"@ {time / num_trials:.2f}sec/trial)[/]"
-                )
+                f"    [bold { color }]{result} ({100*float(confidence):.0f}% "
+                f"@ {time / num_trials:.2f}sec/trial)[/]"
             )
 
         print()

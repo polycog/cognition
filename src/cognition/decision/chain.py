@@ -2,27 +2,19 @@
 Support for a decision process generated via an iterable value.
 """
 
-from typing import (
-    Optional,
-    cast,
-)
-
 from collections.abc import (
     Iterable,
     Iterator,
 )
-
 from dataclasses import dataclass
+from typing import cast
 
 from ..util.functypes import BiFunction
-
 from ..util.misc import stringify
-
 from .core import Action, IOContainer
-
 from .dp import DecisionProcess
 
-#
+# ===
 
 
 @dataclass(frozen=True)
@@ -34,7 +26,7 @@ class Link[CV, CA]:
     value: CV
     """current iterated value"""
 
-    accumulator: Optional[CA]
+    accumulator: CA | None
     """current (optional) user-accumulated value"""
 
 
@@ -48,14 +40,14 @@ class ChainState[CV, CA]:
     - CA: type of an optional (a)ccumulator
     """
 
-    def __init__(self, chain: Iterable[CV], init_acc: Optional[CA] = None):
+    def __init__(self, chain: Iterable[CV], init_acc: CA | None = None):
         """
         :param chain: something iterable
         :param init_acc: (optional) initial accumulator value
         """
         self._iterator: Iterator[CV] = iter(chain)
-        self._value: Optional[CV] = None
-        self._accumulator: Optional[CA] = None
+        self._value: CV | None = None
+        self._accumulator: CA | None = None
 
         self.next(init_acc)
 
@@ -71,7 +63,7 @@ class ChainState[CV, CA]:
         return self._value is None
 
     @property
-    def current_link(self) -> Optional[Link[CV, CA]]:
+    def current_link(self) -> Link[CV, CA] | None:
         """
         :return: current link in the chain, or ``None`` if exhausted
         """
@@ -82,14 +74,14 @@ class ChainState[CV, CA]:
         return Link(cast(CV, self._value), self._accumulator)
 
     @property
-    def accumulator(self) -> Optional[CA]:
+    def accumulator(self) -> CA | None:
         """
         :return: current accumulator value
         """
 
         return self._accumulator
 
-    def next(self, acc: Optional[CA]) -> None:
+    def next(self, acc: CA | None) -> None:
         """
         Proceeds with the chain
 
@@ -102,8 +94,8 @@ class ChainState[CV, CA]:
 
 def create_chain_dp[CV, CA](
     chain: Iterable[CV],
-    link_handler: BiFunction[Link[CV, CA], IOContainer, Optional[CA]],
-    init_accumulator: Optional[CA] = None,
+    link_handler: BiFunction[Link[CV, CA], IOContainer, CA | None],
+    init_accumulator: CA | None = None,
 ) -> DecisionProcess[ChainState[CV, CA]]:
     """
     Decision process via an iterable that with a handler at each value accumulating a result
@@ -118,7 +110,7 @@ def create_chain_dp[CV, CA](
         lambda: ChainState[CV, CA](chain, init_accumulator)
     )
 
-    #
+    # ===
 
     @dp.action_factory
     @stringify("always_chaining")
@@ -137,7 +129,7 @@ def create_chain_dp[CV, CA](
             (if not exhausted)
             """
 
-            link: Optional[Link[CV, CA]] = cs.current_link
+            link: Link[CV, CA] | None = cs.current_link
 
             if link is not None:
                 cs.next(link_handler(link, io))
@@ -151,6 +143,6 @@ def create_chain_dp[CV, CA](
 
         return cs.done
 
-    #
+    # ===
 
     return dp

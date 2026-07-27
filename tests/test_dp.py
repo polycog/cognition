@@ -2,16 +2,13 @@
 Tests for dp code
 """
 
+import unittest
+from collections.abc import Mapping
+from enum import Enum, StrEnum, auto
 from typing import (
     Any,
     cast,
 )
-
-from enum import Enum, StrEnum, auto
-
-from collections.abc import Mapping
-
-import unittest
 
 from cognition import (
     Action,
@@ -19,25 +16,25 @@ from cognition import (
     ActionFactory,
     ActionRank,
     AttrReferral,
+    BaseDecisionProcess,
     BiFunction,
-    Elaborator,
     DecisionProcess,
+    Elaborator,
     IOContainer,
     NamedAction,
     Operator,
     Phase,
     Rank,
-    BaseDecisionProcess,
     args_added,
-    create_named_action,
     create_elaborator,
+    create_named_action,
     operator_sorting_key,
     sorting_evaluator,
     stringify,
     uniform_evaluator,
 )
 
-#
+# ===
 
 
 class OpStage(StrEnum):
@@ -70,7 +67,7 @@ class ByeOp(Operator[OpStage]):
         return OpStage.DONE
 
 
-#
+# ===
 
 
 class PrioritizedMathOperation(Enum):
@@ -141,7 +138,7 @@ class ChangeOp(Operator[int]):
         return hash((self._op, self._amt))
 
 
-#
+# ===
 
 
 class TestDP(unittest.TestCase):
@@ -177,7 +174,7 @@ class TestDP(unittest.TestCase):
 
         self.assertEqual(dp.state, state_start)
 
-        #
+        # ===
 
         namespace = "foo"
         arg_name = "bar"
@@ -205,7 +202,7 @@ class TestDP(unittest.TestCase):
         self.assertTrue(dp.done)
         self.assertEqual(dp.state, arg_val)
 
-        #
+        # ===
 
         dp.reinit()
 
@@ -328,7 +325,7 @@ class TestDP(unittest.TestCase):
 
         self.assertFalse(dp1.done)
 
-        #
+        # ===
 
         dp2.add_action_factory(allow_action(do_regular)).run_cycles(100)
 
@@ -484,7 +481,7 @@ class TestDP(unittest.TestCase):
 
         self.assertEqual(self.vote_yay(42, self.mock_io), 1)
 
-        #
+        # ===
 
         self.assertIsInstance(self.vote_nay, NamedAction)
         vote_nay_named = cast(NamedAction, self.vote_nay)
@@ -497,7 +494,7 @@ class TestDP(unittest.TestCase):
 
         self.assertEqual(self.vote_nay(42, self.mock_io), 0)
 
-        #
+        # ===
 
         self.assertIsInstance(self.abstain, NamedAction)
         abstrain_named = cast(NamedAction, self.abstain)
@@ -537,7 +534,7 @@ class TestDP(unittest.TestCase):
 
         self.assertEqual(str(eval_vote_h), name_vote_h)
 
-        #
+        # ===
 
         ranks = list(eval_all_m(51, self.mock_io, candidates))
         self.assertEqual(len(ranks), len(candidates))
@@ -567,7 +564,7 @@ class TestDP(unittest.TestCase):
             neg=lambda s, _: -s,
         )
 
-        #
+        # ===
 
         self.assertEqual(str(elab), name)
 
@@ -589,7 +586,7 @@ class TestDP(unittest.TestCase):
             },
         )
 
-        #
+        # ===
 
         elab2: Elaborator[int] = create_elaborator(
             identity=lambda s, _: s,
@@ -652,7 +649,7 @@ class TestDP(unittest.TestCase):
         )
 
         self.assertSequenceEqual(
-            list(ar.rank for ar in evaluator(dp2.state, self.mock_io, (a2, a2b))),
+            [ar.rank for ar in evaluator(dp2.state, self.mock_io, (a2, a2b))],
             (1, 1),
         )
 
@@ -703,7 +700,7 @@ class TestDP(unittest.TestCase):
                     f"Phase={Phase.ELABORATION.name}",
                     f"State={init_state + 1}",
                     f"Done?={False}",
-                    f"Chosen={str(ops[add1][1])}",
+                    f"Chosen={ops[add1][1] !s}",
                     f"Action Factories={", ".join(str(ov[0]) for ov in ops.values())}",
                     f"Potential Actions={", ".join(str(ov[1]) for ov in ops.values())}",
                     f"Action Evaluators={eval_name}",
@@ -742,10 +739,12 @@ class TestDP(unittest.TestCase):
                     f"Phase={Phase.ELABORATION.name}",
                     f"State={init_state}",
                     f"Done?={False}",
-                    f"Chosen={str(ops[sub1][1])}",
+                    f"Chosen={ops[sub1][1] !s}",
                     f"Action Factories={", ".join(str(ov[0]) for ov in ops.values())}",
-                    "Potential Actions="
-                    f"{", ".join(str(ov[1]) for o,ov in ops.items() if o.enabled)}",
+                    (
+                        "Potential Actions="
+                        f"{", ".join(str(ov[1]) for o,ov in ops.items() if o.enabled)}"
+                    ),
                     f"Action Evaluators={eval_name}",
                     f"Rankings={
                     ", ".join(
@@ -779,10 +778,12 @@ class TestDP(unittest.TestCase):
                     f"Phase={Phase.ELABORATION.name}",
                     f"State={init_state * 2}",
                     f"Done?={False}",
-                    f"Chosen={str(ops[mult2][1])}",
+                    f"Chosen={ops[mult2][1] !s}",
                     f"Action Factories={", ".join(str(ov[0]) for ov in ops.values())}",
-                    "Potential Actions="
-                    f"{", ".join(str(ov[1]) for o,ov in ops.items() if o.enabled)}",
+                    (
+                        "Potential Actions="
+                        f"{", ".join(str(ov[1]) for o,ov in ops.items() if o.enabled)}"
+                    ),
                     f"Action Evaluators={eval_name}",
                     "Rankings=",
                     f"Termination Checks={goal_name}",
@@ -808,10 +809,12 @@ class TestDP(unittest.TestCase):
                     f"Phase={Phase.TERMINATIONCHECK.name}",
                     f"State={final_val}",
                     f"Done?={True}",
-                    f"Chosen={str(ops[add1][1])}",
+                    f"Chosen={ops[add1][1] !s}",
                     f"Action Factories={", ".join(str(ov[0]) for ov in ops.values())}",
-                    "Potential Actions="
-                    f"{", ".join(str(ov[1]) for o,ov in ops.items() if o.enabled)}",
+                    (
+                        "Potential Actions="
+                        f"{", ".join(str(ov[1]) for o,ov in ops.items() if o.enabled)}"
+                    ),
                     f"Action Evaluators={eval_name}",
                     f"Rankings={
                     ", ".join(

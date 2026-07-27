@@ -6,7 +6,7 @@ import unittest
 
 from cognition import AutoDocEnum, DocEnum, EnumDispatch
 
-#
+# ===
 
 _HI_VAL = "howdy"
 _HI_DOC = "greeting"

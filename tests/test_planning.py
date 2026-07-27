@@ -4,15 +4,11 @@ Tests for planning code
 
 from __future__ import annotations
 
-from typing import cast
-
-from enum import IntEnum
-
-from collections import Counter
-
-from collections.abc import Iterable
-
 import unittest
+from collections import Counter
+from collections.abc import Iterable
+from enum import IntEnum
+from typing import cast
 
 from cognition import (
     FrontierManager,
@@ -26,11 +22,11 @@ from cognition import (
     Succession,
     Supplier,
     dynamic_opts_succession,
-    stringify,
     static_opts_succession,
+    stringify,
 )
 
-#
+# ===
 
 
 class TestFrontier(unittest.TestCase):
@@ -50,12 +46,12 @@ class TestFrontier(unittest.TestCase):
 
         ds: FrontierManager[int, str] = Stack()
 
-        #
+        # ===
 
         self.assertEqual(str(ds), "Stack(items=[])")
         self.assertTrue(ds.empty)
 
-        #
+        # ===
 
         for n in self.nodes:
             ds.add(n)
@@ -65,7 +61,7 @@ class TestFrontier(unittest.TestCase):
         )
         self.assertFalse(ds.empty)
 
-        #
+        # ===
 
         n = ds.remove()
 
@@ -73,7 +69,7 @@ class TestFrontier(unittest.TestCase):
         self.assertEqual(str(ds), f"Stack(items=[{self.nodes[0]}, {self.nodes[1]}])")
         self.assertFalse(ds.empty)
 
-        #
+        # ===
 
         n = ds.remove()
 
@@ -81,7 +77,7 @@ class TestFrontier(unittest.TestCase):
         self.assertEqual(str(ds), f"Stack(items=[{self.nodes[0]}])")
         self.assertFalse(ds.empty)
 
-        #
+        # ===
 
         n = ds.remove()
 
@@ -94,12 +90,12 @@ class TestFrontier(unittest.TestCase):
 
         ds: FrontierManager[int, str] = Queue()
 
-        #
+        # ===
 
         self.assertEqual(str(ds), "Queue(items=deque([]))")
         self.assertTrue(ds.empty)
 
-        #
+        # ===
 
         for n in self.nodes:
             ds.add(n)
@@ -110,7 +106,7 @@ class TestFrontier(unittest.TestCase):
         )
         self.assertFalse(ds.empty)
 
-        #
+        # ===
 
         n = ds.remove()
 
@@ -121,7 +117,7 @@ class TestFrontier(unittest.TestCase):
         )
         self.assertFalse(ds.empty)
 
-        #
+        # ===
 
         n = ds.remove()
 
@@ -132,7 +128,7 @@ class TestFrontier(unittest.TestCase):
         )
         self.assertFalse(ds.empty)
 
-        #
+        # ===
 
         n = ds.remove()
 
@@ -148,12 +144,12 @@ class TestFrontier(unittest.TestCase):
 
         ds: FrontierManager[int, str] = PriorityQueue()
 
-        #
+        # ===
 
         self.assertEqual(str(ds), "PriorityQueue(heuristic=None, items=[])")
         self.assertTrue(ds.empty)
 
-        #
+        # ===
 
         for n in self.nodes:
             ds.add(n)
@@ -169,7 +165,7 @@ class TestFrontier(unittest.TestCase):
         )
         self.assertFalse(ds.empty)
 
-        #
+        # ===
 
         n = ds.remove()
 
@@ -180,7 +176,7 @@ class TestFrontier(unittest.TestCase):
         )
         self.assertFalse(ds.empty)
 
-        #
+        # ===
 
         n = ds.remove()
 
@@ -191,7 +187,7 @@ class TestFrontier(unittest.TestCase):
         )
         self.assertFalse(ds.empty)
 
-        #
+        # ===
 
         n = ds.remove()
 
@@ -367,7 +363,7 @@ class TestSearchPlanning(unittest.TestCase):
         )
 
 
-#
+# ===
 
 
 class USCoin(IntEnum):

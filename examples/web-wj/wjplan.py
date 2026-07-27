@@ -4,22 +4,17 @@ Planning code for WaterJug
 
 from __future__ import annotations
 
-from typing import Optional
-
 from collections.abc import Sequence
-
 from dataclasses import dataclass
-
 from enum import IntEnum
-
 from math import gcd
 
 from cognition import (
     Predicate,
     SearchPlanner,
     SearchPlannerStaticOption,
-    stringify,
     static_opts_succession,
+    stringify,
 )
 
 ##################################################
@@ -238,12 +233,10 @@ class Success:
 
 type WJResult = InvalidConfiguration | TooLong | Success
 
-#
+# ===
 
 
-def validate_inputs(
-    vol1: int, vol2: int, desired: int, max_steps: int
-) -> Optional[str]:
+def validate_inputs(vol1: int, vol2: int, desired: int, max_steps: int) -> str | None:
     """
     Produces an error message if the
     supplied solver inputs are invalid;
@@ -280,11 +273,11 @@ def run_waterjug(vol1: int, vol2: int, desired: int, max_steps: int) -> WJResult
     validing the inputs first
     """
 
-    bad_input_msg: Optional[str] = validate_inputs(vol1, vol2, desired, max_steps)
+    bad_input_msg: str | None = validate_inputs(vol1, vol2, desired, max_steps)
     if isinstance(bad_input_msg, str):
         return InvalidConfiguration(bad_input_msg)
 
-    #
+    # ===
 
     init_jugs: JugPair = (Jug(vol1, 0), Jug(vol2, 0))
 
@@ -301,7 +294,7 @@ def run_waterjug(vol1: int, vol2: int, desired: int, max_steps: int) -> WJResult
         ),
     ).run(max_steps)
 
-    #
+    # ===
 
     if planner.still_searching:
         return TooLong(max_steps)

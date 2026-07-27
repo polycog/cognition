@@ -2,11 +2,10 @@
 Enumeration support
 """
 
+from enum import Enum
 from typing import Any, Self
 
-from enum import Enum
-
-#
+# ===
 
 
 class DocEnum(Enum):

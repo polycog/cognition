@@ -2,9 +2,8 @@
 Tests for utility code
 """
 
-from typing import cast
-
 import unittest
+from typing import cast
 
 from cognition import (
     AttrReferral,
@@ -14,7 +13,7 @@ from cognition import (
     timed,
 )
 
-#
+# ===
 
 
 class TestUtility(unittest.TestCase):
@@ -47,14 +46,14 @@ class TestUtility(unittest.TestCase):
         self.assertEqual(r1.value, start)
         self.assertEqual(r2.value, start)
         self.assertEqual(str(r1), start)
-        self.assertEqual(repr(r1), f"{ type(r1).__name__ }({ repr(start) })")
+        self.assertEqual(repr(r1), f"{ type(r1).__name__ }({ start !r })")
 
         r2.value = end
 
         self.assertEqual(r1.value, end)
         self.assertEqual(r2.value, end)
         self.assertEqual(str(r2), end)
-        self.assertEqual(repr(r2), f"{ type(r1).__name__ }({ repr(end) })")
+        self.assertEqual(repr(r2), f"{ type(r1).__name__ }({ end !r })")
 
     def test_optionally_name(self) -> None:
         """Confirming optionally_name"""
@@ -121,7 +120,7 @@ class TestUtility(unittest.TestCase):
 
         obj = AttrReferral(src)
 
-        #
+        # ===
 
         self.assertTrue(hasattr(obj, "a"))
         self.assertEqual(obj.a, src["a"])
@@ -131,7 +130,7 @@ class TestUtility(unittest.TestCase):
 
         self.assertFalse(hasattr(obj, "c"))
 
-        #
+        # ===
 
         src["a"] = cast(int, src["a"]) + 1
         src["c"] = 3.14

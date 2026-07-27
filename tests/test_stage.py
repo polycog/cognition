@@ -2,11 +2,9 @@
 Tests for stage code
 """
 
-from dataclasses import dataclass
-
-from io import StringIO
-
 import unittest
+from dataclasses import dataclass
+from io import StringIO
 from unittest.mock import MagicMock, patch
 
 from cognition import (
@@ -18,7 +16,7 @@ from cognition import (
     staged_operator,
 )
 
-#
+# ===
 
 
 class AuthStage(AutoDocEnum):
@@ -68,7 +66,7 @@ class TestStage(unittest.TestCase):
             print(
                 f"Please provide the secret within {io.i.args.max_attempts} attempt(s)."
             )
-            print("")
+            print()
 
         @staged_operator(self.dp, AuthStage.ATTEMPT)
         def _perform_attempt(_s: AuthState, io: IOContainer) -> KWArgs:

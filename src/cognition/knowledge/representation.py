@@ -4,16 +4,15 @@ Knowledge representation
 
 from __future__ import annotations
 
-from typing import Any
-
 from collections.abc import Iterable
+from typing import Any
 
 from pydantic import (
     BaseModel,
     ConfigDict,
 )
 
-#
+# ===
 
 
 class TypedSchema(BaseModel):
@@ -106,7 +105,7 @@ class BinaryRelation(TypedSchema):
         )
 
 
-#
+# ===
 
 type Fact = Entity | BinaryRelation
 """Hashable typed schema for concepts and relationships"""

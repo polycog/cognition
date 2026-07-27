@@ -4,23 +4,21 @@ Knowledge organization
 
 from __future__ import annotations
 
-from typing import Any, Optional, Self, cast
-
-from collections.abc import Hashable, Iterable, Iterator
-
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
-
-from functools import lru_cache, singledispatchmethod
-
+from functools import singledispatchmethod
 from itertools import chain
+from typing import Any, Self, cast
 
 import networkx as nx
 
 from ..util.functypes import Predicate
+from .representation import BinaryRelation, Entity, Fact
 
-from .representation import Entity, Fact, BinaryRelation
+# ===
 
-#
+type _ClassInfo[T] = type[T] | tuple["_ClassInfo[T]", ...]
+"""allows for isinstance multi-types"""
 
 
 @dataclass(frozen=True)
@@ -32,7 +30,7 @@ class WorldSnapshot:
     items: frozenset[Fact]
     """Fixed set of facts"""
 
-    #
+    # ===
 
     def __str__(self) -> str:
         """
@@ -121,8 +119,7 @@ class WorldSnapshot:
 
         return self.click(*(self.items - set(remove) | set(add)))
 
-    @lru_cache
-    def by[T: Hashable](self, cls_t: type[T]) -> Iterable[T]:
+    def by[FT](self, cls_t: _ClassInfo[FT]) -> Iterable[FT]:
         """
         Cached access by fact type
 
@@ -132,9 +129,9 @@ class WorldSnapshot:
 
         return tuple(item for item in self.items if isinstance(item, cls_t))
 
-    def find_first[T: Hashable](
-        self, cls_t: type[T], check: Predicate[T] = lambda _: True
-    ) -> T:
+    def find_first[FT](
+        self, cls_t: type[FT], check: Predicate[FT] = lambda _: True
+    ) -> FT:
         """
         Finds the first typed fact that satisfies the check
 
@@ -145,13 +142,12 @@ class WorldSnapshot:
         """
 
         for item in self.by(cls_t):
-            item = cast(T, item)
             if check(item):
                 return item
 
         raise ValueError("Could not find a satisfying fact")
 
-    def entity_by_name(self, entity_name: str) -> Optional[Entity]:
+    def entity_by_name(self, entity_name: str) -> Entity | None:
         """
         Finds the first entity with the supplied name
 
@@ -164,12 +160,12 @@ class WorldSnapshot:
         except ValueError:
             return None
 
-    def filter_relations[T: BinaryRelation](
+    def filter_relations[RT: BinaryRelation](
         self,
-        cls_t: Optional[type[T]] = None,
-        e1: Optional[Entity] = None,
-        e2: Optional[Entity] = None,
-    ) -> Iterable[T]:
+        cls_t: type[RT] | None = None,
+        e1: Entity | None = None,
+        e2: Entity | None = None,
+    ) -> Iterable[BinaryRelation]:
         """
         Finds all relation(s) that match the supplied criteria
 

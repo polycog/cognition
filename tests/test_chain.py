@@ -2,11 +2,9 @@
 Tests for chain code
 """
 
-from typing import cast
-
-from enum import StrEnum, auto
-
 import unittest
+from enum import StrEnum, auto
+from typing import cast
 
 from cognition import (
     ChainState,
@@ -14,7 +12,7 @@ from cognition import (
     create_chain_dp,
 )
 
-#
+# ===
 
 
 class NerdFighter(StrEnum):
@@ -51,7 +49,7 @@ class TestChain(unittest.TestCase):
 
             return cast(int, result.accumulator)
 
-        #
+        # ===
 
         self.assertEqual(my_fact(0), 1)
 

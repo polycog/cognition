@@ -3,23 +3,17 @@ Support for workflow housed
 within a single enumerated field.
 """
 
-from typing import Any, Optional, cast
-
 from collections.abc import Mapping
-
-from enum import Enum
-
 from dataclasses import dataclass
-
-from ..util.functypes import BiFunction, Function
-
-from ..util.enumeration import EnumDispatch
+from enum import Enum
+from typing import Any, cast
 
 from ..decision.core import IOContainer
-
 from ..decision.dp import DecisionProcess, Operator
+from ..util.enumeration import EnumDispatch
+from ..util.functypes import BiFunction, Function
 
-#
+# ===
 
 
 @dataclass
@@ -65,7 +59,7 @@ type KWArgs = Mapping[str, Any]
 """Shorthand for kwarg_name=kwarg_value"""
 
 # pylint: disable=line-too-long
-type StageSupporter[E: Enum, S: StagedState[E]] = BiFunction[S, IOContainer, Optional[KWArgs]]  # type: ignore
+type StageSupporter[E: Enum, S: StagedState[E]] = BiFunction[S, IOContainer, KWArgs | None]  # type: ignore
 """Function to optionally provide kwargs based upon interaction with IO"""
 
 

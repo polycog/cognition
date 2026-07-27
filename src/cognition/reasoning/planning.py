@@ -2,38 +2,31 @@
 Planning support
 """
 
-from typing import Optional, Self
-
-from abc import abstractmethod, ABC
-from dataclasses import dataclass, field
-
+import heapq
+from abc import ABC, abstractmethod
 from collections import deque
-
 from collections.abc import (
     Hashable,
     Iterable,
     Sequence,
 )
-
+from dataclasses import dataclass, field
 from itertools import chain
-
-import heapq
-
-from ..util.functypes import (
-    Function,
-    Predicate,
-    Supplier,
-)
-
-from ..util.misc import stringify
+from typing import Self
 
 from ..decision.core import (
     Action,
     BaseDecisionProcess,
     IOContainer,
 )
+from ..util.functypes import (
+    Function,
+    Predicate,
+    Supplier,
+)
+from ..util.misc import stringify
 
-#
+# ===
 
 type PathCost = int | float
 """Cost of a plan action (can be whole numbers or decimal)"""
@@ -137,9 +130,9 @@ class PriorityQueue[PS, PA](FrontierManager[PS, PA]):
     """
 
     _items: list[tuple[PathCost, FrontierNode[PS, PA]]]
-    _heuristic: Optional[Function[PS, PathCost]]
+    _heuristic: Function[PS, PathCost] | None
 
-    def __init__(self, heuristic: Optional[Function[PS, PathCost]] = None) -> None:
+    def __init__(self, heuristic: Function[PS, PathCost] | None = None) -> None:
         """
         :param heuristic: if supplied, provides an estimate of remaining cost
         """
@@ -186,13 +179,13 @@ class SearchState[PS: Hashable, PA]:
     done: bool
     """``True`` if done searching"""
 
-    final_state: Optional[PS]
+    final_state: PS | None
     """final state, or None if failure"""
 
-    action_path: Optional[Sequence[PA]]
+    action_path: Sequence[PA] | None
     """sequence of actions to the final state, or None if failure"""
 
-    path_cost: Optional[PathCost]
+    path_cost: PathCost | None
     """cost of actions to the final state, or None if failure"""
 
     def failure(self) -> None:
@@ -216,7 +209,7 @@ class SearchState[PS: Hashable, PA]:
         return (
             "SearchState("
             f"explored={self.explored}, "
-            f"frontier={str(self.frontier)}, "
+            f"frontier={self.frontier !s}, "
             f"done={self.done}, "
             f"final_state={self.final_state}, "
             f"action_path={self.action_path}, "
@@ -256,7 +249,7 @@ class SearchPlanner[PS: Hashable, PA]:
             """Initialize search problem"""
 
             init_frontier = frontier_factory()
-            init_frontier.add(FrontierNode(initial_state, tuple(), 0))
+            init_frontier.add(FrontierNode(initial_state, (), 0))
 
             return SearchState[PS, PA](
                 explored=set(),
@@ -271,7 +264,7 @@ class SearchPlanner[PS: Hashable, PA]:
             init_dp_state
         )
 
-        #
+        # ===
 
         @dp.action_factory
         @stringify("always_search")
@@ -348,7 +341,7 @@ class SearchPlanner[PS: Hashable, PA]:
 
         return not self._dp.done
 
-    def run(self, max_steps: Optional[int] = None) -> Self:
+    def run(self, max_steps: int | None = None) -> Self:
         """
         Attempts to search for a solution.
 

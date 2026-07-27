@@ -2,11 +2,9 @@
 Tests for language code
 """
 
-from typing import Any, Optional, Self, cast
-
-from enum import StrEnum, auto
-
 import unittest
+from enum import StrEnum, auto
+from typing import Any, Self, cast
 
 from pydantic import BaseModel
 from pydantic.fields import Field, FieldInfo
@@ -30,7 +28,7 @@ from cognition import (
     enum_schema,
 )
 
-#
+# ===
 
 
 class Fruit(StrEnum):
@@ -58,7 +56,7 @@ DESC_FRUIT: str = (
 class FruitSchema(BaseModel):
     """Response schema for Fruit"""
 
-    value: Optional[Fruit]
+    value: Fruit | None
 
 
 DOC_FRUIT_SCHEMA: str = f"{FruitSchema.__name__} ({ FruitSchema.__doc__ })"
@@ -155,7 +153,7 @@ DESC_BINARYRESPONSE: str = (
 class BinaryResponseSchema(BaseModel):
     """Response schema for BinaryResponse with custom name"""
 
-    yn: Optional[BinaryResponse]
+    yn: BinaryResponse | None
 
 
 DOC_BINARYRESPONSE_SCHEMA: str = (
@@ -197,7 +195,7 @@ DESC_USERROLE: str = (
 class UserRoleSchema(BaseModel):
     """Response schema for UserRole"""
 
-    value: Optional[UserRole]
+    value: UserRole | None
 
 
 DOC_USERROLE_SCHEMA: str = f"{UserRoleSchema.__name__} ({ UserRoleSchema.__doc__ })"
@@ -216,7 +214,7 @@ class ComplexSchema(BaseModel):
     """Multiple pieces"""
 
     a: int = Field(description="apple")
-    b: Optional[str]
+    b: str | None
     e: BinaryResponse = Field(description="binary")
     q: FruitSchema | BinaryResponseSchema | UserRoleSchema = Field(
         description="ternary"
@@ -341,6 +339,7 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
             (Fruit.BANANA, EmpiricalConfidence(num_trials - 1, num_trials)),
         )
 
+        # ruff: ignore[RUF015]
         self.assertEqual(
             classifier("make the doctor happy", model_mod, num_trials=num_trials),
             (list(Fruit)[0], EmpiricalConfidence(2, num_trials)),
@@ -410,7 +409,7 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(basemodel_description(FruitSchema, False), DESC_FRUIT_SCHEMA)
         self.assertEqual(basemodel_description(FruitSchema, True), DESC_FRUIT_SCHEMA)
 
-        #
+        # ===
 
         target = FruitSchema(value=Fruit.APPLE)
         f_b = FruitSchema(value=Fruit.BANANA)
@@ -444,7 +443,7 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
             knights_who_say,
         )
 
-        #
+        # ===
 
         self.assertEqual(
             basemodel_name_doc(BinaryResponseSchema), DOC_BINARYRESPONSE_SCHEMA
@@ -473,7 +472,7 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
             DESC_BINARYRESPONSE_SCHEMA,
         )
 
-        #
+        # ===
 
         self.assertEqual(basemodel_name_doc(UserRoleSchema), DOC_USERROLE_SCHEMA)
         self.assertEqual(
@@ -500,7 +499,7 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
             DESC_BINARYRESPONSE_SCHEMA,
         )
 
-        #
+        # ===
 
         self.assertEqual(basemodel_name_doc(ComplexSchema), DOC_COMPLEX_SCHEMA)
         self.assertEqual(

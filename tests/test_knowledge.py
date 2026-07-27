@@ -3,14 +3,13 @@ Tests for knowledge code
 """
 
 import unittest
-
 from typing import cast
 
 from networkx import NetworkXError
 
 from cognition import BinaryRelation, Entity, WorldGraph, WorldSnapshot
 
-#
+# ===
 
 
 class Fact1(Entity):
@@ -63,7 +62,7 @@ class TestKnowledge(unittest.TestCase):
             entity1=self.f2, entity2=self.f1, ra1=self.r2_ra1, ra2=self.r2_ra2
         )
 
-        #
+        # ===
 
         self.all_entities = (self.f1, self.f2)
         self.all_relations = (self.r1, self.r2)
@@ -87,7 +86,7 @@ class TestKnowledge(unittest.TestCase):
             f"Fact2(name={self.f2_name}, a1={self.f2_a1}, a2={self.f2_a2})",
         )
 
-        #
+        # ===
 
         self.assertEqual(self.r1.type, type(self.r1).__name__)
         self.assertEqual(self.r1.entity1, self.f1)
@@ -129,7 +128,10 @@ class TestKnowledge(unittest.TestCase):
         self.assertEqual(snap_empty, snap_empty)
         self.assertLessEqual(snap_empty, snap_empty)
         self.assertFalse(
-            snap_empty < snap_empty  # pylint: disable=comparison-with-itself
+            # pylint: disable=comparison-with-itself
+            # ruff: ignore[PLR0124]
+            snap_empty
+            < snap_empty
         )
         self.assertTrue(snap_empty != "foo")
 
@@ -144,7 +146,7 @@ class TestKnowledge(unittest.TestCase):
         with self.assertRaises(ValueError):
             snap_empty.find_first(Entity)
 
-        #
+        # ===
 
         snap_all = WorldSnapshot.click(*self.all_facts)
 
@@ -162,7 +164,7 @@ class TestKnowledge(unittest.TestCase):
 
         self.assertSetEqual(set(self.all_facts), set(snap_all))
         self.assertSetEqual(
-            set(self.all_facts), set(snap_all.by(Entity | BinaryRelation))
+            set(self.all_facts), set(snap_all.by((Entity, BinaryRelation)))
         )
         self.assertSetEqual(set(self.all_entities), set(snap_all.by(Entity)))
         self.assertSetEqual(set(self.all_relations), set(snap_all.by(BinaryRelation)))
@@ -184,15 +186,13 @@ class TestKnowledge(unittest.TestCase):
             set(self.all_relations),
         )
 
-        self.assertSetEqual(
-            set(snap_all.filter_relations(cls_t=Relation1)), set((self.r1,))
-        )
+        self.assertSetEqual(set(snap_all.filter_relations(cls_t=Relation1)), {self.r1})
         self.assertSetEqual(
             set(snap_all.filter_relations(e2=self.f1)), set(self.all_relations)
         )
         self.assertSetEqual(
             set(snap_all.filter_relations(cls_t=Relation2, e1=self.f2, e2=self.f1)),
-            set((self.r2,)),
+            {self.r2},
         )
 
         self.assertEqual(

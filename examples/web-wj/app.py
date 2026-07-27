@@ -2,10 +2,8 @@
 WaterJug streamlit main code
 """
 
-from typing import Optional
-
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
 from wjllm import (
     LLM_EXAMPLE_INPUT,
@@ -18,7 +16,6 @@ from wjllm import (
     llm_parse_config,
     llm_user_prompt,
 )
-
 from wjplan import InvalidConfiguration, Success, TooLong, WJResult, run_waterjug
 
 # pylint: disable=pointless-statement
@@ -34,7 +31,7 @@ KEY_DESC: str = "description"
 KEY_MAXSTEPS: str = "maxsteps"
 KEY_LLM_OUTPUT: str = "config"
 
-#
+# ===
 
 st.set_page_config(
     page_title=f"{APP_NAME}: {APP_DESC}", page_icon=APP_ICON, layout="wide"
@@ -56,7 +53,7 @@ with st.container(border=False):
 
 
 @st.cache_data
-def run_llm(description: str) -> Optional[ProblemConfig]:
+def run_llm(description: str) -> ProblemConfig | None:
     """Invokes llm to try to parse problem configuration from text"""
 
     if llm:
@@ -89,7 +86,7 @@ with st.container(border=True):
         st.video("https://youtu.be/m9F0i-1Jys0")
 
     if desc:
-        conversion: Optional[ProblemConfig] = run_llm(desc)
+        conversion: ProblemConfig | None = run_llm(desc)
 
         if conversion:
             st.session_state[KEY_LLM_OUTPUT] = conversion
@@ -106,9 +103,8 @@ with st.container(border=True):
                 with st.chat_message("ai"):
                     st.code(conversion)
 
-    if not desc or not conversion:
-        if KEY_LLM_OUTPUT in st.session_state:
-            del st.session_state[KEY_LLM_OUTPUT]
+    if (not desc or not conversion) and (KEY_LLM_OUTPUT in st.session_state):
+        del st.session_state[KEY_LLM_OUTPUT]
 
 
 with st.container(border=True):
@@ -141,7 +137,7 @@ if all(k in st.session_state for k in (KEY_MAXSTEPS, KEY_LLM_OUTPUT)):
     prob: ProblemConfig = st.session_state[KEY_LLM_OUTPUT]
     result: WJResult = run_planner(prob, st.session_state[KEY_MAXSTEPS])
 
-    #
+    # ===
 
     with st.container(border=True):
         f"""
@@ -162,8 +158,8 @@ if all(k in st.session_state for k in (KEY_MAXSTEPS, KEY_LLM_OUTPUT)):
                     "you can try extending this limit."
                 )
 
-            case Success(explored=e, plan=p):
-                st.success(f"Success (after exploring {e} planner states)")
+            case Success(explored=exp, plan=p):
+                st.success(f"Success (after exploring {exp} planner states)")
 
                 st.dataframe(
                     pd.DataFrame(
@@ -176,12 +172,12 @@ if all(k in st.session_state for k in (KEY_MAXSTEPS, KEY_LLM_OUTPUT)):
                     )
                 )
 
-                #
+                # ===
 
                 row_index = st.slider("Select action to view", 0, len(p) - 1, 0)
                 selected_row = p[row_index]
 
-                #
+                # ===
 
                 f"""
                 ### {selected_row[0]}

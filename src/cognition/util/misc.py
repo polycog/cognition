@@ -2,22 +2,18 @@
 Misc utility code
 """
 
-from typing import (
-    Any,
-    Optional,
-    Protocol,
-)
-
+import time
 from collections.abc import (
     Callable,
     Mapping,
 )
-
 from functools import wraps
+from typing import (
+    Any,
+    Protocol,
+)
 
-import time
-
-#
+# ===
 
 
 # pylint: disable=too-few-public-methods
@@ -52,7 +48,7 @@ class AttrReferral:
     # private field name for the mapping reference
     _ref_field_name: str = "_attr_mapping"
 
-    #
+    # ===
 
     def __init__(self, external_source: Mapping[str, Any]) -> None:
         """
@@ -138,7 +134,7 @@ def stringify[**P, R](str_value: str) -> Callable[[Callable[P, R]], Callable[P, 
     return decorated
 
 
-def optionally_name[**P, R](f: Callable[P, R], name: Optional[str]) -> Callable[P, R]:
+def optionally_name[**P, R](f: Callable[P, R], name: str | None) -> Callable[P, R]:
     """
     Shorthand for optionally providing a callable an ``str()`` value
 

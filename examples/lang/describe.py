@@ -4,13 +4,6 @@ LLM fact descriptions
 
 from __future__ import annotations
 
-from pydantic import Field
-
-from pydantic_ai.models.openai import OpenAIResponsesModel
-from pydantic_ai.providers.openai import OpenAIProvider
-
-from rich import print as rprint
-
 from cognition import (
     BinaryRelation,
     DocEnum,
@@ -18,12 +11,15 @@ from cognition import (
     FactDescriber,
     timed,
 )
-
 from dotenv import load_dotenv
+from pydantic import Field
+from pydantic_ai.models.openai import OpenAIResponsesModel
+from pydantic_ai.providers.openai import OpenAIProvider
+from rich import print as rprint
 
 load_dotenv()
 
-#
+# ===
 
 
 class City(DocEnum):
@@ -82,7 +78,7 @@ class Airplane(Vehicle):
     """A named plane for transporting goods"""
 
 
-#
+# ===
 
 
 class TruckRoute(BinaryRelation):
@@ -108,7 +104,7 @@ class At(BinaryRelation):
     entity2: Office | Airport | Vehicle = Field(description="The object's location")
 
 
-#
+# ===
 
 
 def main() -> None:
@@ -160,10 +156,10 @@ def main() -> None:
 
         rprint(f"[bold underline]Prompt ({fact_type.__name__})[/]")
         print()
-        rprint(("[i]" f"{describer.prompt(
-                "<< target fact here >>",  # type: ignore
-                ("<< other fact 1 >>", "<< other fact 2 >>", "..."),  # type: ignore
-            )}" "[/]"))
+        rprint(f"[i]{describer.prompt(
+                   "<< target fact here >>",  # type: ignore
+                   ("<< other fact 1 >>", "<< other fact 2 >>", "..."),  # type: ignore
+                )}[/]")
         print()
 
         rprint("[bold underline]Facts[/]")
@@ -173,6 +169,7 @@ def main() -> None:
             @timed
             def _describe():  # type: ignore
                 # pylint: disable=cell-var-from-loop
+                # ruff: ignore[B023]
                 return describer(typed_fact, others, llm_model)
 
             rprint(f"Fact: {typed_fact}")
