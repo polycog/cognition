@@ -4,9 +4,10 @@ Re-usable state components
 
 from collections.abc import Mapping
 from types import MappingProxyType
-from typing import Any, Self, final
+from typing import Any, Self, final, override
 
-from ..util.misc import stringify
+from ..util.functypes import Supplier
+from ..util.misc import AttrReferral, stringify
 from .core import Elaborator, IOContainer
 
 # ===
@@ -32,7 +33,7 @@ class SelfReinitState:
 
 
 # pylint: disable=too-few-public-methods
-class SelfElaborationState:
+class SelfElaborationState(SelfReinitState):
     """
     State that self-serves elaboration.
 
@@ -72,6 +73,11 @@ class SelfElaborationState:
 
         return _elaborator
 
+    @override
+    def _reinit(self) -> None:
+        self.__init_elab()
+        self.__elab_values.clear()
+
     # pylint: disable=unused-argument
     def _elaborate(self, io: IOContainer) -> Mapping[str, Any]:
         """
@@ -92,3 +98,75 @@ class SelfElaborationState:
 
         self.__init_elab()
         return self.__elab_view
+
+
+class PTEState[P, T](SelfElaborationState):
+    """
+    Container for state that...
+
+    * is (P)ersistant across dp reinitialization;
+    * is (T)ransient, and so is reset each dp reinit; and
+    * is (E)laborated each cycle based upon P/T state + IO
+      via a custom implementation of `_elaborate`
+    """
+
+    def __init__(self, p_init_value: P, t_init: Supplier[T]) -> None:
+        """
+        :param p_init_value: initial value of persistent state
+        :param t_init: function to (re)initialize transient state
+        """
+
+        self._p = p_init_value
+        self._t_init = t_init
+
+        self._e = AttrReferral(self._elab_values)
+
+        self._reinit()
+
+    @override
+    def _reinit(self) -> None:
+        super()._reinit()
+        self._t = self._t_init()
+
+    # ===
+
+    @property
+    def p(self) -> P:
+        """
+        :return: persistent state
+        """
+
+        return self._p
+
+    @property
+    def t(self) -> T:
+        """
+        :return: transient state
+        """
+
+        return self._t
+
+    @property
+    def e(self) -> AttrReferral:
+        """
+        :return: elaborated state
+        """
+
+        return self._e
+
+    def __str__(self) -> str:
+        return f"{type(self).__name__}(p={self._p}; t={self._t}; e={self._elab_values})"
+
+
+class PEState[P](PTEState[P, None]):
+    """
+    Convenience special case of :class:`PTEState`
+    whose transient state is `None`
+    """
+
+    def __init__(self, p_init_value: P) -> None:
+        """
+        :param p_init_value: initial value of persistent state
+        """
+
+        super().__init__(p_init_value, lambda: None)
