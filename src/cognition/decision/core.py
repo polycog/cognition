@@ -9,10 +9,11 @@ from collections.abc import (
     Iterable,
     Iterator,
 )
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import IntEnum, StrEnum
 from io import StringIO
 from itertools import chain
+from types import MappingProxyType
 from typing import (
     Any,
     Self,
@@ -41,10 +42,20 @@ class IOContainer:
     """
 
     i: AttrReferral
-    """Access to (i)nput via sensors"""
+    """.key access to (i)nput via sensors"""
 
     o: AttrReferral
-    """Access to (o)utput via actuators"""
+    """.key access to (o)utput via actuators"""
+
+    input: MappingProxyType[str, Any] = field(init=False)
+    """Mapping view of i"""
+
+    output: MappingProxyType[str, Any] = field(init=False)
+    """Mapping view of o"""
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "input", AttrReferral.view(self.i))
+        object.__setattr__(self, "output", AttrReferral.view(self.o))
 
 
 class Phase(IntEnum):

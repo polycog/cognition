@@ -2,15 +2,19 @@
 Misc utility code
 """
 
+from __future__ import annotations
+
 import time
 from collections.abc import (
     Callable,
     Mapping,
 )
 from functools import wraps
+from types import MappingProxyType
 from typing import (
     Any,
     Protocol,
+    cast,
 )
 
 # ===
@@ -48,6 +52,24 @@ class AttrReferral:
     # private field name for the mapping reference
     _ref_field_name: str = "_attr_mapping"
 
+    # private field name for the mapping view
+    _view_field_name: str = "_mapping_view"
+
+    # ===
+
+    @staticmethod
+    def view(obj: AttrReferral) -> MappingProxyType[str, Any]:
+        """
+        :param obj: object of interest
+        :return: read-only mapping of available key/value pairs
+        """
+
+        # pylint: disable=unnecessary-dunder-call
+        return cast(
+            MappingProxyType[str, Any],
+            obj.__getattribute__(AttrReferral._view_field_name),
+        )
+
     # ===
 
     def __init__(self, external_source: Mapping[str, Any]) -> None:
@@ -56,6 +78,9 @@ class AttrReferral:
         """
 
         object.__setattr__(self, AttrReferral._ref_field_name, external_source)
+        object.__setattr__(
+            self, AttrReferral._view_field_name, MappingProxyType(external_source)
+        )
 
     def __getattr__(self, key: str) -> Any:
         if key not in self.__getattribute__(AttrReferral._ref_field_name):

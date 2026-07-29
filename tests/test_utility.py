@@ -98,10 +98,12 @@ class TestUtility(unittest.TestCase):
         }
 
         obj = AttrReferral(src)
+        view = AttrReferral.view(obj)
 
         # should not be able to access
         # a key not in the source
         self.assertFalse(hasattr(obj, "c"))
+        self.assertFalse("c" in view)
         with self.assertRaises(AttributeError):
             _ = obj.c
 
@@ -119,16 +121,24 @@ class TestUtility(unittest.TestCase):
         src = {"a": 1, "b": "bee"}
 
         obj = AttrReferral(src)
+        view = AttrReferral.view(obj)
 
         # ===
 
         self.assertTrue(hasattr(obj, "a"))
+        self.assertTrue("a" in view)
         self.assertEqual(obj.a, src["a"])
+        self.assertEqual(view["a"], src["a"])
 
         self.assertTrue(hasattr(obj, "b"))
+        self.assertTrue("b" in view)
         self.assertEqual(obj.b, src["b"])
+        self.assertEqual(view["b"], src["b"])
 
         self.assertFalse(hasattr(obj, "c"))
+        self.assertFalse("c" in view)
+
+        self.assertDictEqual(src, dict(view))
 
         # ===
 
@@ -136,10 +146,16 @@ class TestUtility(unittest.TestCase):
         src["c"] = 3.14
 
         self.assertTrue(hasattr(obj, "a"))
+        self.assertTrue("a" in view)
         self.assertEqual(obj.a, src["a"])
+        self.assertEqual(view["a"], src["a"])
 
         self.assertTrue(hasattr(obj, "b"))
+        self.assertTrue("b" in view)
         self.assertEqual(obj.b, src["b"])
+        self.assertEqual(view["b"], src["b"])
 
         self.assertTrue(hasattr(obj, "c"))
+        self.assertTrue("c" in view)
         self.assertAlmostEqual(obj.c, src["c"])
+        self.assertAlmostEqual(view["c"], src["c"])
