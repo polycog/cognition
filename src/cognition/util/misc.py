@@ -97,6 +97,9 @@ class AttrReferral:
             f"'{type(self).__name__}' object attributes are read-only."
         )
 
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self.__getattribute__(AttrReferral._ref_field_name)!r})"
+
 
 # pylint: disable=too-few-public-methods
 class ImplementsLessThan(Protocol):

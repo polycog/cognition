@@ -139,6 +139,7 @@ class TestUtility(unittest.TestCase):
         self.assertFalse("c" in view)
 
         self.assertDictEqual(src, dict(view))
+        self.assertEqual(str(obj), f"AttrReferral({src})")
 
         # ===
 
@@ -159,3 +160,6 @@ class TestUtility(unittest.TestCase):
         self.assertTrue("c" in view)
         self.assertAlmostEqual(obj.c, src["c"])
         self.assertAlmostEqual(view["c"], src["c"])
+
+        self.assertDictEqual(src, dict(view))
+        self.assertEqual(str(obj), f"AttrReferral({src})")
