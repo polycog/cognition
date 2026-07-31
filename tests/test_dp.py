@@ -23,7 +23,7 @@ from cognition import (
     DecisionProcess,
     Elaborator,
     IOContainer,
-    NamedAction,
+    NamedObject,
     Operator,
     Phase,
     Rank,
@@ -529,8 +529,8 @@ class TestDP(unittest.TestCase):
     def test_named_action(self) -> None:
         """Confirming the named actions"""
 
-        self.assertIsInstance(self.vote_yay, NamedAction)
-        vote_yay_named = cast(NamedAction, self.vote_yay)
+        self.assertIsInstance(self.vote_yay, NamedObject)
+        vote_yay_named = cast(NamedObject, self.vote_yay)
 
         self.assertEqual(vote_yay_named.name, "vote")
 
@@ -542,8 +542,8 @@ class TestDP(unittest.TestCase):
 
         # ===
 
-        self.assertIsInstance(self.vote_nay, NamedAction)
-        vote_nay_named = cast(NamedAction, self.vote_nay)
+        self.assertIsInstance(self.vote_nay, NamedObject)
+        vote_nay_named = cast(NamedObject, self.vote_nay)
 
         self.assertEqual(vote_nay_named.name, "vote")
 
@@ -555,8 +555,8 @@ class TestDP(unittest.TestCase):
 
         # ===
 
-        self.assertIsInstance(self.abstain, NamedAction)
-        abstrain_named = cast(NamedAction, self.abstain)
+        self.assertIsInstance(self.abstain, NamedObject)
+        abstrain_named = cast(NamedObject, self.abstain)
 
         self.assertEqual(abstrain_named.name, "abstain")
 
@@ -574,7 +574,7 @@ class TestDP(unittest.TestCase):
 
         def is_vote(a: Action[int]) -> bool:
             """distinguishes actual votes"""
-            return cast(NamedAction, a).name == "vote"
+            return cast(NamedObject, a).name == "vote"
 
         name_all_m: str = "all_m"
         name_vote_h: str = "vote_h"

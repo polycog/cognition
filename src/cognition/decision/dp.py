@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 # ===
 
 OPERATOR_SELF_PARAM: str = "_op"
-"""Default :class:`NamedAction` parameter key to access source operator"""
+"""Default :class:`NamedObject` parameter key to access source operator"""
 
 ARGS_ATTR: str = "args"
 """io.i.name for run arguments"""
@@ -120,10 +120,34 @@ def create_elaborator[S](
     return optionally_name(_f, name)
 
 
-def _qualified_name(name: str, **kwargs: Any) -> str:
+# pylint: disable=too-few-public-methods
+@runtime_checkable
+class NamedObject(Protocol):
+    """
+    An object that has name/params annotations
+    """
+
+    @property
+    def name(self) -> str:
+        """
+        :return: object name
+        """
+
+    @property
+    def params(self) -> MappingProxyType[str, Any]:
+        """
+        :return: optional augmentations in the name
+        """
+
+
+def _format_name_params(name: str, **kwargs: Any) -> str:
     """
     Naming convention for a combo of name + optional params
     (ignoring those whose name starts with an underscore)
+
+    :param name: item name
+    :param kwargs: optional params
+    :return: "name" or "name[arg1=val1, arg2=val2, ...]"
     """
 
     true_args = {k: v for k, v in kwargs.items() if k[:1] != "_"}
@@ -136,20 +160,6 @@ def _qualified_name(name: str, **kwargs: Any) -> str:
     return name
 
 
-# pylint: disable=too-few-public-methods
-@runtime_checkable
-class NamedAction(Protocol):
-    """
-    An action that has name/params annotations
-    """
-
-    name: str
-    """Action name"""
-
-    params: MappingProxyType[str, Any]
-    """Action parameters"""
-
-
 def create_named_action[S](name: str, f: Action[S], **kwargs: Any) -> Action[S]:
     """
     Annotates an action via ``str()`` and attributes
@@ -157,15 +167,13 @@ def create_named_action[S](name: str, f: Action[S], **kwargs: Any) -> Action[S]:
     :param name: name to add
     :param f: original action
     :param kwargs: arbitrary keyword=value pairs
-    :return: :class:`NamedAction` + :func:`.utility.stringify`
+    :return: :class:`NamedObject` + :func:`.utility.stringify`
     """
 
-    new_f = stringify(_qualified_name(name, **kwargs))(f)
+    new_f = stringify(_format_name_params(name, **kwargs))(f)
 
-    # pylint: disable=attribute-defined-outside-init
-    new_named = cast(NamedAction, new_f)
-    new_named.name = name
-    new_named.params = MappingProxyType(kwargs.copy())
+    new_f.name = name  # type: ignore[attr-defined]
+    new_f.params = MappingProxyType(kwargs.copy())  # type: ignore[attr-defined]
 
     return new_f
 
@@ -339,15 +347,15 @@ def operator_sorting_key[S](
     op_param: str = OPERATOR_SELF_PARAM,
 ) -> TriFunction[Action[S], S, IOContainer, SupportsAllComparisons]:
     """
-    Produces an action sorting key for actions derived from named operators
+    Produces an action sorting key for actions derived from operators
 
     :param op_param: action param key for operator self-reference
     :return: key function
     """
 
     def cmp(a: Action[S], b: Action[S]) -> int:
-        op_a = cast(NamedAction, a).params[op_param]
-        op_b = cast(NamedAction, b).params[op_param]
+        op_a = cast(NamedObject, a).params[op_param]
+        op_b = cast(NamedObject, b).params[op_param]
 
         if op_a == op_b:
             return 0
@@ -394,7 +402,8 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
     ) -> None:
         """
         :param state_initializer: produces state initially (and on ``reinit``)
-        :param enable_terminal_check: if True, a selected :class:`NamedAction` with a
+        :param enable_terminal_check: if True, a selected named action 
+                                      (:func:`create_named_action`) with a
                                       :const:`TERMINAL_ACTION_ATTR` parameter
                                       triggers termination during check
         """
@@ -466,10 +475,9 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
 
         def cls_dec(cls: type[Operator[S]]) -> type[Operator[S]]:
             """
-            Parameterized named-object decorator that adds an
-            operator instance to this decision process.
+            Adds an operator instance to this decision process.
 
-            :param cls: named operator to instantiate
+            :param cls: operator to instantiate
             :return: added class
             """
 
@@ -484,7 +492,7 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         Custom termination check, adding possibility of terminal actions
         """
 
-        if (not self._terminated) and isinstance(self._chosen, NamedAction):
+        if (not self._terminated) and isinstance(self._chosen, NamedObject):
             self._terminated = TERMINAL_ACTION_ATTR in self._chosen.params
 
         return super()._termination_check()
