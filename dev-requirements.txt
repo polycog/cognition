@@ -3,7 +3,7 @@ pylint==4.0.6
 ruff==0.16.1
 black==26.5.1
 validate-pyproject==0.25
-packaging==26.5.1
+packaging==26.2
 coverage==7.15.2
 
 # adding cognition
