@@ -8,7 +8,6 @@ from abc import ABC, abstractmethod
 from collections.abc import (
     Generator,
     Iterable,
-    Mapping,
 )
 from contextlib import contextmanager
 from enum import IntEnum
@@ -173,64 +172,24 @@ def create_named_action[S](name: str, f: Action[S], **kwargs: Any) -> Action[S]:
     new_f = stringify(_format_name_params(name, **kwargs))(f)
 
     new_f.name = name  # type: ignore[attr-defined]
-    new_f.params = MappingProxyType(kwargs.copy())  # type: ignore[attr-defined]
+    new_f.params = MappingProxyType(kwargs)  # type: ignore[attr-defined]
 
     return new_f
 
 
-class BaseOperator[S](Protocol):
+class _BaseOperator[S](ABC, NamedObject):
     """
-    Pattern to support a predicate gating a single action
-    """
-
-    def can_perform(self, state: S, io: IOContainer) -> bool:
-        """
-        Does this hold in the current state?
-
-        :param state: current state
-        :param io: access to sensors/actuators
-        :return: ``True`` if the action applies in the current state
-        """
-
-    def perform(self, state: S, io: IOContainer) -> S | None:
-        """
-        Action to perform if selected (see :class:`.core.Action`)
-        """
-
-    @property
-    def name(self) -> str:
-        """
-        :return: how to refer to the resulting action [and factory]
-        """
-
-    @property
-    def params(self) -> Mapping[str, Any]:
-        """
-        :return: optional augmentations in the name
-        """
-
-
-class Operator[S](ABC, BaseOperator[S]):
-    """
-    Operator interface
+    Common functionality across operators
     """
 
     def __init__(self, name: str, **kwargs: Any) -> None:
         """
-        :param name: name for the protocol
-        :param kwargs: params for the protocol
+        :param name: name for the resulting action [and factory]
+        :param kwargs: optional params for the resulting action
         """
 
         self._name = name
         self._params = MappingProxyType(kwargs.copy())
-
-    @abstractmethod
-    def can_perform(self, state: S, io: IOContainer) -> bool:
-        """See :meth:`BaseOperator.can_perform`"""
-
-    @abstractmethod
-    def perform(self, state: S, io: IOContainer) -> S | None:
-        """See :meth:`BaseOperator.perform`"""
 
     @property
     def name(self) -> str:
@@ -248,10 +207,103 @@ class Operator[S](ABC, BaseOperator[S]):
 
         return self._params
 
+    @abstractmethod
+    def perform(self, state: S, io: IOContainer) -> S | None:
+        """
+        Action to perform if selected (see :class:`.core.Action`)
+        """
+
+
+class OperatorGenerator[S, X](_BaseOperator[S]):
+    """
+    A pattern for generating state-specific action(s)
+    """
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(type(self).get_name(), **kwargs)
+
+    @classmethod
+    @abstractmethod
+    def get_name(cls) -> str:
+        """
+        :return: name for all generated instances
+        """
+
+    @classmethod
+    @abstractmethod
+    def generate(cls, state: S, io: IOContainer, extra: X) -> Iterable[Self]:
+        """
+        Produces action(s) that hold in the current state
+
+        :param state: current state
+        :param io: access to sensors/actuators
+        :param extra: generator-specific data
+        :return: applicable action(s)
+        """
+
+
+class Operator[S](_BaseOperator[S]):
+    """
+    A predicate gating a single action
+    """
+
+    @abstractmethod
+    def can_perform(self, state: S, io: IOContainer) -> bool:
+        """
+        Does the action hold in the current state?
+
+        :param state: current state
+        :param io: access to sensors/actuators
+        :return: ``True`` if the action applies in the current state
+        """
+
+
+def _maybe_augment_params[S](
+    op: _BaseOperator[S], self_param: str | None
+) -> dict[str, Any]:
+    act_params = dict(op.params)
+    if self_param is not None:
+        act_params[self_param] = op
+
+    return act_params
+
+
+def add_generator[S, X](
+    dp: BaseDecisionProcess[S],
+    gen_type: type[OperatorGenerator[S, X]],
+    extra: X,
+    self_param: str | None = OPERATOR_SELF_PARAM,
+) -> ActionFactory[S]:
+    """
+    Instantiates the generator within a decision process
+
+    :param dp: decision process to be added to
+    :param gen_type: source of operators
+    :param extra: generator-specific data
+    :param cmp_param: if not ``None``, action param -> the produced ops (for purposes of comparison)
+    :return: the produced action factory
+    """
+
+    op_generator = gen_type.generate
+
+    @dp.action_factory
+    @stringify(gen_type.get_name())
+    def action_factory(s: S, io: IOContainer) -> Iterable[Action[S]]:
+        """allow the generator to propose"""
+
+        yield from (
+            create_named_action(
+                op.name, op.perform, **_maybe_augment_params(op, self_param)
+            )
+            for op in op_generator(s, io, extra)
+        )
+
+    return action_factory
+
 
 def add_operator[S](
     dp: BaseDecisionProcess[S],
-    op: BaseOperator[S],
+    op: Operator[S],
     self_param: str | None = OPERATOR_SELF_PARAM,
 ) -> tuple[ActionFactory[S], Action[S]]:
     """
@@ -264,12 +316,9 @@ def add_operator[S](
     """
 
     factory_pred = op.can_perform
-
-    act_params = dict(op.params)
-    if self_param is not None:
-        act_params[self_param] = op
-
-    op_action = create_named_action(op.name, op.perform, **act_params)
+    op_action = create_named_action(
+        op.name, op.perform, **_maybe_augment_params(op, self_param)
+    )
 
     @dp.action_factory
     @stringify(op.name)
@@ -308,6 +357,7 @@ def uniform_evaluator[S](
 
 def sorting_evaluator[S](
     sorting_key: TriFunction[Action[S], S, IOContainer, SupportsAllComparisons],
+    p: Predicate[Action[S]] = lambda _: True,
     rank_start: int = 1,
     name: str | None = None,
 ) -> ActionEvaluator[S]:
@@ -315,6 +365,7 @@ def sorting_evaluator[S](
     Associates rankings based upon relative sorting order over actions
 
     :param sorting_key: key function for ``sort()`` to order actions
+    :param p: optional predicate to gate potential actions
     :param rank_start: starting value for produced ranks
     :param name: optional name for the evaluator
     :return: resulting evaluator
@@ -324,7 +375,10 @@ def sorting_evaluator[S](
         state: S, io: IOContainer, potential_actions: Iterable[Action[S]]
     ) -> Iterable[ActionRank[S]]:
 
-        ordered = sorted(potential_actions, key=lambda a: sorting_key(a, state, io))
+        ordered = sorted(
+            (pa for pa in potential_actions if p(pa)),
+            key=lambda a: sorting_key(a, state, io),
+        )
 
         current_rank: int = rank_start
         ranks = [current_rank] * len(ordered)
@@ -402,7 +456,7 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
     ) -> None:
         """
         :param state_initializer: produces state initially (and on ``reinit``)
-        :param enable_terminal_check: if True, a selected named action 
+        :param enable_terminal_check: if True, a selected named action
                                       (:func:`create_named_action`) with a
                                       :const:`TERMINAL_ACTION_ATTR` parameter
                                       triggers termination during check
@@ -428,8 +482,69 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
 
         yield from _add_args(self, namespace, **info)
 
+    def add_generator[X](
+        self,
+        gen_type: type[OperatorGenerator[S, X]],
+        extra: X,
+        self_param: str | None = OPERATOR_SELF_PARAM,
+    ) -> tuple[ActionFactory[S], Self]:
+        """
+        Pass-thru to :func:`add_generator`.
+
+        :param gen_type: source of operators
+        :param self_param: if not ``None``, action param referring to the op
+        :param extra: generator-specific data
+        :return: the produced action factory and this decision process (for chaining)
+        """
+
+        return add_generator(self, gen_type, extra, self_param), self
+
+    def add_generator_c[X](
+        self,
+        gen_type: type[OperatorGenerator[S, X]],
+        extra: X,
+        self_param: str | None = OPERATOR_SELF_PARAM,
+    ) -> Self:
+        """
+        Pass-thru to :meth:`DecisionProcess.add_generator`.
+
+        :param gen_type: source of operators
+        :param extra: generator-specific data
+        :param self_param: if not ``None``, action param referring to the op
+        :return: this decision process (for chaining)
+        """
+
+        return self.add_generator(gen_type, extra, self_param)[1]
+
+    def generator[X](
+        self, extra: X, self_param: str | None = OPERATOR_SELF_PARAM
+    ) -> Function[type[OperatorGenerator[S, X]], type[OperatorGenerator[S, X]]]:
+        """
+        Decorator version of :meth:`DecisionProcess.add_generator`
+
+        :param extra: generator-specific data
+        :param self_param: if not ``None``, action param referring to the op
+        :return: parameterized decorator
+        """
+
+        def cls_dec(
+            cls: type[OperatorGenerator[S, X]],
+        ) -> type[OperatorGenerator[S, X]]:
+            """
+            Adds a generator to this decision process.
+
+            :param cls: generator to add
+            :return: added generator
+            """
+
+            self.add_generator(cls, extra, self_param)
+
+            return cls
+
+        return cls_dec
+
     def add_operator(
-        self, op: BaseOperator[S], self_param: str | None = OPERATOR_SELF_PARAM
+        self, op: Operator[S], self_param: str | None = OPERATOR_SELF_PARAM
     ) -> tuple[ActionFactory[S], Action[S], Self]:
         """
         Pass-thru to :func:`add_operator`.
@@ -439,11 +554,10 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         :return: the produced action factory and action, and this decision process (for chaining)
         """
 
-        af, a = add_operator(self, op, self_param)
-        return af, a, self
+        return *add_operator(self, op, self_param), self
 
     def add_operator_c(
-        self, op: BaseOperator[S], self_param: str | None = OPERATOR_SELF_PARAM
+        self, op: Operator[S], self_param: str | None = OPERATOR_SELF_PARAM
     ) -> Self:
         """
         Pass-thru to :meth:`DecisionProcess.add_operator`.
@@ -453,8 +567,7 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         :return: this decision process (for chaining)
         """
 
-        self.add_operator(op, self_param)
-        return self
+        return self.add_operator(op, self_param)[2]
 
     def operator(
         self,

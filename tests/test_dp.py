@@ -5,10 +5,12 @@ Tests for dp code
 from __future__ import annotations
 
 import unittest
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
 from enum import Enum, StrEnum, auto
 from typing import (
     Any,
+    Self,
     cast,
 )
 
@@ -25,6 +27,7 @@ from cognition import (
     IOContainer,
     NamedObject,
     Operator,
+    OperatorGenerator,
     Phase,
     Rank,
     args_added,
@@ -38,6 +41,8 @@ from cognition import (
 
 # ===
 
+# pylint: disable=too-many-lines
+
 
 class OpStage(StrEnum):
     """Stage of op test"""
@@ -50,10 +55,10 @@ class OpStage(StrEnum):
 class HiOp(Operator[OpStage]):
     """Says hi"""
 
-    def can_perform(self, state: OpStage, io: IOContainer) -> bool:
+    def can_perform(self, state: OpStage, _io: IOContainer) -> bool:
         return state == OpStage.SAY_HI
 
-    def perform(self, state: OpStage, io: IOContainer) -> OpStage:
+    def perform(self, _state: OpStage, io: IOContainer) -> OpStage:
         print("hi", file=io.o.log)
         return OpStage.SAY_BYE
 
@@ -61,10 +66,10 @@ class HiOp(Operator[OpStage]):
 class ByeOp(Operator[OpStage]):
     """Says bye"""
 
-    def can_perform(self, state: OpStage, io: IOContainer) -> bool:
+    def can_perform(self, state: OpStage, _io: IOContainer) -> bool:
         return state == OpStage.SAY_BYE
 
-    def perform(self, state: OpStage, io: IOContainer) -> OpStage:
+    def perform(self, _state: OpStage, io: IOContainer) -> OpStage:
         print("bye", file=io.o.log)
         return OpStage.DONE
 
@@ -895,3 +900,141 @@ class TestDP(unittest.TestCase):
                 )
             ),
         )
+
+    def test_generator(self) -> None:
+        """testing generators"""
+
+        letters = "DFTBA"
+        syms = "!?$#"
+        len_added = 10
+
+        md_header = "# "
+
+        # ===
+
+        @dataclass(frozen=True)
+        class SymLen:
+            """combine symbol options and length constraint"""
+
+            syms: str
+            len_constraint: int
+
+        # ===
+
+        dp = DecisionProcess(lambda: "", enable_terminal_check=True)
+
+        # arg gets negative character code (so reverse alpha)
+        dp.add_action_evaluator(
+            sorting_evaluator(
+                lambda a, _s, _io: -ord(cast(NamedObject, a).params["s"]),
+                lambda a: cast(NamedObject, a).name == "arg",
+                rank_start=0,
+            )
+        )
+
+        # done/emph use __lt__ and __eq__
+        dp.add_action_evaluator(
+            sorting_evaluator(
+                operator_sorting_key(),
+                lambda a: cast(NamedObject, a).name in ("done", "emph"),
+                rank_start=10,
+            )
+        )
+
+        # pylint: disable=unused-variable
+        @dp.generator(None)
+        class ArgGenerator(OperatorGenerator[str, None]):
+            """aaarrrrrg"""
+
+            def __init__(self, s: str) -> None:
+                super().__init__(s=s)
+                self.s = s
+
+            @classmethod
+            def get_name(cls) -> str:
+                return "arg"
+
+            @classmethod
+            def generate(
+                cls, state: str, io: IOContainer, _extra: None
+            ) -> Iterable[Self]:
+                yield from (cls(s) for s in io.i.args.incoming if s not in state)
+
+            def perform(self, state: str, _io: IOContainer) -> str:
+                return f"{state}{self.s}"
+
+        class EmphGenerator(OperatorGenerator[str, SymLen]):
+            """adds emphasis until a fixed len"""
+
+            def __init__(self, sym: str) -> None:
+                super().__init__(sym=sym)
+                self.s = sym
+
+            def perform(self, state: str, _io: IOContainer) -> str:
+                return f"{state}{self.s}"
+
+            @classmethod
+            def get_name(cls) -> str:
+                return "emph"
+
+            @classmethod
+            def generate(
+                cls, state: str, _io: IOContainer, extra: SymLen
+            ) -> Iterable[Self]:
+                if len(state) >= extra.len_constraint:
+                    yield from ()
+                else:
+                    for sym in extra.syms:
+                        yield cls(sym)
+
+            def __lt__(self, other: object) -> bool:
+                """all emph comes before anything else"""
+
+                if not isinstance(other, NamedObject):
+                    return NotImplemented
+
+                return self.name != other.name
+
+            def __eq__(self, other: object) -> bool:
+                """no pref amongst emph"""
+
+                if not isinstance(other, NamedObject):
+                    return NotImplemented
+
+                return self.name == other.name
+
+        # pylint: disable=unused-variable
+        @dp.operator("done", terminal=True)
+        class DoneOperator(Operator[str]):
+            """gotta end sometime!"""
+
+            def can_perform(self, _state: str, _io: IOContainer) -> bool:
+                return True
+
+            def perform(self, state: str, _io: IOContainer) -> str:
+                return f"{md_header}{state}"
+
+            def __lt__(self, other: object) -> bool:
+                """done is always last"""
+
+                return False
+
+        dp.add_generator_c(EmphGenerator, SymLen(syms, len(set(letters)) + len_added))
+
+        # ===
+
+        result = dp(incoming=letters)
+        exp_letters = "".join(sorted(set(letters), reverse=True))
+
+        self.assertIsNotNone(result)
+        result = cast(str, result)
+
+        self.assertEqual(result[:2], md_header)
+        result = result[2:]
+
+        self.assertEqual(len(result), len(exp_letters) + len_added)
+
+        self.assertEqual(result[: len(exp_letters)], exp_letters)
+
+        for other in result[len(exp_letters) :]:
+            self.assertTrue(other in syms)
