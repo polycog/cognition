@@ -9,7 +9,7 @@ from collections.abc import Iterable
 from types import SimpleNamespace
 from typing import Any, Protocol, cast, final, override
 
-from ..decision.core import IOContainer
+from ..decision.core import BaseDecisionProcess, IOContainer
 
 # ===
 
@@ -51,24 +51,27 @@ class Sensor[T](ABC, SensorReader[T]):
         """
         Retrieve the current sensor value.
 
-        Generally this should be done by the
-        environment to synchronize retrieval of
-        values from all sensors, as cached
-        within the IOContainer.
+        Generally this should not be called
+        directly, but rather synchronized
+        via perception across all sensors,
+        and then cached within the IOContainer.
 
         :return: current sensor value
         """
 
-    @final
-    @property
-    def reader(self) -> SensorReader[T]:
+    def perceive(self, dp: BaseDecisionProcess[Any]) -> None:
         """
-        IOContainer reading for this sensor.
+        Integrates the sensing for a single time point
+        within a decision process.
 
-        :return: an IOContainer reader for this sensor
+        Generally this should not be called reictly,
+        but rather synchronized via perception across
+        all sensors.
+
+        :param dp: decision process
         """
 
-        return self
+        dp.set_sensor(self.name, self.sense())
 
     @override
     @final
@@ -80,6 +83,17 @@ class Sensor[T](ABC, SensorReader[T]):
         :return: this sensor's value from IO
         """
         return cast(T, getattr(io.i, self.name))
+
+    @final
+    @property
+    def reader(self) -> SensorReader[T]:
+        """
+        IOContainer reading for this sensor.
+
+        :return: an IOContainer reader for this sensor
+        """
+
+        return self
 
 
 # pylint: disable=too-few-public-methods
@@ -125,16 +139,14 @@ class Actuator[I, O](ABC, ActuatorWriter[I, O]):
         :return: typed actuator response
         """
 
-    @final
-    @property
-    def writer(self) -> ActuatorWriter[I, O]:
+    def install(self, dp: BaseDecisionProcess[Any]) -> None:
         """
-        IOContainer writing for this actuator.
+        Integrates this actuator within a decision process
 
-        :return: an IOContainer writer for this actuator
+        :param dp: decision process
         """
 
-        return self
+        dp.set_actuator(self.name, self.actuate)
 
     @override
     @final
@@ -148,6 +160,17 @@ class Actuator[I, O](ABC, ActuatorWriter[I, O]):
         """
 
         return cast(O, getattr(io.o, self.name)(param))
+
+    @final
+    @property
+    def writer(self) -> ActuatorWriter[I, O]:
+        """
+        IOContainer writing for this actuator.
+
+        :return: an IOContainer writer for this actuator
+        """
+
+        return self
 
 
 class Environment(Protocol):
