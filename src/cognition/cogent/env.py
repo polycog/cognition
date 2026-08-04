@@ -71,7 +71,7 @@ class Sensor[T](ABC, SensorReader[T]):
         :param dp: decision process
         """
 
-        dp.set_sensor(self.name, self.sense())
+        dp.set_input_data(self.name, self.sense())
 
     @override
     @final
@@ -146,7 +146,7 @@ class Actuator[I, O](ABC, ActuatorWriter[I, O]):
         :param dp: decision process
         """
 
-        dp.set_actuator(self.name, self.actuate)
+        dp.set_output_channel(self.name, self.actuate)
 
     @override
     @final

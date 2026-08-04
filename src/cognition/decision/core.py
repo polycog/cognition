@@ -38,14 +38,14 @@ from ..util.misc import (
 @dataclass(frozen=True)
 class IOContainer:
     """
-    Convenience bundling of sensor/actuator access
+    Convenience bundling of input/output data access
     """
 
     i: AttrReferral
-    """.key access to (i)nput via sensors"""
+    """.key access to (i)nput data"""
 
     o: AttrReferral
-    """.key access to (o)utput via actuators"""
+    """.key access to (o)utput channels"""
 
     input: MappingProxyType[str, Any] = field(init=False)
     """Mapping view of i"""
@@ -180,17 +180,17 @@ class BaseDecisionProcess[S]:
     """
 
     # Constants
-    SENSOR_TIME: str = "clock"
-    """Key associated with the sensor for cycles"""
+    INPUT_KEY_TIME: str = "clock"
+    """Key associated with cycle input data"""
 
-    SENSOR_TIME_ATTR: str = "cycles"
-    """Attribute produced by the cycle sensor"""
+    INPUT_ATTR_TIME: str = "cycles"
+    """Attribute produced by the cycle input data"""
 
-    SENSOR_ELABORATION: str = "elaboration"
-    """Key for the elaboration 'sensor'"""
+    INPUT_KEY_ELABORATION: str = "elaboration"
+    """Key for the elaboration input data"""
 
-    ACTUATOR_LOG: str = "log"
-    """Key associated with the log actuator"""
+    OUTPUT_KEY_LOG: str = "log"
+    """Key associated with the log output channel"""
 
     # Supplied components...
     _state: S  # arbitrary representation
@@ -214,8 +214,8 @@ class BaseDecisionProcess[S]:
     _elaboration: dict[str, Any]  # summary description of cycle state/io
 
     # Input/Output
-    _sensors: dict[str, Any]
-    _actuators: dict[str, Any]
+    _inputs: dict[str, Any]
+    _outputs: dict[str, Any]
     _io: IOContainer
 
     # Phase handling
@@ -236,14 +236,21 @@ class BaseDecisionProcess[S]:
 
         self._elaboration = {}
 
-        self._sensors = {
-            BaseDecisionProcess.SENSOR_TIME: TimeSensor(self),
-            BaseDecisionProcess.SENSOR_ELABORATION: AttrReferral(self._elaboration),
+        # pylint: disable=too-few-public-methods
+        class _InnerClock:
+            def __init__(self, dp: BaseDecisionProcess[S]):
+                setattr(
+                    type(self),
+                    BaseDecisionProcess.INPUT_ATTR_TIME,
+                    property(lambda _: dp.num_cycles),
+                )
+
+        self._inputs = {
+            BaseDecisionProcess.INPUT_KEY_TIME: _InnerClock(self),
+            BaseDecisionProcess.INPUT_KEY_ELABORATION: AttrReferral(self._elaboration),
         }
-        self._actuators = {BaseDecisionProcess.ACTUATOR_LOG: StringIO()}
-        self._io = IOContainer(
-            AttrReferral(self._sensors), AttrReferral(self._actuators)
-        )
+        self._outputs = {BaseDecisionProcess.OUTPUT_KEY_LOG: StringIO()}
+        self._io = IOContainer(AttrReferral(self._inputs), AttrReferral(self._outputs))
 
         # establish phase handling
         # (order dictated by enum)
@@ -296,8 +303,8 @@ class BaseDecisionProcess[S]:
                     str(p) for p in self._termination_checks
                 ),
                 "Elaborators": ", ".join(str(e) for e in self._elaborators),
-                "Sensors": ", ".join(s for s in self._sensors),
-                "Actuators": ", ".join(a for a in self._actuators),
+                "Input Sources": ", ".join(s for s in self._inputs),
+                "Output Channels": ", ".join(a for a in self._outputs),
             }.items()
         )
 
@@ -364,7 +371,7 @@ class BaseDecisionProcess[S]:
 
     def elaborator(self, e: Elaborator[S]) -> Elaborator[S]:
         """
-        Decorator version of :meth:`DecisionProcess.add_elaborator`
+        Decorator version of :meth:`BaseDecisionProcess.add_elaborator`
 
         :param e: elaborator to add
         :return: added elaborator
@@ -402,7 +409,7 @@ class BaseDecisionProcess[S]:
 
     def termination_check(self, p: TerminationCheck[S]) -> TerminationCheck[S]:
         """
-        Decorator version of :meth:`DecisionProcess.add_termination_check`
+        Decorator version of :meth:`BaseDecisionProcess.add_termination_check`
 
         :param p: predicate to add
         :return: added predicate
@@ -440,7 +447,7 @@ class BaseDecisionProcess[S]:
 
     def action_factory(self, f: ActionFactory[S]) -> ActionFactory[S]:
         """
-        Decorator version of :meth:`DecisionProcess.add_action_factory`
+        Decorator version of :meth:`BaseDecisionProcess.add_action_factory`
 
         :param f: factory to add
         :return: added factory
@@ -494,7 +501,7 @@ class BaseDecisionProcess[S]:
 
     def action_evaluator(self, ae: ActionEvaluator[S]) -> ActionEvaluator[S]:
         """
-        Decorator version of :meth:`DecisionProcess.add_action_evaluator`
+        Decorator version of :meth:`BaseDecisionProcessadd_action_evaluator`
 
         :param ae: evaluator to add
         :return: added evaluator
@@ -625,71 +632,50 @@ class BaseDecisionProcess[S]:
     # ===
 
     @staticmethod
-    def _set_io_buffer(d: dict[str, Any], name: str, buffer: Any) -> None:
-        """Abstraction for sensor/actuator setting"""
+    def _set_io(d: dict[str, Any], key: str, data: Any) -> None:
+        """Abstraction for input/output setting"""
 
-        if buffer is None:
-            d.pop(name, None)
+        if data is None:
+            d.pop(key, None)
         else:
-            d[name] = buffer
+            d[key] = data
 
-    def set_sensor(self, name: str, buffer: Any) -> Self:
+    def set_input_data(self, input_key: str, data: Any) -> Self:
         """
-        Sets value of ``io.i.name``
+        Sets value of ``io.i.input_key``
 
-        :param name: sensor name
-        :param buffer: arbitrary object reference (or ``None`` to remove sensor)
+        :param name: input data key
+        :param buffer: arbitrary object reference (or ``None`` to remove)
         :return: this decision process (for chaining)
         """
 
-        BaseDecisionProcess._set_io_buffer(self._sensors, name, buffer)
+        BaseDecisionProcess._set_io(self._inputs, input_key, data)
 
         return self
 
-    def set_actuator(self, name: str, buffer: Any) -> Self:
+    def set_output_channel(self, output_key: str, data: Any) -> Self:
         """
-        Sets value of ``io.o.name``
+        Sets value of ``io.o.output_key``
 
-        :param name: actuator name
-        :param buffer: arbitrary object reference (or ``None`` to remove actuator)
+        :param name: output channel key
+        :param buffer: arbitrary object reference (or ``None`` to remove)
         :return: this decision process (for chaining)
         """
 
-        BaseDecisionProcess._set_io_buffer(self._actuators, name, buffer)
+        BaseDecisionProcess._set_io(self._outputs, output_key, data)
 
         return self
 
     @property
     def log(self) -> str:
         """
-        :return: any data provided to the :attr:`DecisionProcess.ACTUATOR_LOG` actuator
+        :return: any data provided to the :attr:`BaseDecisionProcess.OUTPUT_KEY_LOG` channel
         """
 
         logger: StringIO = cast(
-            StringIO, self._actuators[BaseDecisionProcess.ACTUATOR_LOG]
+            StringIO, self._outputs[BaseDecisionProcess.OUTPUT_KEY_LOG]
         )
         return logger.getvalue()
-
-
-# pylint: disable=too-few-public-methods
-class TimeSensor[S]:
-    """
-    Sensor (:attr:`DecisionProcess.SENSOR_TIME`) of the cycle count
-    (via :attr:`DecisionProcess.SENSOR_TIME_ATTR`)
-
-    :param dp: associated decision process
-    """
-
-    def __init__(self, dp: BaseDecisionProcess[S]):
-        self._dp: BaseDecisionProcess[S] = dp
-
-    @property
-    def cycles(self) -> int:
-        """
-        :return: associated decision process' cycle count
-        """
-
-        return self._dp.num_cycles
 
 
 # pylint: disable=too-few-public-methods

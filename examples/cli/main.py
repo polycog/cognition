@@ -197,10 +197,10 @@ with nullcontext[dict[str, str]]({}) as cli_status:
 
     dp = (
         DecisionProcess(CLIState)
-        .set_sensor(
+        .set_input_data(
             "cli", AttrReferral(cli_status)
         )  # expose the current command via io.i.cli
-        .set_actuator(
+        .set_output_channel(
             "cli_set_command", lambda c: cli_status.update(command=c)
         )  # change current command via io.o
     )

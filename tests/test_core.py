@@ -20,7 +20,6 @@ from cognition import (
     Phase,
     Rank,
     TerminationCheck,
-    TimeSensor,
     create_elaborator,
     create_named_action,
     stringify,
@@ -83,8 +82,8 @@ def _make_increment_factory(a_name: str) -> ActionFactory[int]:
     return factory
 
 
-class ListSensorActuator:
-    """confirms simple sensor/actuator scheme"""
+class ListInputOutput:
+    """confirms simple input/output scheme"""
 
     def __init__(self) -> None:
         """make the encapsulated list"""
@@ -93,7 +92,7 @@ class ListSensorActuator:
 
     @property
     def data(self) -> list[str]:
-        """sensor access to list contents"""
+        """input access to list contents"""
 
         return self._data.copy()
 
@@ -151,10 +150,10 @@ class TestCore(unittest.TestCase):
                     "Termination Checks=",
                     "Elaborators=",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -183,10 +182,10 @@ class TestCore(unittest.TestCase):
                     "Termination Checks=",
                     f"Elaborators={e_name}",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -203,7 +202,7 @@ class TestCore(unittest.TestCase):
                 getattr(
                     cast(
                         AttrReferral,
-                        getattr(io.i, BaseDecisionProcess.SENSOR_ELABORATION),
+                        getattr(io.i, BaseDecisionProcess.INPUT_KEY_ELABORATION),
                     ),
                     e_name,
                 ),
@@ -226,10 +225,10 @@ class TestCore(unittest.TestCase):
                     f"Termination Checks={g_name}",
                     f"Elaborators={e_name}",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -251,10 +250,10 @@ class TestCore(unittest.TestCase):
                     f"Termination Checks={g_name}",
                     f"Elaborators={e_name}",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -361,7 +360,7 @@ class TestCore(unittest.TestCase):
         starting_point: int = 1
 
         lst_name: str = "lst"
-        lst: ListSensorActuator = ListSensorActuator()
+        lst = ListInputOutput()
 
         dp_io: BaseDecisionProcess[int] = BaseDecisionProcess(lambda: starting_point)
 
@@ -380,16 +379,16 @@ class TestCore(unittest.TestCase):
                     "Termination Checks=",
                     "Elaborators=",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
 
-        # add as both sensor/actuator
-        dp_io.set_sensor(lst_name, lst).set_actuator(lst_name, lst)
+        # add as both input/output
+        dp_io.set_input_data(lst_name, lst).set_output_channel(lst_name, lst)
 
         self.assertIs(getattr(dp_io.io.o, lst_name), lst)
         self.assertIsNot(getattr(dp_io.io.i, lst_name).data, lst.data)
@@ -412,10 +411,10 @@ class TestCore(unittest.TestCase):
                     "Termination Checks=",
                     "Elaborators=",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}, {lst_name}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}, {lst_name}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}, {lst_name}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}, {lst_name}",
                 )
             ),
         )
@@ -423,19 +422,20 @@ class TestCore(unittest.TestCase):
         def inc_and_add_and_log(s: int, io: IOContainer) -> int:
             """
             * logs a combo of sensed data
-            * adds sensed data to another actuator
+            * adds sensed data to another output channel
             * progresses the decision process
             """
 
-            sensed: str = str(cast(ListSensorActuator, getattr(io.i, lst_name)).data)
-            cast(ListSensorActuator, getattr(io.o, lst_name)).add(str(s))
+            sensed: str = str(cast(ListInputOutput, getattr(io.i, lst_name)).data)
+            cast(ListInputOutput, getattr(io.o, lst_name)).add(str(s))
 
             log: StringIO = cast(
-                StringIO, getattr(io.o, BaseDecisionProcess.ACTUATOR_LOG)
+                StringIO, getattr(io.o, BaseDecisionProcess.OUTPUT_KEY_LOG)
             )
-            cycle: int = cast(
-                TimeSensor[int], getattr(io.i, BaseDecisionProcess.SENSOR_TIME)
-            ).cycles
+            cycle: int = getattr(
+                getattr(io.i, BaseDecisionProcess.INPUT_KEY_TIME),
+                BaseDecisionProcess.INPUT_ATTR_TIME,
+            )
 
             print(f"@{cycle}: data={sensed}", file=log)
 
@@ -473,8 +473,8 @@ class TestCore(unittest.TestCase):
         )
         self.assertListEqual(getattr(dp_io.io.i, lst_name).data, lst.data)
 
-        # confirm ability to remove sensors/actuators
-        dp_io.set_sensor(lst_name, None).set_actuator(lst_name, None)
+        # confirm ability to remove input/output
+        dp_io.set_input_data(lst_name, None).set_output_channel(lst_name, None)
 
         self.assertEqual(
             str(dp_io),
@@ -491,10 +491,10 @@ class TestCore(unittest.TestCase):
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -558,10 +558,10 @@ class TestCore(unittest.TestCase):
                     f"Termination Checks={TERMINATION_NAME}",
                     f"Elaborators={ELAB_NAME}",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -593,10 +593,10 @@ class TestCore(unittest.TestCase):
                     f"Termination Checks={TERMINATION_NAME}",
                     f"Elaborators={ELAB_NAME}",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )

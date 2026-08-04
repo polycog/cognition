@@ -221,10 +221,10 @@ class TestDP(unittest.TestCase):
                     f"Termination Checks={t_name}",
                     f"Elaborators={e_name}",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -342,10 +342,10 @@ class TestDP(unittest.TestCase):
                     "Termination Checks=",
                     "Elaborators=",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -442,10 +442,10 @@ class TestDP(unittest.TestCase):
                     f"Termination Checks={done_name}",
                     "Elaborators=",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -467,10 +467,10 @@ class TestDP(unittest.TestCase):
                     f"Termination Checks={done_name}",
                     "Elaborators=",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -494,10 +494,10 @@ class TestDP(unittest.TestCase):
                     f"Termination Checks={done_name}",
                     "Elaborators=",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -521,10 +521,10 @@ class TestDP(unittest.TestCase):
                     f"Termination Checks={done_name}",
                     "Elaborators=",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -746,10 +746,10 @@ class TestDP(unittest.TestCase):
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -782,10 +782,10 @@ class TestDP(unittest.TestCase):
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -822,10 +822,10 @@ class TestDP(unittest.TestCase):
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -853,10 +853,10 @@ class TestDP(unittest.TestCase):
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -893,10 +893,10 @@ class TestDP(unittest.TestCase):
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )

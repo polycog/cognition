@@ -76,15 +76,15 @@ def _add_args[S](
     Provides `io.i.namespace` temporarily
 
     :param dp: decision process for which to provide arguments
-    :param namespace: sensor name
+    :param namespace: input source name
     :param info: io.i.namespace.key=value
     """
 
     try:
-        dp.set_sensor(namespace, AttrReferral(info))
+        dp.set_input_data(namespace, AttrReferral(info))
         yield dp
     finally:
-        dp.set_sensor(namespace, None)
+        dp.set_input_data(namespace, None)
 
 
 @contextmanager
@@ -95,7 +95,7 @@ def args_added[S](
     Provides `io.i.namespace` temporarily
 
     :param dp: decision process for which to provide arguments
-    :param namespace: sensor name
+    :param namespace: input source name
     :param info: io.i.namespace.key=value
     """
 
@@ -236,7 +236,7 @@ class OperatorGenerator[S, X](_BaseOperator[S]):
         Produces action(s) that hold in the current state
 
         :param state: current state
-        :param io: access to sensors/actuators
+        :param io: access to input/output
         :param extra: generator-specific data
         :return: applicable action(s)
         """
@@ -253,7 +253,7 @@ class Operator[S](_BaseOperator[S]):
         Does the action hold in the current state?
 
         :param state: current state
-        :param io: access to sensors/actuators
+        :param io: access to input/output
         :return: ``True`` if the action applies in the current state
         """
 
@@ -622,7 +622,7 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
 
         :param max_cycles: maximum steps to execute
         :param suppress_errors: if `True`, does not raise any errors from execution
-        :param args_namespace: argument sensor name
+        :param args_namespace: input source name
         :param args: arguments to supply
         :return: the final state if the decision process completed
                  without any exceptions; None otherwise

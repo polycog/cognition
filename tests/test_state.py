@@ -142,10 +142,10 @@ class TestState(unittest.TestCase):
                         f"{type(state_simple).ELABORATOR_NAME}({type(state_simple).__name__})"
                     ),
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -172,10 +172,10 @@ class TestState(unittest.TestCase):
                         f"{type(state_simple).ELABORATOR_NAME}({type(state_simple).__name__})"
                     ),
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -205,10 +205,10 @@ class TestState(unittest.TestCase):
                         f"{type(state_simple).ELABORATOR_NAME}({type(state_custom).__name__})"
                     ),
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -235,10 +235,10 @@ class TestState(unittest.TestCase):
                         f"{type(state_simple).ELABORATOR_NAME}({type(state_custom).__name__})"
                     ),
                     (
-                        f"Sensors={BaseDecisionProcess.SENSOR_TIME}, "
-                        f"{BaseDecisionProcess.SENSOR_ELABORATION}"
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
                     ),
-                    f"Actuators={BaseDecisionProcess.ACTUATOR_LOG}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
