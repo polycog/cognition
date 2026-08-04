@@ -5,9 +5,7 @@ Environments
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
-from types import SimpleNamespace
-from typing import Any, Protocol, cast, final, override
+from typing import Any, Protocol, cast, final
 
 from ..decision.core import BaseDecisionProcess, IOContainer
 
@@ -15,25 +13,10 @@ from ..decision.core import BaseDecisionProcess, IOContainer
 
 
 # pylint: disable=too-few-public-methods
-class SensorReader[T](Protocol):
-    """
-    Interface to facilitate typed sensor
-    access from IO - preferred for cogents.
-    """
-
-    def read(self, io: IOContainer) -> T:
-        """
-        Reads the current sensor input
-
-        :param io: reference to IO
-        :return: current value for associated sensor
-        """
-
-
-class Sensor[T](ABC, SensorReader[T]):
+class BaseSensor[T](Protocol):
     """
     Base interface for external input (of
-    type `T`) to an environment
+    type `T`) to a cogent
     """
 
     @property
@@ -51,73 +34,75 @@ class Sensor[T](ABC, SensorReader[T]):
         """
         Retrieve the current sensor value.
 
-        Generally this should not be called
+        Generally this should NOT be called
         directly, but rather synchronized
         via perception across all sensors,
-        and then cached within the IOContainer.
+        in an agent (where results are
+        cached within an IOContainer).
 
         :return: current sensor value
         """
 
+
+def perceive[T](sensor: BaseSensor[T], dp: BaseDecisionProcess[Any]) -> None:
+    """
+    Route sensing for a single time point to
+    the IOContainer of a decision process.
+
+    :param sensor: source sensor
+    :param dp: destination decision process
+    """
+
+    dp.set_input_data(sensor.name, sensor.sense())
+
+
+def read_sensor_data[T](sensor: BaseSensor[T], io: IOContainer) -> T:
+    """
+    Retrieve sensed data from io cache.
+
+    :param sensor: source sensor
+    :param io: io cache
+    :return: most recent sensed data
+    """
+
+    return cast(T, getattr(io.i, sensor.name))
+
+
+class Sensor[T](ABC, BaseSensor[T]):
+    """
+    Useful implementation of a sensor
+    """
+
+    @property
+    @abstractmethod
+    def name(self) -> str: ...
+
+    @abstractmethod
+    def sense(self) -> T: ...
+
+    @final
     def perceive(self, dp: BaseDecisionProcess[Any]) -> None:
         """
-        Integrates the sensing for a single time point
-        within a decision process.
-
-        Generally this should not be called reictly,
-        but rather synchronized via perception across
-        all sensors.
-
-        :param dp: decision process
+        See :func:`perceive`
         """
 
-        dp.set_input_data(self.name, self.sense())
+        perceive(self, dp)
 
-    @override
     @final
     def read(self, io: IOContainer) -> T:
         """
-        Default reader implementation.
-
-        :param io: access to IO
-        :return: this sensor's value from IO
-        """
-        return cast(T, getattr(io.i, self.name))
-
-    @final
-    @property
-    def reader(self) -> SensorReader[T]:
-        """
-        IOContainer reading for this sensor.
-
-        :return: an IOContainer reader for this sensor
+        See :func:`read_sensor_data`
         """
 
-        return self
+        return read_sensor_data(self, io)
 
 
 # pylint: disable=too-few-public-methods
-class ActuatorWriter[I, O](Protocol):
+class BaseActuator[P, F](Protocol):
     """
-    Interface to facilitate typed actuation
-    access via IO - preferred for cogents.
-    """
-
-    def write(self, io: IOContainer, param: I) -> O:
-        """
-        Performs actuation
-
-        :param io: reference to IO
-        :param param: typed input to the actuator
-        :return: typed response from actuation
-        """
-
-
-class Actuator[I, O](ABC, ActuatorWriter[I, O]):
-    """
-    Base interface for external output to an environment;
-    actuation is parameterized via type `I` and
-    provides feedback via type `O`
+    Base interface for external output from
+    a cogent; actuation is parameterized via
+    type `P` and result feeback via `F`
     """
 
     @property
@@ -131,66 +116,65 @@ class Actuator[I, O](ABC, ActuatorWriter[I, O]):
         """
 
     @abstractmethod
-    def actuate(self, param: I) -> O:
+    def actuate(self, param: P) -> F:
         """
-        Function exposed via IOContainer
+        Function exposed via IOContainer to
+        invoke the actuator and receive feedback
 
-        :param param: typed input
-        :return: typed actuator response
+        :param param: typed parameter
+        :return: typed actuator feedback
         """
 
+
+def install[P, F](actuator: BaseActuator[P, F], dp: BaseDecisionProcess[Any]) -> None:
+    """
+    Provide persistent access to the actuator
+    via the IOContainer of the decision process
+
+    :param actuator: actuator to install
+    :param dp: destination decision process
+    """
+
+    dp.set_output_channel(actuator.name, actuator.actuate)
+
+
+def invoke_actuator[P, F](actuator: BaseActuator[P, F], io: IOContainer, param: P) -> F:
+    """
+    Invokes an actuator via io.
+
+    :param actuator: actuator to invoke
+    :param io: io container
+    :param param: input to the actuator
+    :return: actuator feedback from invocation
+    """
+
+    return cast(F, getattr(io.o, actuator.name)(param))
+
+
+class Actuator[P, F](ABC, BaseActuator[P, F]):
+    """
+    Useful implementation of an actuator
+    """
+
+    @property
+    @abstractmethod
+    def name(self) -> str: ...
+
+    @abstractmethod
+    def actuate(self, param: P) -> F: ...
+
+    @final
     def install(self, dp: BaseDecisionProcess[Any]) -> None:
         """
-        Integrates this actuator within a decision process
-
-        :param dp: decision process
+        See :func:`install`
         """
 
-        dp.set_output_channel(self.name, self.actuate)
-
-    @override
-    @final
-    def write(self, io: IOContainer, param: I) -> O:
-        """
-        Default writer implementation.
-
-        :param io: access to IO
-        :param param: input to send to the actuator
-        :return: this actuator's response
-        """
-
-        return cast(O, getattr(io.o, self.name)(param))
+        install(self, dp)
 
     @final
-    @property
-    def writer(self) -> ActuatorWriter[I, O]:
+    def invoke(self, io: IOContainer, param: P) -> F:
         """
-        IOContainer writing for this actuator.
-
-        :return: an IOContainer writer for this actuator
+        See :func:`invoke_actuator`
         """
 
-        return self
-
-
-class Environment(Protocol):
-    """what's needed for an environment"""
-
-    IN_THE_HEAD: Environment = SimpleNamespace(
-        name="InTheHead",
-        sensors=(),
-        actuators=(),
-    )
-    """Constant for an environment with no external sensing/acutation"""
-
-    @property
-    def sensors(self) -> Iterable[Sensor[Any]]:
-        """
-        :return: this environment's sensor(s)
-        """
-
-    @property
-    def actuators(self) -> Iterable[Actuator[Any, Any]]:
-        """
-        :return: this environment's actuator(s)
-        """
+        return invoke_actuator(self, io, param)

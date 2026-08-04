@@ -6,11 +6,8 @@ import unittest
 
 from cognition import (
     Actuator,
-    ActuatorWriter,
     BaseDecisionProcess,
-    Environment,
     Sensor,
-    SensorReader,
 )
 
 # ===
@@ -63,15 +60,7 @@ class TestEnv(unittest.TestCase):
         # ===
 
         self.sensor = ListSensor(self.s_name, self.shared_list)
-        self.reader: SensorReader[tuple[str, ...]] = self.sensor.reader
         self.actuator = ListAppender(self.a_name, self.shared_list)
-        self.writer: ActuatorWriter[str, int] = self.actuator.writer
-
-    def test_in_the_head(self) -> None:
-        """tests non-environment"""
-
-        self.assertListEqual(list(Environment.IN_THE_HEAD.sensors), [])
-        self.assertListEqual(list(Environment.IN_THE_HEAD.actuators), [])
 
     def test_sensor_actuator(self) -> None:
         """tests s/a without env"""
@@ -101,10 +90,10 @@ class TestEnv(unittest.TestCase):
         # ===
 
         with self.assertRaises(AttributeError):
-            self.reader.read(dp.io)
+            self.sensor.read(dp.io)
 
         with self.assertRaises(AttributeError):
-            self.writer.write(dp.io, to_add1)
+            self.actuator.invoke(dp.io, to_add1)
 
         # ==
 
@@ -113,16 +102,16 @@ class TestEnv(unittest.TestCase):
         # ===
 
         self.sensor.perceive(dp)
-        self.assertListEqual(list(self.reader.read(dp.io)), [])
+        self.assertListEqual(list(self.sensor.read(dp.io)), [])
 
-        self.assertEqual(self.writer.write(dp.io, to_add1), 1)
+        self.assertEqual(self.actuator.invoke(dp.io, to_add1), 1)
 
-        self.assertListEqual(list(self.reader.read(dp.io)), [])
+        self.assertListEqual(list(self.sensor.read(dp.io)), [])
         self.sensor.perceive(dp)
-        self.assertListEqual(list(self.reader.read(dp.io)), [to_add1])
+        self.assertListEqual(list(self.sensor.read(dp.io)), [to_add1])
 
-        self.assertEqual(self.writer.write(dp.io, to_add2), 2)
+        self.assertEqual(self.actuator.invoke(dp.io, to_add2), 2)
 
-        self.assertListEqual(list(self.reader.read(dp.io)), [to_add1])
+        self.assertListEqual(list(self.sensor.read(dp.io)), [to_add1])
         self.sensor.perceive(dp)
-        self.assertListEqual(list(self.reader.read(dp.io)), [to_add1, to_add2])
+        self.assertListEqual(list(self.sensor.read(dp.io)), [to_add1, to_add2])
