@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Protocol, cast, final
 
 from ..decision.core import BaseDecisionProcess, IOContainer
+from ..util.functypes import BiFunction, Function, Supplier
 
 # ===
 
@@ -44,7 +45,7 @@ class BaseSensor[T](Protocol):
         """
 
 
-def perceive[T](sensor: BaseSensor[T], dp: BaseDecisionProcess[Any]) -> None:
+def perceive[ST](sensor: BaseSensor[ST], dp: BaseDecisionProcess[Any]) -> None:
     """
     Route sensing for a single time point to
     the IOContainer of a decision process.
@@ -56,7 +57,7 @@ def perceive[T](sensor: BaseSensor[T], dp: BaseDecisionProcess[Any]) -> None:
     dp.set_input_data(sensor.name, sensor.sense())
 
 
-def read_sensor_data[T](sensor: BaseSensor[T], io: IOContainer) -> T:
+def read_sensor_data[ST](sensor: BaseSensor[ST], io: IOContainer) -> ST:
     """
     Retrieve sensed data from io cache.
 
@@ -65,7 +66,11 @@ def read_sensor_data[T](sensor: BaseSensor[T], io: IOContainer) -> T:
     :return: most recent sensed data
     """
 
-    return cast(T, getattr(io.i, sensor.name))
+    return cast(ST, getattr(io.i, sensor.name))
+
+
+type SensorReader[T] = Function[IOContainer, T]
+"""Represents a function to extract a sensor type from an io container"""
 
 
 class Sensor[T](ABC, BaseSensor[T]):
@@ -95,6 +100,40 @@ class Sensor[T](ABC, BaseSensor[T]):
         """
 
         return read_sensor_data(self, io)
+
+    @final
+    @property
+    def reader(self) -> SensorReader[T]:
+        """
+        Produces an easy-to-call function to
+        extract sensor data from an io container
+
+        :return: associated sensor reader
+        """
+
+        return self.read
+
+
+def create_sensor[ST](name: str, sense_f: Supplier[ST]) -> Sensor[ST]:
+    """
+    Dynamically constructs a sensor instance.
+
+    :param name: sensor name
+    :param sense_f: function to produce input data
+    :return: sensor
+    """
+
+    class DynamicSensor(Sensor[ST]):
+        """new subclass"""
+
+        @property
+        def name(self) -> str:
+            return name
+
+        def sense(self) -> ST:
+            return sense_f()
+
+    return DynamicSensor()
 
 
 # pylint: disable=too-few-public-methods
@@ -126,7 +165,9 @@ class BaseActuator[P, F](Protocol):
         """
 
 
-def install[P, F](actuator: BaseActuator[P, F], dp: BaseDecisionProcess[Any]) -> None:
+def install[AP, AF](
+    actuator: BaseActuator[AP, AF], dp: BaseDecisionProcess[Any]
+) -> None:
     """
     Provide persistent access to the actuator
     via the IOContainer of the decision process
@@ -138,7 +179,9 @@ def install[P, F](actuator: BaseActuator[P, F], dp: BaseDecisionProcess[Any]) ->
     dp.set_output_channel(actuator.name, actuator.actuate)
 
 
-def invoke_actuator[P, F](actuator: BaseActuator[P, F], io: IOContainer, param: P) -> F:
+def invoke_actuator[AP, AF](
+    actuator: BaseActuator[AP, AF], io: IOContainer, param: AP
+) -> AF:
     """
     Invokes an actuator via io.
 
@@ -148,7 +191,11 @@ def invoke_actuator[P, F](actuator: BaseActuator[P, F], io: IOContainer, param: 
     :return: actuator feedback from invocation
     """
 
-    return cast(F, getattr(io.o, actuator.name)(param))
+    return cast(AF, getattr(io.o, actuator.name)(param))
+
+
+type ActuatorInvoker[P, F] = BiFunction[IOContainer, P, F]
+"""Represents a function to invoke an actuator on an io container"""
 
 
 class Actuator[P, F](ABC, BaseActuator[P, F]):
@@ -178,3 +225,37 @@ class Actuator[P, F](ABC, BaseActuator[P, F]):
         """
 
         return invoke_actuator(self, io, param)
+
+    @final
+    @property
+    def invoker(self) -> ActuatorInvoker[P, F]:
+        """
+        Produces an easy-to-call function to
+        invoke an actuator on an io container
+
+        :return: associated sensor reader
+        """
+
+        return self.invoke
+
+
+def create_actuator[AP, AF](name: str, actuate_f: Function[AP, AF]) -> Actuator[AP, AF]:
+    """
+    Dynamically constructs an actuator instance.
+
+    :param name: actuator name
+    :param sense_f: function to handle actuation
+    :return: actuator
+    """
+
+    class DynamicActuator(Actuator[AP, AF]):
+        """new subclass"""
+
+        @property
+        def name(self) -> str:
+            return name
+
+        def actuate(self, param: AP) -> AF:
+            return actuate_f(param)
+
+    return DynamicActuator()

@@ -8,6 +8,8 @@ from cognition import (
     Actuator,
     BaseDecisionProcess,
     Sensor,
+    create_actuator,
+    create_sensor,
 )
 
 # ===
@@ -62,22 +64,27 @@ class TestEnv(unittest.TestCase):
         self.sensor = ListSensor(self.s_name, self.shared_list)
         self.actuator = ListAppender(self.a_name, self.shared_list)
 
-    def test_sensor_actuator(self) -> None:
-        """tests s/a without env"""
+    def _test_sa(self, s: Sensor[tuple[str, ...]], a: Actuator[str, int]) -> None:
+        """helper"""
 
         to_add1 = "howdy"
         to_add2 = "doody"
 
-        self.assertEqual(self.sensor.name, self.s_name)
-        self.assertEqual(self.actuator.name, self.a_name)
+        self.assertEqual(s.name, self.s_name)
+        self.assertEqual(a.name, self.a_name)
 
-        self.assertListEqual(list(self.sensor.sense()), [])
+        self.assertListEqual(list(s.sense()), [])
 
-        self.assertEqual(self.actuator.actuate(to_add1), 1)
-        self.assertListEqual(list(self.sensor.sense()), [to_add1])
+        self.assertEqual(a.actuate(to_add1), 1)
+        self.assertListEqual(list(s.sense()), [to_add1])
 
-        self.assertEqual(self.actuator.actuate(to_add2), 2)
-        self.assertListEqual(list(self.sensor.sense()), [to_add1, to_add2])
+        self.assertEqual(a.actuate(to_add2), 2)
+        self.assertListEqual(list(s.sense()), [to_add1, to_add2])
+
+    def test_sensor_actuator(self) -> None:
+        """tests s/a without env"""
+
+        self._test_sa(self.sensor, self.actuator)
 
     def test_io(self) -> None:
         """tests s/a with manual dp"""
@@ -109,9 +116,54 @@ class TestEnv(unittest.TestCase):
         self.assertListEqual(list(self.sensor.read(dp.io)), [])
         self.sensor.perceive(dp)
         self.assertListEqual(list(self.sensor.read(dp.io)), [to_add1])
+        self.assertListEqual(list(self.sensor.reader(dp.io)), [to_add1])
 
-        self.assertEqual(self.actuator.invoke(dp.io, to_add2), 2)
+        self.assertEqual(self.actuator.invoker(dp.io, to_add2), 2)
 
         self.assertListEqual(list(self.sensor.read(dp.io)), [to_add1])
         self.sensor.perceive(dp)
         self.assertListEqual(list(self.sensor.read(dp.io)), [to_add1, to_add2])
+
+    def test_dynamic(self) -> None:
+        """test dynamic creation"""
+
+        lst: list[str] = []
+
+        def cp_list() -> tuple[str, ...]:
+            return tuple(lst)
+
+        def append_list(s: str) -> int:
+            lst.append(s)
+            return len(lst)
+
+        # ===
+
+        self._test_sa(
+            create_sensor(self.s_name, cp_list),
+            create_actuator(self.a_name, append_list),
+        )
+
+        # ===
+
+        class MethodTest:
+            """eg class"""
+
+            def __init__(self) -> None:
+                self._l: list[str] = []
+
+            def cp(self) -> tuple[str, ...]:
+                """tuple copy"""
+                return tuple(self._l)
+
+            def append(self, s: str) -> int:
+                """append and return size"""
+
+                self._l.append(s)
+                return len(self._l)
+
+        mt = MethodTest()
+
+        self._test_sa(
+            create_sensor(self.s_name, mt.cp),
+            create_actuator(self.a_name, mt.append),
+        )
