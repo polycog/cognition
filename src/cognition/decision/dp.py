@@ -455,7 +455,7 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
     def __init__(
         self,
         state_initializer: Supplier[S],
-        enable_terminal_check: bool = False,
+        enable_terminal_check: bool = True,
     ) -> None:
         """
         :param state_initializer: produces state initially

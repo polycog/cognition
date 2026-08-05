@@ -165,7 +165,7 @@ class TestCogent(unittest.TestCase):
         type ClosedList = PEState[set[int]]
 
         init_set: set[int] = set()
-        dp = DecisionProcess[ClosedList](PEState(init_set), enable_terminal_check=True)
+        dp = DecisionProcess[ClosedList](PEState(init_set))
         dp.add_action_evaluator(uniform_evaluator(1, name="all_guesses_same"))
 
         c: Cogent[ClosedList, DecisionProcess[ClosedList]] = Cogent(dp)

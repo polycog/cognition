@@ -58,7 +58,7 @@ class TestStage(unittest.TestCase):
     """Tests for stage code"""
 
     def setUp(self) -> None:
-        self.dp = DecisionProcess(AuthState, enable_terminal_check=True)
+        self.dp = DecisionProcess(AuthState)
 
         @staged_operator(self.dp, AuthStage.INIT)
         def _perform_init(_s: AuthState, io: IOContainer) -> None:

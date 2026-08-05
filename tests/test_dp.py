@@ -234,7 +234,7 @@ class TestDP(unittest.TestCase):
 
         state_start = 0
 
-        dp = DecisionProcess(lambda: state_start, enable_terminal_check=True)
+        dp = DecisionProcess(lambda: state_start)
 
         self.assertEqual(dp.state, state_start)
 
@@ -308,9 +308,7 @@ class TestDP(unittest.TestCase):
     def test_named_op_decorator(self) -> None:
         """Confirming named operator decorator"""
 
-        dp: DecisionProcess[bool] = DecisionProcess(
-            lambda: False, enable_terminal_check=True
-        )
+        dp: DecisionProcess[bool] = DecisionProcess(lambda: False)
 
         op_name = "done"
         act_name = f"{op_name}[terminal=True]"
@@ -354,12 +352,10 @@ class TestDP(unittest.TestCase):
         """Confirming terminal check"""
 
         dp1: DecisionProcess[str] = DecisionProcess(
-            lambda: "",
+            lambda: "", enable_terminal_check=False
         )
 
-        dp2: DecisionProcess[str] = DecisionProcess(
-            lambda: "", enable_terminal_check=True
-        )
+        dp2: DecisionProcess[str] = DecisionProcess(lambda: "")
 
         do_regular = create_named_action(
             "do",
@@ -921,7 +917,7 @@ class TestDP(unittest.TestCase):
 
         # ===
 
-        dp = DecisionProcess(lambda: "", enable_terminal_check=True)
+        dp = DecisionProcess(lambda: "")
 
         # arg gets negative character code (so reverse alpha)
         dp.add_action_evaluator(

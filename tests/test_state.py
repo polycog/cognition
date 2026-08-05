@@ -271,7 +271,7 @@ class TestState(unittest.TestCase):
 
         # ===
 
-        dp = DecisionProcess(c, enable_terminal_check=True)
+        dp = DecisionProcess(c)
 
         upper_t = 10
 
@@ -363,7 +363,7 @@ class TestState(unittest.TestCase):
 
         # ===
 
-        dp = DecisionProcess(c, enable_terminal_check=True)
+        dp = DecisionProcess(c)
 
         # pylint: disable=unused-variable
         @dp.operator("inc", terminal=True)
