@@ -3,6 +3,7 @@ Selecting from amongst enumerated values
 based upon natural language input
 """
 
+import logging
 from collections import Counter
 from contextlib import suppress
 from dataclasses import dataclass
@@ -15,6 +16,10 @@ from pydantic_ai import Agent as LanguageConvo
 from pydantic_ai.models import Model
 
 from .description import enum_item_doc, enum_name_doc
+
+# ===
+
+_logger = logging.getLogger(__name__)
 
 # ===
 
@@ -70,6 +75,23 @@ class EnumClassifier[T: Enum]:
         :param enum_type: type representing options
         :param task_desc: textual description of the task
         """
+
+        _logger.info(
+            "Creating a classifier for type %s (task: %s)",
+            enum_type.__name__,
+            task_desc,
+        )
+
+        self._log_info = "".join(
+            (
+                f"{enum_type.__name__}",
+                " (",
+                ", ".join(member.value for member in enum_type),
+                ")",
+            )
+        )
+
+        # ===
 
         self._schema = enum_schema(enum_type)
 
@@ -138,6 +160,18 @@ class EnumClassifier[T: Enum]:
         :return: most common classification with confidence
         """
 
+        _logger.info(
+            (
+                "Attempting to classify utterance (%s) "
+                "-> %s using %s (trials=%s; timeout=%ss)"
+            ),
+            utterance,
+            self._log_info,
+            llm.model_name,
+            num_trials,
+            timeout_secs,
+        )
+
         if num_trials < 1:
             raise ValueError("Must perform at least one trial")
 
@@ -151,14 +185,23 @@ class EnumClassifier[T: Enum]:
         prompt = self.prompt(utterance)
 
         results = []
-        for _ in range(num_trials):
+        for t in range(num_trials):
             result = None
+
+            _logger.debug("Trial %s: started", t)
 
             with suppress(Exception):
                 result = convo.run_sync(prompt).output.value  # type: ignore
 
+            _logger.debug("Trial %s: ended (result=%s)", t, result)
+
             results.append(result)
 
         top_result, top_count = Counter(results).most_common(1)[0]
+        conf = EmpiricalConfidence(top_count, num_trials)
 
-        return top_result, EmpiricalConfidence(top_count, num_trials)
+        _logger.info(
+            "Classification: '%s' => %s (confidence=%s)", utterance, top_result, conf
+        )
+
+        return top_result, conf

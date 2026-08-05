@@ -299,17 +299,14 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
         """Tests for enum classification"""
 
         model_apple = FunctionModel(
-            CountingModelFunc.always(FruitSchema(value=Fruit.APPLE))
+            CountingModelFunc.always(FruitSchema(value=Fruit.APPLE)),
+            model_name="always_apple",
         )
         model_first_none_then_banana = FunctionModel(
             CountingModelFunc(
-                lambda ct: FruitSchema(value=Fruit.BANANA if ct != 1 else None)
-            )
-        )
-        model_first_none_then_banana = FunctionModel(
-            CountingModelFunc(
-                lambda ct: FruitSchema(value=Fruit.BANANA if ct != 1 else None)
-            )
+                lambda ct: FruitSchema(value=Fruit.BANANA if ct != 1 else None),
+            ),
+            model_name="first_none_then_banana",
         )
         model_mod = FunctionModel(
             CountingModelFunc(
@@ -320,7 +317,8 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
                         else list(Fruit)[_mod - 1]
                     )
                 )
-            )
+            ),
+            model_name="loops_through_options_and_none",
         )
 
         classifier = EnumClassifier(Fruit, "Interpreting a shopping list")
@@ -430,7 +428,8 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
         knights_who_say = "Ni!"
 
         model_mphg = FunctionModel(
-            lambda *args, **kwargs: ModelResponse(parts=(TextPart(knights_who_say),))
+            lambda *args, **kwargs: ModelResponse(parts=(TextPart(knights_who_say),)),
+            model_name="knights_who_say_ni",
         )
 
         self.assertEqual(

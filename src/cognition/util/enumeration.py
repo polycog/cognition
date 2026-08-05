@@ -2,8 +2,13 @@
 Enumeration support
 """
 
+import logging
 from enum import Enum
 from typing import Any, Self
+
+# ===
+
+_logger = logging.getLogger(__name__)
 
 # ===
 
@@ -68,7 +73,34 @@ class EnumDispatch[T: Enum]:
         """
 
         method_name = v.name.lower()
-        if hasattr(self, method_name):
-            return getattr(self, method_name)(*args, **kwargs)
+        method_exists = hasattr(self, method_name)
+
+        _logger.info(
+            (
+                "%s (%s) called: "
+                "enum=%s, value=%s, method_name=%s (exists=%s), args=%s, kwargs=%s"
+            ),
+            EnumDispatch.__name__,
+            type(self).__name__,
+            type(v).__name__,
+            v,
+            method_name,
+            method_exists,
+            args,
+            kwargs,
+        )
+
+        if method_exists:
+            result = getattr(self, method_name)(*args, **kwargs)
+
+            _logger.info(
+                "%s (-> %s.%s) returned: %s",
+                EnumDispatch.__name__,
+                type(v).__name__,
+                method_name,
+                result,
+            )
+
+            return result
 
         return None

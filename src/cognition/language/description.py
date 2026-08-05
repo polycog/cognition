@@ -2,6 +2,7 @@
 Describing data types
 """
 
+import logging
 from collections.abc import Iterable, Sequence
 from enum import Enum
 from string import Template
@@ -15,6 +16,10 @@ from pydantic_ai.models import Model
 
 from ..knowledge.representation import BinaryRelation, Entity
 from ..util.enumeration import AutoDocEnum, DocEnum
+
+# ===
+
+_logger = logging.getLogger(__name__)
 
 # ===
 
@@ -41,6 +46,13 @@ def enum_name_doc(enum_type: type[Enum]) -> str:
     :return: "{name}[ ({doc})]"
     """
 
+    _logger.debug(
+        "%s(%s): doc=%s",
+        enum_name_doc.__name__,
+        enum_type.__name__,
+        enum_type.__doc__,
+    )
+
     return f"{ enum_type.__name__ }{ _sub_if(_t_paren, enum_type.__doc__) }"
 
 
@@ -51,6 +63,14 @@ def enum_item_doc(enum_item: Enum) -> str:
     :param enum_item: item to describe
     :return: "{value}[ ({doc})]"
     """
+
+    _logger.debug(
+        "%s(%s): mro=%s, doc=%s",
+        enum_item_doc.__name__,
+        enum_item,
+        type(enum_item).__mro__,
+        enum_item.__doc__,
+    )
 
     extra = enum_item.__doc__ if isinstance(enum_item, (DocEnum, AutoDocEnum)) else None
     return f"{ enum_item.value }{ _sub_if(_t_paren, extra) }"
@@ -65,11 +85,17 @@ def enum_description(enum_type: type[Enum]) -> str:
     :return: type description
     """
 
+    members = tuple(item for item in enum_type)
+
+    _logger.debug(
+        "%s(%s): members=(%s)", enum_description.__name__, enum_type.__name__, members
+    )
+
     lines = []
 
     lines.append(f"Enumeration: { enum_name_doc(enum_type) }, options...")
 
-    for item in enum_type:
+    for item in members:
         lines.append(f"* { enum_item_doc(item) }")
 
     return "\n".join(lines)
@@ -83,7 +109,15 @@ def basemodel_name_doc(schema_type: type[BaseModel]) -> str:
     :return: "{name}[ ({desc})]"
     """
 
+    _logger.debug(
+        "%s(%s)",
+        basemodel_name_doc.__name__,
+        schema_type.__name__,
+    )
+
     schema_json = schema_type.model_json_schema()
+
+    _logger.debug(schema_json)
 
     return (
         f"{schema_json['title']}{ _sub_if(_t_paren, schema_json.get('description')) }"
@@ -103,11 +137,27 @@ def basemodel_field_doc(field_name: str, field_info: FieldInfo) -> str:
     :return: "{name} ({type}[; {desc}])"
     """
 
+    is_union = _is_union(field_info.annotation)
+
+    _logger.debug(
+        "%s(%s, %s): is_union=%s, desc=%s",
+        basemodel_field_doc.__name__,
+        field_name,
+        field_info,
+        is_union,
+        field_info.description,
+    )
+
     field_types: Sequence[type]
-    if _is_union(field_info.annotation):
+    if is_union:
         field_types = get_args(field_info.annotation)
     else:
         field_types = [cast(type, field_info.annotation)]
+
+    _logger.debug(
+        "field types: %s",
+        field_types,
+    )
 
     types_names = " | ".join(t.__name__ for t in field_types)
 
@@ -144,6 +194,15 @@ def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> Iterable[t
 
     # ===
 
+    _logger.debug(
+        "%s(%s, deep=%s): start",
+        basemodel_dep_types.__name__,
+        start_schema.__name__,
+        deep,
+    )
+
+    # ===
+
     todo: list[type] = [start_schema]
     explored: set[type] = set()
 
@@ -152,16 +211,46 @@ def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> Iterable[t
 
     while todo:
         t = todo.pop(0)
-        if t not in explored:
+        already_explored = t in explored
+
+        _logger.debug(
+            "Consider type: %s (already_explored=%s)", t.__name__, already_explored
+        )
+
+        if not already_explored:
             explored.add(t)
 
+            _logger.debug("Type added to explored: %s", explored)
+
             for field_type in _basemodel_field_types(t):
-                if field_type not in added:
+
+                already_in_result = field_type in added
+                _logger.debug(
+                    "Consider field type: %s (already_in_result=%s, mro=%s)",
+                    field_type.__name__,
+                    already_in_result,
+                    field_type.__mro__,
+                )
+
+                if not already_in_result:
                     result.append(field_type)
                     added.add(field_type)
 
                 if deep and issubclass(field_type, BaseModel):
                     todo.append(field_type)
+
+                    _logger.debug("Field type added to TODO: %s", todo)
+
+    # ===
+
+    _logger.debug(
+        "%s(%s, deep=%s): done (explored=%s, result=%s)",
+        basemodel_dep_types.__name__,
+        start_schema.__name__,
+        deep,
+        explored,
+        result,
+    )
 
     return result
 
@@ -175,6 +264,16 @@ def basemodel_description(schema_type: type[BaseModel], deep: bool) -> str:
     :param deep: if ``True``, recursively includes fields' types
     :return: type description
     """
+
+    _logger.debug(
+        "%s(%s, deep=%s): mro=%s",
+        basemodel_description.__name__,
+        schema_type.__name__,
+        deep,
+        schema_type.__mro__,
+    )
+
+    # ===
 
     lines: list[str] = []
 
@@ -206,6 +305,14 @@ class FactDescriber[T: BaseModel]:
         :param schema_type: type for this describer
         :param task_desc: textual description of the task
         """
+
+        _logger.info(
+            "Creating a describer for fact type %s (task: %s)",
+            schema_type.__name__,
+            task_desc,
+        )
+
+        # ===
 
         task_prefix = ""
         if task_desc:
@@ -326,15 +433,30 @@ class FactDescriber[T: BaseModel]:
         :return: description
         """
 
-        return (
+        others_t = tuple(others)
+
+        _logger.info(
+            "Describing instance (%s; type=%s) using %s (timeout=%ss) and context of others=%s",
+            instance,
+            type(instance).__name__,
+            llm.model_name,
+            timeout_secs,
+            others_t,
+        )
+
+        result = (
             LanguageConvo(
                 model=llm,
                 system_prompt="You are a helpful assistant.",
                 model_settings={"timeout": timeout_secs},
             )
-            .run_sync(self.prompt(instance, others))
+            .run_sync(self.prompt(instance, others_t))
             .output
         )
+
+        _logger.info(result)
+
+        return result
 
     @staticmethod
     def describe(

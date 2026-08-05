@@ -3,6 +3,7 @@ Planning support
 """
 
 import heapq
+import logging
 from abc import ABC, abstractmethod
 from collections import deque
 from collections.abc import (
@@ -25,6 +26,10 @@ from ..util.functypes import (
     Supplier,
 )
 from ..util.misc import stringify
+
+# ===
+
+_logger = logging.getLogger(__name__)
 
 # ===
 
@@ -277,25 +282,37 @@ class SearchPlanner[PS: Hashable, PA]:
             def search_action(sa: SearchState[PS, PA], _io: IOContainer) -> None:
                 """Graph search step"""
 
+                _logger.debug("Initiating step of graph search")
+
                 if sa.frontier.empty:
+                    _logger.debug("Frontier empty -> planning failure")
                     return sa.failure()
 
                 node = sa.frontier.remove()
+                _logger.debug("Next frontier state: %s", node)
 
                 if is_goal(node.state):
+                    _logger.debug("Goal state -> planning success")
                     return sa.success(node)
 
-                if node.state not in sa.explored:
+                explored = node.state in sa.explored
+                _logger.debug("State was previously explored: %s", explored)
+
+                if not explored:
                     sa.explored.add(node.state)
 
+                    _logger.debug("State added to explored: %s", sa.explored)
+
                     for state_p, action, cost in successors(node.state):
-                        sa.frontier.add(
-                            FrontierNode(
-                                state=state_p,
-                                path=(tuple(node.path) + (action,)),
-                                path_cost=node.path_cost + cost,
-                            )
+                        new_node = FrontierNode(
+                            state=state_p,
+                            path=(tuple(node.path) + (action,)),
+                            path_cost=node.path_cost + cost,
                         )
+
+                        _logger.debug("Frontier node added: %s", new_node)
+
+                        sa.frontier.add(new_node)
 
                 return None
 
@@ -331,6 +348,14 @@ class SearchPlanner[PS: Hashable, PA]:
             initial_state, is_goal, successors, frontier_factory
         )
 
+        _logger.info(
+            "%s initialized: init_state=%s, frontier=%s, is_goal=%s",
+            SearchPlanner.__name__,
+            initial_state,
+            frontier_factory(),
+            is_goal,
+        )
+
     @property
     def still_searching(self) -> bool:
         """
@@ -349,10 +374,27 @@ class SearchPlanner[PS: Hashable, PA]:
         :return: this planner (for chaining)
         """
 
+        _logger.info(
+            "%s run: max_steps=%s",
+            SearchPlanner.__name__,
+            max_steps,
+        )
+
         if max_steps is None:
             self._dp.run_until_done()
         else:
             self._dp.run_cycles(max_steps)
+
+        _logger.info(
+            "%s run concluded: plan_found=%s, states_explored=%s",
+            SearchPlanner.__name__,
+            self.plan_found,
+            self.states_explored,
+        )
+
+        if self.plan_found:
+            _logger.info("plan_cost=%s", self.plan_cost)
+            _logger.info(self.plan)
 
         return self
 
@@ -509,9 +551,23 @@ def static_opts_succession[PS, PA](
         globally available options
         """
 
+        _logger.debug("Expanding (via static options): %s", s)
+
         for opt in fixed_opts:
-            if opt.is_available(s):
+            avail = opt.is_available(s)
+
+            _logger.debug("Considering: %s (available=%s)", opt, avail)
+
+            if avail:
                 state_p, cost = opt.then(s)
+
+                _logger.debug(
+                    "Result of %s: next_state=%s, action=%s, cost=%s",
+                    opt,
+                    state_p,
+                    opt.action,
+                    cost,
+                )
 
                 yield (state_p, opt.action, cost)
 
@@ -528,6 +584,7 @@ def dynamic_opts_succession[PS, PA](
     :return: resulting succession function for any search state
     """
 
+    opt_names = tuple(ot.__name__ for ot in option_types)
     opt_generators = tuple(ot.when for ot in option_types)
 
     def expand(s: PS) -> Iterable[tuple[PS, PA, PathCost]]:
@@ -537,8 +594,19 @@ def dynamic_opts_succession[PS, PA](
         globally available dynamic options
         """
 
+        _logger.debug("Expanding (dynamically via %s): %s", opt_names, s)
+
         for opt in chain.from_iterable(og(s) for og in opt_generators):
             new_state, cost = opt.then(s)
+
+            _logger.debug(
+                "Result of %s: next_state=%s, action=%s, cost=%s",
+                opt,
+                new_state,
+                opt.action,
+                cost,
+            )
+
             yield (new_state, opt.action, cost)
 
     return expand

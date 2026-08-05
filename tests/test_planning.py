@@ -261,6 +261,7 @@ def straight_line_to_bucharest(city: str) -> int:
     }.get(city, 1000)
 
 
+@stringify("in_bucharest")
 def in_bucharest(city: str) -> bool:
     """Is this Bucharest?"""
 
@@ -280,7 +281,7 @@ class TestSearchPlanning(unittest.TestCase):
 
         planner = SearchPlanner(
             self.initial_state,
-            lambda city: city == "does not exist",
+            stringify("never")(lambda city: city == "does not exist"),
             navigate_romania,
             Stack,
         )
@@ -381,6 +382,9 @@ class AddCoinStatic(SearchPlannerStaticOption[int, USCoin]):
     def __init__(self, coin: USCoin):
         super().__init__(coin)
 
+    def __str__(self) -> str:
+        return f"AddCoin({self.action})"
+
     def is_available(self, _: int) -> bool:
         return True
 
@@ -393,6 +397,9 @@ class AddCoinDynamic(SearchPlannerDynamicOption[int, USCoin]):
 
     def __init__(self, coin: USCoin):
         super().__init__(coin)
+
+    def __str__(self) -> str:
+        return f"AddCoin({self.action})"
 
     @classmethod
     def when(cls, _state: int) -> Iterable[AddCoinDynamic]:
@@ -414,7 +421,7 @@ class TestPlanningOptions(unittest.TestCase):
         self.init_cents: int = 0
 
         goal_cents: int = 119
-        self.termination_test = lambda s: s == goal_cents
+        self.termination_test = stringify(f"{goal_cents}¢")(lambda s: s == goal_cents)
 
         self.frontier_factory = Queue
         # each coin is a single action
