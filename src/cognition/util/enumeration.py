@@ -12,7 +12,9 @@ class DocEnum(Enum):
     """
     An enumeration where members can have individual docstrings.
 
-    MEMBER = value[, "docstring"]
+    Example usage::
+
+        MEMBER = value[, "docstring"]
     """
 
     def __new__(cls, *args: Any) -> Self:
@@ -32,7 +34,9 @@ class AutoDocEnum(Enum):
     An enumeration where members have individual docstrings
     and the value is automatically set (as integers: 1, 2, ...)
 
-    MEMBER = "docstring"
+    Example usage::
+    
+        MEMBER = "docstring"
     """
 
     def __new__(cls, *args: Any) -> Self:

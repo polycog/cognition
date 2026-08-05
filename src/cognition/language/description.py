@@ -28,7 +28,7 @@ def _sub_if(t: Template, s: str | None) -> str:
 
     :param t: template to (potentially) use
     :param s: string to substitute, if not None
-    :return: empty string if `s` is None; substituted template otherwise
+    :return: empty string if ``s`` is None; substituted template otherwise
     """
     return t.substitute(s=s.strip()) if s is not None else ""
 
@@ -118,9 +118,9 @@ def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> Iterable[t
     """
     Accounts for a base model's dependent types
 
-    :param schema_type: source type
-    :param deep: if `True`, recursively includes base model fields
-    :return: Enum and BaseModel types needed to understand the schema (including itself)
+    :param start_schema: source type
+    :param deep: if ``True``, recursively includes base model fields
+    :return: :class:`enum.Enum` and :class:`pydantic.BaseModel` types needed to understand the schema (including itself)
     """
 
     def _supported_type(t: type) -> bool:
@@ -171,7 +171,7 @@ def basemodel_description(schema_type: type[BaseModel], deep: bool) -> str:
     and its members
 
     :param schema_type: type to describe
-    :param deep: if `True`, recursively includes fields' types
+    :param deep: if ``True``, recursively includes fields' types
     :return: type description
     """
 

@@ -23,7 +23,8 @@ def self_sensor[C: Cogent[Any, Any], T](m: Function[C, T]) -> Function[C, T]:
     """
     Decorator to mark a cogent method for use as a sensor upon instance init
 
-    :param f: method
+    :param m: method
+    :return: supplied method (tagged for later init)
     """
 
     # pylint: disable=protected-access
@@ -37,7 +38,8 @@ def self_actuator[C: Cogent[Any, Any], P, F](
     """
     Decorator to mark a cogent method for use as an actuator upon instance init
 
-    :param f: method
+    :param m: method
+    :return: supplied method (tagged for later init)
     """
 
     # pylint: disable=protected-access
@@ -47,7 +49,9 @@ def self_actuator[C: Cogent[Any, Any], P, F](
 
 class Cogent[S, DP: BaseDecisionProcess[S]]:  # type: ignore[name-defined]
     """
-    Base for a cognitive agent
+    Base for a cognitive agent that uses type ``S``
+    for decision process state, and ``DP`` as the
+    type of decision process
     """
 
     _self_sensors: dict[str, Function["Cogent[S, DP]", Any]]
@@ -147,7 +151,7 @@ class Cogent[S, DP: BaseDecisionProcess[S]]:  # type: ignore[name-defined]
 
     def as_sensor[T](self, name: str) -> Function[Supplier[T], Supplier[T]]:
         """
-        Decorator version of :func:`create_sensor`
+        Decorator version of :func:`.env.create_sensor`
 
         :param name: name for the sensor instance
         :return: parameterized decorator
@@ -196,7 +200,7 @@ class Cogent[S, DP: BaseDecisionProcess[S]]:  # type: ignore[name-defined]
 
     def as_actuator[P, F](self, name: str) -> Function[Function[P, F], Function[P, F]]:
         """
-        Decorator version of :func:`create_actuator`
+        Decorator version of :func:`.env.create_actuator`
 
         :param name: name for the actuator instance
         :return: parameterized decorator
@@ -227,12 +231,13 @@ class Cogent[S, DP: BaseDecisionProcess[S]]:  # type: ignore[name-defined]
         3. Cache sensor(s) perception to IO
         4. Run the decision process
 
-        until the supplied gating predicate returns `False`
+        until the supplied gating predicate returns ``False``
 
         :param repeat_p: gating predicate
         :param max_cycles: maximum dp cycles to run per loop;
-                           `None` indicates no limit
-        :param args: IO args to add (see :func:`args_added`)
+                           ``None`` indicates no limit
+        :param args: IO args to add (see :func:`cognition.decision.dp.args_added`)
+        :return: this cogent (for chaining)
         """
 
         proceed = True

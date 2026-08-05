@@ -17,7 +17,7 @@ from ..util.functypes import BiFunction, Function, Supplier
 class BaseSensor[T](Protocol):
     """
     Base interface for external input (of
-    type `T`) to a cogent
+    type ``T``) to a cogent
     """
 
     @property
@@ -141,7 +141,7 @@ class BaseActuator[P, F](Protocol):
     """
     Base interface for external output from
     a cogent; actuation is parameterized via
-    type `P` and result feeback via `F`
+    type ``P`` and result feeback via ``F``
     """
 
     @property

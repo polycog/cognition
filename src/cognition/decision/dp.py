@@ -78,6 +78,7 @@ def _add_args[S](
     :param dp: decision process for which to provide arguments
     :param namespace: input source name
     :param info: io.i.namespace.key=value
+    :return: supplied dp
     """
 
     try:
@@ -97,6 +98,7 @@ def args_added[S](
     :param dp: decision process for which to provide arguments
     :param namespace: input source name
     :param info: io.i.namespace.key=value
+    :return: supplied dp
     """
 
     yield from _add_args(dp, namespace, **info)
@@ -166,7 +168,7 @@ def create_named_action[S](name: str, f: Action[S], **kwargs: Any) -> Action[S]:
     :param name: name to add
     :param f: original action
     :param kwargs: arbitrary keyword=value pairs
-    :return: :class:`NamedObject` + :func:`.utility.stringify`
+    :return: :class:`NamedObject` + :func:`cognition.util.misc.stringify`
     """
 
     new_f = stringify(_format_name_params(name, **kwargs))(f)
@@ -280,7 +282,7 @@ def add_generator[S, X](
     :param dp: decision process to be added to
     :param gen_type: source of operators
     :param extra: generator-specific data
-    :param cmp_param: if not ``None``, action param -> the produced ops (for purposes of comparison)
+    :param self_param: if not ``None``, action param -> the produced ops (for purposes of comparison)
     :return: the produced action factory
     """
 
@@ -364,7 +366,7 @@ def sorting_evaluator[S](
     """
     Associates rankings based upon relative sorting order over actions
 
-    :param sorting_key: key function for ``sort()`` to order actions
+    :param sorting_key: key function for :func:`sort` to order actions
     :param p: optional predicate to gate potential actions
     :param rank_start: starting value for produced ranks
     :param name: optional name for the evaluator
@@ -455,8 +457,8 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         enable_terminal_check: bool = False,
     ) -> None:
         """
-        :param state_initializer: produces state initially (and on ``reinit``)
-        :param enable_terminal_check: if True, a selected named action
+        :param state_initializer: produces state initially (and on :meth:`.core.BaseDecisionProcess.reinit`)
+        :param enable_terminal_check: if ``True``, a selected named action
                                       (:func:`create_named_action`) with a
                                       :const:`TERMINAL_ACTION_ATTR` parameter
                                       triggers termination during check
@@ -520,7 +522,7 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         self, extra: X, self_param: str | None = OPERATOR_SELF_PARAM
     ) -> Function[type[OperatorGenerator[S, X]], type[OperatorGenerator[S, X]]]:
         """
-        Decorator version of :meth:`DecisionProcess.add_generator`
+        Decorator version of :meth:`add_generator`
 
         :param extra: generator-specific data
         :param self_param: if not ``None``, action param referring to the op
@@ -560,7 +562,7 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         self, op: Operator[S], self_param: str | None = OPERATOR_SELF_PARAM
     ) -> Self:
         """
-        Pass-thru to :meth:`DecisionProcess.add_operator`.
+        Pass-thru to :meth:`add_operator`.
 
         :param op: operator with factory/action info
         :param self_param: if not ``None``, action param referring to the op
@@ -576,7 +578,7 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         **kwargs: Any,
     ) -> Function[type[Operator[S]], type[Operator[S]]]:
         """
-        Decorator version of :meth:`DecisionProcess.add_operator`
+        Decorator version of :meth:`add_operator`
         that assumes instantiation takes a positional name
         and arbitrary keywords
 
@@ -620,12 +622,12 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         """
         Execute the decision process, function-style
 
-        :param max_cycles: maximum steps to execute
-        :param suppress_errors: if `True`, does not raise any errors from execution
+        :param max_cycles: maximum steps to execute (or ``None`` for no limit)
+        :param suppress_errors: if ``True``, does not raise any errors from execution
         :param args_namespace: input source name
         :param args: arguments to supply
         :return: the final state if the decision process completed
-                 without any exceptions; None otherwise
+                 without any exceptions; ``None`` otherwise
         """
 
         with self.args_added(namespace=args_namespace, **args):

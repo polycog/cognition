@@ -57,7 +57,7 @@ class FrontierManager[PS, PA](ABC):
     @abstractmethod
     def empty(self) -> bool:
         """
-        :return: `True` if there are no more items on the frontier
+        :return: ``True`` if there are no more items on the frontier
         """
 
     @abstractmethod
@@ -336,7 +336,7 @@ class SearchPlanner[PS: Hashable, PA]:
         """
         Indicates if the planner still has options to explore.
 
-        :return: `True` if the planner has not concluded search
+        :return: ``True`` if the planner has not concluded search
         """
 
         return not self._dp.done
@@ -361,7 +361,7 @@ class SearchPlanner[PS: Hashable, PA]:
         """
         Indicates if a plan was found.
 
-        :return: `True` if the planner was successful
+        :return: ``True`` if the planner was successful
         """
 
         return self._dp.state.final_state is not None

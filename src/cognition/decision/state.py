@@ -19,7 +19,7 @@ class SelfReinitState:
     State that internally handles reinitialization.
 
     Supply a subclass instance to a decision process
-    as a `state_initializer` and the result will be
+    as a ``state_initializer`` and the result will be
     internal control about dp reinit.
     """
 
@@ -38,7 +38,7 @@ class SelfElaborationState(SelfReinitState):
     State that self-serves elaboration.
 
     A decision process that uses an instance's
-    `elaborator` property will provide it an
+    :attr:`elaborator` property will provide it an
     opportunity for elaboration (during the phase),
     whose read-only results are then accessible
     via a protected property (that can then be
@@ -161,7 +161,7 @@ class PTEState[P, T](SelfElaborationState):
 class PEState[P](PTEState[P, None]):
     """
     Convenience special case of :class:`PTEState`
-    whose transient state is `None`
+    whose transient state is ``None``
     """
 
     def __init__(self, p_init_value: P) -> None:

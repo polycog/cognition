@@ -49,14 +49,14 @@ class WorldSnapshot:
     def __contains__(self, item: Fact) -> bool:
         """
         :param item: fact of interest
-        :return: `True` if supplied fact is in this set
+        :return: ``True`` if supplied fact is in this set
         """
         return item in self.items
 
     def __eq__(self, other: object) -> bool:
         """
         :param other: some object
-        :return: `True` if the object is of this type and has the same facts
+        :return: ``True`` if the object is of this type and has the same facts
         """
 
         if not isinstance(other, WorldSnapshot):
@@ -67,7 +67,7 @@ class WorldSnapshot:
     def __lt__(self, other: object) -> bool:
         """
         :param other: some object
-        :return: `True` if the object is of this type and has a strict subset of the facts
+        :return: ``True`` if the object is of this type and has a strict subset of the facts
         """
 
         if not isinstance(other, WorldSnapshot):
@@ -78,7 +78,7 @@ class WorldSnapshot:
     def __le__(self, other: object) -> bool:
         """
         :param other: some object
-        :return: `True` if the object is of this type and has a subset of the facts
+        :return: ``True`` if the object is of this type and has a subset of the facts
         """
 
         if not isinstance(other, WorldSnapshot):
@@ -121,7 +121,7 @@ class WorldSnapshot:
 
     def by[FT](self, cls_t: _ClassInfo[FT]) -> Iterable[FT]:
         """
-        Cached access by fact type
+        Access by fact type
 
         :param cls_t: filter type
         :return: facts matching the filter
@@ -152,7 +152,7 @@ class WorldSnapshot:
         Finds the first entity with the supplied name
 
         :param entity_name: target name
-        :return: entity, or None if unused name
+        :return: entity, or ``None`` if unused name
         """
 
         try:
@@ -169,9 +169,9 @@ class WorldSnapshot:
         """
         Finds all relation(s) that match the supplied criteria
 
-        :param cls_t: relation type criterion (or None for unconstrained)
-        :param e1: first entity (or None for unconstrained)
-        :param e2: second entity (or None for unconstrained)
+        :param cls_t: relation type criterion (or ``None`` for unconstrained)
+        :param e1: first entity (or ``None`` for unconstrained)
+        :param e2: second entity (or ``None`` for unconstrained)
         :return: any matching relations
         """
 
@@ -204,7 +204,7 @@ class WorldGraph:
     Knowledge graph - publicly exposed,
     but should be handled in a read-only
     fashion and conversion data read/writes
-    left to the `WorldGraph` API
+    left to the :class:`WorldGraph` API
     """
 
     def __init__(self) -> None:

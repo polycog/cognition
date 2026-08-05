@@ -25,8 +25,8 @@ class StagedState[T: Enum](EnumDispatch[T]):
 
     To use...
 
-    * declare @dataclass subclass with
-      stage field type and initial value
+    * declare :func:`dataclasses.dataclass` subclass with
+      ``stage`` field type and initial value
     * add additional fields as necessary
     * implement enum-named methods for non-
       terminal stages; each of which must

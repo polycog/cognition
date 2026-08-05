@@ -96,7 +96,7 @@ type TerminationCheck[S] = BiPredicate[S, IOContainer]
 """Detects decision process termination based upon current state"""
 
 type Action[S] = BiFunction[S, IOContainer, S | None]
-"""Changes state via mutation (return None) or replacement (return ``S``)"""
+"""Changes state via mutation (return ``None``) or replacement (return ``S``)"""
 
 type ActionFactory[S] = BiFunction[S, IOContainer, Action[S] | Iterable[Action[S]]]
 """Identifies viable actions in the current state"""
@@ -121,6 +121,9 @@ class ActionRank[S]:
         with a deterministic ordering in
         ties facilitated by action string
         representations
+
+        :param other: ``self`` < ``other``
+        :return: ``True`` if comparison holds
         """
 
         if not isinstance(other, ActionRank):
@@ -225,7 +228,7 @@ class BaseDecisionProcess[S]:
 
     def __init__(self, state_initializer: Supplier[S]) -> None:
         """
-        :param state_initializer: produces state initially (and on ``reinit``)
+        :param state_initializer: produces state initially (and on :meth:`reinit`)
         """
 
         self._state_init = state_initializer
@@ -371,7 +374,7 @@ class BaseDecisionProcess[S]:
 
     def elaborator(self, e: Elaborator[S]) -> Elaborator[S]:
         """
-        Decorator version of :meth:`BaseDecisionProcess.add_elaborator`
+        Decorator version of :meth:`add_elaborator`
 
         :param e: elaborator to add
         :return: added elaborator
@@ -409,7 +412,7 @@ class BaseDecisionProcess[S]:
 
     def termination_check(self, p: TerminationCheck[S]) -> TerminationCheck[S]:
         """
-        Decorator version of :meth:`BaseDecisionProcess.add_termination_check`
+        Decorator version of :meth:`add_termination_check`
 
         :param p: predicate to add
         :return: added predicate
@@ -447,7 +450,7 @@ class BaseDecisionProcess[S]:
 
     def action_factory(self, f: ActionFactory[S]) -> ActionFactory[S]:
         """
-        Decorator version of :meth:`BaseDecisionProcess.add_action_factory`
+        Decorator version of :meth:`add_action_factory`
 
         :param f: factory to add
         :return: added factory
@@ -501,7 +504,7 @@ class BaseDecisionProcess[S]:
 
     def action_evaluator(self, ae: ActionEvaluator[S]) -> ActionEvaluator[S]:
         """
-        Decorator version of :meth:`BaseDecisionProcessadd_action_evaluator`
+        Decorator version of :meth:`add_action_evaluator`
 
         :param ae: evaluator to add
         :return: added evaluator
@@ -669,7 +672,7 @@ class BaseDecisionProcess[S]:
     @property
     def log(self) -> str:
         """
-        :return: any data provided to the :attr:`BaseDecisionProcess.OUTPUT_KEY_LOG` channel
+        :return: any data provided to the :attr:`OUTPUT_KEY_LOG` channel
         """
 
         logger: StringIO = cast(
@@ -688,7 +691,7 @@ class DecisionProcessIterator[S, DP: BaseDecisionProcess[S]](  # type: ignore[na
 
     def __init__(self, dp: DP, by_phase: bool = True) -> None:
         """
-        :param t: associated decision process
+        :param dp: associated decision process
         :param by_phase: ``True`` if iteration by phase; by cycle otherwise
         """
 

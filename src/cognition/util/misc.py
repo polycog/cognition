@@ -112,7 +112,7 @@ class ImplementsLessThan(Protocol):
 
 class StringifiedFunction[**P, R]:
     """
-    A callable object that wraps a function and provides a custom ``str()`` value.
+    A callable object that wraps a function and provides a custom :func:`str` value.
     """
 
     def __init__(self, func: Callable[P, R], str_value: str):
@@ -143,9 +143,9 @@ class StringifiedFunction[**P, R]:
 # pylint: disable=invalid-name
 def stringify[**P, R](str_value: str) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """
-    Decorator for providing a callable with an ``str()`` value
+    Decorator for providing a callable with an :func:`str` value
 
-    :param str_value: value to return upon ``str()``
+    :param str_value: value to return upon :func:`str`
     :return: resulting callable
     """
 
