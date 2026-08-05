@@ -120,7 +120,8 @@ def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> Iterable[t
 
     :param start_schema: source type
     :param deep: if ``True``, recursively includes base model fields
-    :return: :class:`enum.Enum` and :class:`pydantic.BaseModel` types needed to understand the schema (including itself)
+    :return: :class:`enum.Enum` and :class:`pydantic.BaseModel` types
+             needed to understand the schema (including itself)
     """
 
     def _supported_type(t: type) -> bool:

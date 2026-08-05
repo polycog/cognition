@@ -282,7 +282,8 @@ def add_generator[S, X](
     :param dp: decision process to be added to
     :param gen_type: source of operators
     :param extra: generator-specific data
-    :param self_param: if not ``None``, action param -> the produced ops (for purposes of comparison)
+    :param self_param: if not ``None``,
+                       action param -> the produced ops (for purposes of comparison)
     :return: the produced action factory
     """
 
@@ -457,7 +458,8 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         enable_terminal_check: bool = False,
     ) -> None:
         """
-        :param state_initializer: produces state initially (and on :meth:`.core.BaseDecisionProcess.reinit`)
+        :param state_initializer: produces state initially
+                                  (and on :meth:`.core.BaseDecisionProcess.reinit`)
         :param enable_terminal_check: if ``True``, a selected named action
                                       (:func:`create_named_action`) with a
                                       :const:`TERMINAL_ACTION_ATTR` parameter

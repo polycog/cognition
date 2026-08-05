@@ -35,7 +35,7 @@ class AutoDocEnum(Enum):
     and the value is automatically set (as integers: 1, 2, ...)
 
     Example usage::
-    
+
         MEMBER = "docstring"
     """
 
