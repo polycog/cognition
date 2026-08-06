@@ -2,6 +2,7 @@
 Support for a decision process generated via an iterable value.
 """
 
+import logging
 from collections.abc import (
     Iterable,
     Iterator,
@@ -13,6 +14,10 @@ from ..util.functypes import BiFunction
 from ..util.misc import stringify
 from .core import Action, IOContainer
 from .dp import DecisionProcess
+
+# ===
+
+_logger = logging.getLogger(__name__)
 
 # ===
 
@@ -36,8 +41,8 @@ class ChainState[CV, CA]:
 
     Parameters represent...
 
-    - CV: type of iterated (v)alues
-    - CA: type of an optional (a)ccumulator
+    - ``CV``: type of iterated (v)alues
+    - ``CA``: type of an optional (a)ccumulator
     """
 
     def __init__(self, chain: Iterable[CV], init_acc: CA | None = None):
@@ -106,6 +111,16 @@ def create_chain_dp[CV, CA](
     :return: produced decision process
     """
 
+    _logger.info(
+        "Generating a (chain) decision process: %s",
+        chain,
+    )
+    _logger.debug(
+        "handler=%s, acc=%s",
+        link_handler,
+        init_accumulator,
+    )
+
     dp: DecisionProcess[ChainState[CV, CA]] = DecisionProcess(
         lambda: ChainState[CV, CA](chain, init_accumulator)
     )
@@ -130,6 +145,14 @@ def create_chain_dp[CV, CA](
             """
 
             link: Link[CV, CA] | None = cs.current_link
+
+            _logger.debug(
+                "%s: link=%s, i=%s, o=%s",
+                link_action,
+                link,
+                {k: str(v) for k, v in io.input.items()},
+                {k: str(v) for k, v in io.output.items()},
+            )
 
             if link is not None:
                 cs.next(link_handler(link, io))

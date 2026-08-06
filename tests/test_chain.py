@@ -10,6 +10,7 @@ from cognition import (
     ChainState,
     EnumDispatch,
     create_chain_dp,
+    stringify,
 )
 
 # ===
@@ -40,7 +41,9 @@ class TestChain(unittest.TestCase):
                 ChainState[int, int],
                 create_chain_dp(
                     range(n),
-                    lambda link, _io: cast(int, link.accumulator) * (link.value + 1),
+                    stringify("factorial_step")(
+                        lambda link, _io: cast(int, link.accumulator) * (link.value + 1)
+                    ),
                     1,
                 )(),
             )
@@ -65,8 +68,10 @@ class TestChain(unittest.TestCase):
         self.assertEqual(
             create_chain_dp(
                 NerdFighter,
-                lambda link, io: print(
-                    link.value.value[0].lower(), end="", file=io.o.log
+                stringify("first_lower_to_log")(
+                    lambda link, io: print(
+                        link.value.value[0].lower(), end="", file=io.o.log
+                    ),
                 ),
             )
             .run_until_done()
@@ -113,5 +118,7 @@ class TestChain(unittest.TestCase):
                 self._result.append("learn")
 
         pfa = Project()
-        create_chain_dp(NerdFighter, lambda link, _io: pfa(link.value))()
+        create_chain_dp(
+            NerdFighter, stringify("pfa_dispatch")(lambda link, _io: pfa(link.value))
+        )()
         self.assertEqual(pfa.result, "care + create + cultivate + empower + learn")

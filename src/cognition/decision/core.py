@@ -248,11 +248,22 @@ class BaseDecisionProcess[S]:
                     property(lambda _: dp.num_cycles),
                 )
 
+            def __str__(self) -> str:
+                return (
+                    f"{_InnerClock.__name__}"
+                    f"({BaseDecisionProcess.INPUT_ATTR_TIME}="
+                    f"{getattr(self, BaseDecisionProcess.INPUT_ATTR_TIME)})"
+                )
+
+        class _InnerLog(StringIO):
+            def __str__(self) -> str:
+                return self.getvalue()
+
         self._inputs = {
             BaseDecisionProcess.INPUT_KEY_TIME: _InnerClock(self),
             BaseDecisionProcess.INPUT_KEY_ELABORATION: AttrReferral(self._elaboration),
         }
-        self._outputs = {BaseDecisionProcess.OUTPUT_KEY_LOG: StringIO()}
+        self._outputs = {BaseDecisionProcess.OUTPUT_KEY_LOG: _InnerLog()}
         self._io = IOContainer(AttrReferral(self._inputs), AttrReferral(self._outputs))
 
         # establish phase handling

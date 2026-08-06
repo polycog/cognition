@@ -349,7 +349,12 @@ class SearchPlanner[PS: Hashable, PA]:
         )
 
         _logger.info(
-            "%s initialized: init_state=%s, frontier=%s, is_goal=%s",
+            "%s initialized",
+            SearchPlanner.__name__,
+        )
+
+        _logger.debug(
+            "%s: init_state=%s, frontier=%s, is_goal=%s",
             SearchPlanner.__name__,
             initial_state,
             frontier_factory(),
@@ -386,15 +391,20 @@ class SearchPlanner[PS: Hashable, PA]:
             self._dp.run_cycles(max_steps)
 
         _logger.info(
-            "%s run concluded: plan_found=%s, states_explored=%s",
+            "%s run concluded",
+            SearchPlanner.__name__,
+        )
+
+        _logger.debug(
+            "%s: plan_found=%s, states_explored=%s",
             SearchPlanner.__name__,
             self.plan_found,
             self.states_explored,
         )
 
         if self.plan_found:
-            _logger.info("plan_cost=%s", self.plan_cost)
-            _logger.info(self.plan)
+            _logger.debug("%s: plan_cost=%s", SearchPlanner.__name__, self.plan_cost)
+            _logger.debug(self.plan)
 
         return self
 

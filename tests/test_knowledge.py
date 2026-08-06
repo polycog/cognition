@@ -219,6 +219,9 @@ class TestKnowledge(unittest.TestCase):
         with self.assertRaises(KeyError):
             wg.add(self.r1)
 
+        with self.assertRaises(KeyError):
+            wg.get_entity(self.f1.name)
+
         self.assertEqual(len(list(wg.entities)), 0)
         self.assertEqual(len(list(wg.relations)), 0)
 
@@ -231,6 +234,9 @@ class TestKnowledge(unittest.TestCase):
         self.assertEqual(len(list(wg.relations)), 0)
         self.assertEqual(wg.snapshot, WorldSnapshot.click(self.f1, self.f2))
         self.assertEqual(wg.snapshot, WorldGraph.from_snapshot(wg.snapshot).snapshot)
+
+        with self.assertRaises(KeyError):
+            wg.get_relation(self.r1.entity1.name, self.r1.entity2.name, self.r1.type)
 
         wg.add(self.r1).add(self.r2)
 

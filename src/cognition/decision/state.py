@@ -2,6 +2,7 @@
 Re-usable state components
 """
 
+import logging
 from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Any, Self, final, override
@@ -9,6 +10,10 @@ from typing import Any, Self, final, override
 from ..util.functypes import Supplier
 from ..util.misc import AttrReferral, stringify
 from .core import Elaborator, IOContainer
+
+# ===
+
+_logger = logging.getLogger(__name__)
 
 # ===
 
@@ -28,6 +33,10 @@ class SelfReinitState:
 
     @final
     def __call__(self) -> Self:
+        _logger.info(
+            "%s %s: reinit called", SelfReinitState.__name__, type(self).__name__
+        )
+
         self._reinit()
         return self
 
@@ -67,8 +76,26 @@ class SelfElaborationState(SelfReinitState):
 
         @stringify(f"{SelfElaborationState.ELABORATOR_NAME}({type(self).__name__})")
         def _elaborator(_: Self, io: IOContainer) -> dict[str, Any]:
+
+            _logger.info(
+                "%s %s: (self-)elaborate",
+                SelfElaborationState.__name__,
+                type(self).__name__,
+            )
+
             self.__elab_values.clear()
-            self.__elab_values.update(self._elaborate(io))
+
+            new_elab = self._elaborate(io)
+            _logger.debug(
+                "%s %s: (i=%s, o=%s) -> %s",
+                SelfElaborationState.__name__,
+                self,
+                {k: str(v) for k, v in io.input.items()},
+                {k: str(v) for k, v in io.output.items()},
+                new_elab,
+            )
+
+            self.__elab_values.update(new_elab)
             return {}
 
         return _elaborator
@@ -116,12 +143,27 @@ class PTEState[P, T](SelfElaborationState):
         :param t_init: function to (re)initialize transient state
         """
 
+        _logger.info(
+            "%s %s: initialize",
+            PTEState.__name__,
+            type(self).__name__,
+        )
+
         self._p = p_init_value
         self._t_init = t_init
 
         self._e = AttrReferral(self._elab_values)
 
         self._reinit()
+
+        _logger.debug(
+            "%s %s: (p_init=%s, t_init=%s) -> %s",
+            PTEState.__name__,
+            type(self).__name__,
+            p_init_value,
+            t_init,
+            self,
+        )
 
     @override
     def _reinit(self) -> None:
@@ -164,9 +206,13 @@ class PEState[P](PTEState[P, None]):
     whose transient state is ``None``
     """
 
+    @stringify("return_none")
+    @staticmethod
+    def __t_init_none() -> None: ...
+
     def __init__(self, p_init_value: P) -> None:
         """
         :param p_init_value: initial value of persistent state
         """
 
-        super().__init__(p_init_value, lambda: None)
+        super().__init__(p_init_value, PEState.__t_init_none)

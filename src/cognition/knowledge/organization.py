@@ -4,6 +4,7 @@ Knowledge organization
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from functools import singledispatchmethod
@@ -14,6 +15,10 @@ import networkx as nx
 
 from ..util.functypes import Predicate
 from .representation import BinaryRelation, Entity, Fact
+
+# ===
+
+_logger = logging.getLogger(__name__)
 
 # ===
 
@@ -210,6 +215,8 @@ class WorldGraph:
     def __init__(self) -> None:
         self.g = nx.MultiDiGraph()
 
+        _logger.info("Initialized an empty %s", type(self).__name__)
+
     @singledispatchmethod
     def add(self, data: Fact) -> Self:
         """
@@ -255,6 +262,9 @@ class WorldGraph:
         :return: reference to this graph
         """
 
+        _logger.info("Adding entity to %s", type(self).__name__)
+        _logger.debug(e)
+
         # supports readable dot
         label = str(e)
         cf = list(e.custom_fields)
@@ -282,9 +292,15 @@ class WorldGraph:
         :raises KeyError: supplied node not in the graph
         """
 
+        _logger.info("Adding relation to %s", type(self).__name__)
+        _logger.debug(r)
+
         for e in (r.entity1, r.entity2):
             if not self.g.has_node(e.name):
-                raise KeyError(f"Unknown node id: {e.name}")
+                err = KeyError(f"Unknown node id: {e.name}")
+
+                _logger.error(err)
+                raise err
 
         label = r.type
         cf = list(r.custom_fields)
@@ -310,9 +326,17 @@ class WorldGraph:
 
         :param entity_name: node to find
         :return: node data
+        :raises KeyError: supplied entity name not in the graph
         """
 
-        node = self.g.nodes[entity_name]
+        _logger.debug("Attempting to find entity named '%s'", entity_name)
+
+        try:
+            node = self.g.nodes[entity_name]
+        except KeyError:
+            _logger.error("Unknown name: %s", entity_name)
+            raise
+
         cls = node[WorldGraph._TYPE_ATTR]
 
         return cls(name=entity_name, **node[WorldGraph._FIELDS_ATTR])  # type: ignore
@@ -359,13 +383,25 @@ class WorldGraph:
         :param entity2_name: ending node name
         :param edge_type: edge schema type
         :return: edge data
+        :raises KeyError: supplied entity name not in the graph
         """
 
-        return self.produce_relation(
-            self.get_entity(entity1_name),
-            self.get_entity(entity2_name),
-            self.g[entity1_name][entity2_name][edge_type],
+        _logger.debug(
+            "Attempting to find relation: %s -[%s]-> %s",
+            entity1_name,
+            edge_type,
+            entity2_name,
         )
+
+        try:
+            return self.produce_relation(
+                self.get_entity(entity1_name),
+                self.get_entity(entity2_name),
+                self.g[entity1_name][entity2_name][edge_type],
+            )
+        except KeyError as e:
+            _logger.error("Unknown entity/edge related to key: %s", e)
+            raise
 
     @property
     def relations(self) -> Iterable[BinaryRelation]:
@@ -418,7 +454,20 @@ class WorldGraph:
         :return: reference to this graph
         """
 
-        self.g.remove_node(entity_name)
+        _logger.info(
+            "Attempting to remove node from %s",
+            type(self).__name__,
+        )
+        _logger.debug(
+            "Entity name: %s",
+            entity_name,
+        )
+
+        try:
+            self.g.remove_node(entity_name)
+        except nx.NetworkXError as e:
+            _logger.error(e)
+            raise
 
         return self
 
@@ -432,6 +481,21 @@ class WorldGraph:
         :return: reference to this graph
         """
 
-        self.g.remove_edge(entity1_name, entity2_name, edge_type)
+        _logger.info(
+            "Attempting to remove edge from %s",
+            type(self).__name__,
+        )
+        _logger.debug(
+            "Edge: %s -[%s]-> %s",
+            entity1_name,
+            edge_type,
+            entity2_name,
+        )
+
+        try:
+            self.g.remove_edge(entity1_name, entity2_name, edge_type)
+        except nx.NetworkXError as e:
+            _logger.error(e)
+            raise
 
         return self

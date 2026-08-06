@@ -9,6 +9,7 @@ from typing import Any, Protocol, cast, final
 
 from ..decision.core import BaseDecisionProcess, IOContainer
 from ..util.functypes import BiFunction, Function, Supplier
+from ..util.misc import stringify
 
 # ===
 
@@ -176,7 +177,12 @@ def install[AP, AF](
     :param dp: destination decision process
     """
 
-    dp.set_output_channel(actuator.name, actuator.actuate)
+    dp.set_output_channel(
+        actuator.name,
+        stringify(f"Actuator[name={actuator.name}, cls={type(actuator).__name__}]")(
+            actuator.actuate
+        ),
+    )
 
 
 def invoke_actuator[AP, AF](

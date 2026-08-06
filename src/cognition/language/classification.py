@@ -161,19 +161,23 @@ class EnumClassifier[T: Enum]:
         """
 
         _logger.info(
-            (
-                "Attempting to classify utterance (%s) "
-                "-> %s using %s (trials=%s; timeout=%ss)"
-            ),
+            "Attempting to classify utterance (%s) -> %s using %s",
             utterance,
             self._log_info,
             llm.model_name,
+        )
+
+        _logger.debug(
+            "Trials=%s; timeout=%ss",
             num_trials,
             timeout_secs,
         )
 
         if num_trials < 1:
-            raise ValueError("Must perform at least one trial")
+            e = ValueError("Must perform at least one trial")
+
+            _logger.error(e)
+            raise e
 
         convo = LanguageConvo(
             model=llm,

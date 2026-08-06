@@ -18,6 +18,7 @@ from cognition import (
     PTEState,
     SelfElaborationState,
     SelfReinitState,
+    stringify,
 )
 
 # ===
@@ -80,7 +81,9 @@ class PTECounter(PTEState[MutableWrapper[int], MutableWrapper[int]]):
     """eg PTE state"""
 
     def __init__(self) -> None:
-        super().__init__(MutableWrapper(0), lambda: MutableWrapper(0))
+        super().__init__(
+            MutableWrapper(0), stringify("reset_0")(lambda: MutableWrapper(0))
+        )
 
     def _elaborate(self, io: IOContainer) -> Mapping[str, Any]:
         return {

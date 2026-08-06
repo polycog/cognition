@@ -3,6 +3,7 @@ Support for workflow housed
 within a single enumerated field.
 """
 
+import logging
 from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
@@ -12,6 +13,10 @@ from ..decision.core import IOContainer
 from ..decision.dp import DecisionProcess, Operator
 from ..util.enumeration import EnumDispatch
 from ..util.functypes import BiFunction, Function
+
+# ===
+
+_logger = logging.getLogger(__name__)
 
 # ===
 
@@ -50,7 +55,25 @@ class StagedState[T: Enum](EnumDispatch[T]):
         :param kwargs: keyword arguments to pass
         """
 
+        _logger.debug(
+            "%s %s: transition (stage=%s, args=%s, kwargs=%s)",
+            StagedState.__name__,
+            self,
+            self.stage,
+            args,
+            kwargs,
+        )
+
         next_stage = self(self.stage, *args, **kwargs)
+
+        _logger.info(
+            "%s %s: stage=%s -> stage=%s",
+            StagedState.__name__,
+            self,
+            self.stage,
+            next_stage if next_stage is not None else f"{next_stage} (no change)",
+        )
+
         if next_stage is not None:
             self.stage = cast(T, next_stage)
 
@@ -85,9 +108,23 @@ def staged_operator[SE: Enum, SS: StagedState[SE]](  # type: ignore[name-defined
                 return state.stage == stage
 
             def perform(self, state: SS, io: IOContainer) -> None:
+
+                _logger.debug(
+                    "%s: state=%s, supporter=%s, i=%s, o=%s",
+                    _StagedOperator.__name__,
+                    state.stage,
+                    ss,
+                    {k: str(v) for k, v in io.input.items()},
+                    {k: str(v) for k, v in io.output.items()},
+                )
+
                 kwargs = ss(state, io)
                 if kwargs is None:
                     kwargs = {}
+
+                _logger.debug(
+                    "%s: kwargs from supporter=%s", _StagedOperator.__name__, kwargs
+                )
 
                 state.transition(**kwargs)
 

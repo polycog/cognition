@@ -76,8 +76,16 @@ class EnumDispatch[T: Enum]:
         method_exists = hasattr(self, method_name)
 
         _logger.info(
+            "%s (%s) called: enum=%s, value=%s",
+            EnumDispatch.__name__,
+            type(self).__name__,
+            type(v).__name__,
+            v,
+        )
+
+        _logger.debug(
             (
-                "%s (%s) called: "
+                "%s (%s): "
                 "enum=%s, value=%s, method_name=%s (exists=%s), args=%s, kwargs=%s"
             ),
             EnumDispatch.__name__,
@@ -93,7 +101,7 @@ class EnumDispatch[T: Enum]:
         if method_exists:
             result = getattr(self, method_name)(*args, **kwargs)
 
-            _logger.info(
+            _logger.debug(
                 "%s (-> %s.%s) returned: %s",
                 EnumDispatch.__name__,
                 type(v).__name__,

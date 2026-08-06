@@ -14,6 +14,7 @@ from cognition import (
     KWArgs,
     StagedState,
     staged_operator,
+    stringify,
 )
 
 # ===
@@ -61,6 +62,7 @@ class TestStage(unittest.TestCase):
         self.dp = DecisionProcess(AuthState)
 
         @staged_operator(self.dp, AuthStage.INIT)
+        @stringify("perform_init")
         def _perform_init(_s: AuthState, io: IOContainer) -> None:
             print("Howdy!!")
             print(
@@ -69,6 +71,7 @@ class TestStage(unittest.TestCase):
             print()
 
         @staged_operator(self.dp, AuthStage.ATTEMPT)
+        @stringify("perform_attempt")
         def _perform_attempt(_s: AuthState, io: IOContainer) -> KWArgs:
             return {
                 "correct_pw": input("Enter password: ") == io.i.args.secret,
@@ -76,10 +79,12 @@ class TestStage(unittest.TestCase):
             }
 
         @staged_operator(self.dp, AuthStage.IN, terminal=True)
+        @stringify("perform_in")
         def _perform_in(_s: AuthState, _io: IOContainer) -> None:
             print("Welcome!")
 
         @staged_operator(self.dp, AuthStage.ALARM, terminal=True)
+        @stringify("perform_alarm")
         def _perform_alarm(s: AuthState, _io: IOContainer) -> None:
             print(f"Invalid after {s.attempts} attempt(s)!")
 

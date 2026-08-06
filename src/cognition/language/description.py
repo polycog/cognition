@@ -436,10 +436,14 @@ class FactDescriber[T: BaseModel]:
         others_t = tuple(others)
 
         _logger.info(
-            "Describing instance (%s; type=%s) using %s (timeout=%ss) and context of others=%s",
+            "Describing instance (%s) using %s",
             instance,
-            type(instance).__name__,
             llm.model_name,
+        )
+
+        _logger.debug(
+            "type=%s, timeout=%ss; others=%s",
+            type(instance).__name__,
             timeout_secs,
             others_t,
         )
@@ -454,7 +458,7 @@ class FactDescriber[T: BaseModel]:
             .output
         )
 
-        _logger.info(result)
+        _logger.info("Description: '%s'", result)
 
         return result
 
