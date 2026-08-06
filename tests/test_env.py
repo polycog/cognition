@@ -10,6 +10,7 @@ from cognition import (
     Sensor,
     create_actuator,
     create_sensor,
+    stringify,
 )
 
 # ===
@@ -92,7 +93,7 @@ class TestEnv(unittest.TestCase):
         to_add1 = "howdy"
         to_add2 = "doody"
 
-        dp = BaseDecisionProcess(lambda: False)
+        dp = BaseDecisionProcess(stringify("start_false")(lambda: False))
 
         # ===
 

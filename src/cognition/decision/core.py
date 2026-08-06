@@ -4,6 +4,7 @@ Base decision process
 
 from __future__ import annotations
 
+import logging
 import random
 from collections.abc import (
     Iterable,
@@ -31,6 +32,10 @@ from ..util.misc import (
     ImplementsLessThan,
     stringify,
 )
+
+# ===
+
+_logger = logging.getLogger(__name__)
 
 # ===
 
@@ -231,6 +236,9 @@ class BaseDecisionProcess[S]:
         :param state_initializer: produces state initially (and on :meth:`reinit`)
         """
 
+        _logger.info("%s: initialization started", type(self).__name__)
+        _logger.debug("state_init=%s", state_initializer)
+
         self._state_init = state_initializer
         self._elaborators = []
         self._termination_checks = []
@@ -281,12 +289,18 @@ class BaseDecisionProcess[S]:
 
         self.reinit()
 
+        _logger.debug("state=%s", self.state)
+        _logger.info("%s: initialization complete", type(self).__name__)
+
     def reinit(self) -> Self:
         """
         Restarts the decision process
 
         :return: this decision process (for chaining)
         """
+
+        _logger.info("%s: reinit started", type(self).__name__)
+
         self._state = self._state_init()
 
         self._terminated = False
@@ -296,6 +310,8 @@ class BaseDecisionProcess[S]:
         self._chosen = None
         self._step_count = 0
         self._elaboration.clear()
+
+        _logger.info("%s: reinit complete", type(self).__name__)
 
         return self
 
@@ -381,6 +397,9 @@ class BaseDecisionProcess[S]:
 
         self._elaborators.append(e)
 
+        _logger.info("%s: elaborator added", type(self).__name__)
+        _logger.debug(e)
+
         return self
 
     def elaborator(self, e: Elaborator[S]) -> Elaborator[S]:
@@ -400,10 +419,27 @@ class BaseDecisionProcess[S]:
                            reasoning over state
         """
 
+        _logger.info("%s: elaboration phase started", type(self).__name__)
+        _logger.debug(
+            "state=%s, i=%s, o=%s",
+            self._state,
+            {k: str(v) for k, v in self._io.input.items()},
+            {k: str(v) for k, v in self._io.output.items()},
+        )
+
         self._elaboration.clear()
 
+        _logger.debug("%s: prior elaboration values cleared", type(self).__name__)
+
         for e in self._elaborators:
-            self._elaboration |= e(self._state, self._io)
+            _logger.debug("%s: running elaborator (%s)", type(self).__name__, e)
+            result = e(self._state, self._io)
+            _logger.debug(result)
+
+            self._elaboration |= result
+
+        _logger.debug("%s: union=%s", type(self).__name__, self._elaboration)
+        _logger.info("%s: elaboration phase complete", type(self).__name__)
 
         return True
 
@@ -418,6 +454,9 @@ class BaseDecisionProcess[S]:
         """
 
         self._termination_checks.append(p)
+
+        _logger.info("%s: termination check added", type(self).__name__)
+        _logger.debug(p)
 
         return self
 
@@ -437,11 +476,20 @@ class BaseDecisionProcess[S]:
         TerminationCheck phase: decision process is complete if any termination check returns True
                                 (and if so shifts to Propose phase)
         """
+
+        _logger.info("%s: termination_check phase started", type(self).__name__)
+        _logger.debug("already terminated: %s", self._terminated)
+
         if not self._terminated:
             self._step_count += 1
+            _logger.debug("cycles: %s -> %s", self._step_count - 1, self._step_count)
+
             self._terminated = any(
                 p(self._state, self._io) for p in self._termination_checks
             )
+            _logger.debug("now terminated: %s", self._terminated)
+
+        _logger.info("%s: termination_check phase completed", type(self).__name__)
 
         return not self._terminated
 
@@ -456,6 +504,9 @@ class BaseDecisionProcess[S]:
         """
 
         self._action_factories.append(f)
+
+        _logger.info("%s: action factory added", type(self).__name__)
+        _logger.debug(f)
 
         return self
 
@@ -490,12 +541,18 @@ class BaseDecisionProcess[S]:
                        (and then shift to Rank phase)
         """
 
+        _logger.info("%s: proposal phase started", type(self).__name__)
+
         self._potential_actions = list(
             chain.from_iterable(
                 BaseDecisionProcess._make_iterable(f(self._state, self._io))
                 for f in self._action_factories
             )
         )
+
+        _logger.debug(tuple(str(pa) for pa in self._potential_actions))
+
+        _logger.info("%s: proposal phase completed", type(self).__name__)
 
         return True
 
@@ -510,6 +567,9 @@ class BaseDecisionProcess[S]:
         """
 
         self._action_evaluators.append(ae)
+
+        _logger.info("%s: action evaluator added", type(self).__name__)
+        _logger.debug(ae)
 
         return self
 
@@ -531,12 +591,19 @@ class BaseDecisionProcess[S]:
                     ranking (and then shift to Apply phase)
         """
 
+        _logger.info("%s: rank phase started", type(self).__name__)
+
         self._chosen = None
 
         if self._potential_actions:
             self._ranking = []
 
             if len(self._potential_actions) > 1:
+                _logger.debug(
+                    "%s: multiple actions, so querying evaluator(s)",
+                    type(self).__name__,
+                )
+
                 self._ranking = sorted(
                     chain.from_iterable(
                         ae(self._state, self._io, self._potential_actions)
@@ -544,19 +611,42 @@ class BaseDecisionProcess[S]:
                     )
                 )
 
+                _logger.debug(tuple(str(r) for r in self._ranking))
+
                 if len(self._ranking) == 0:
-                    raise DecisionProcessExecutionError(
+                    e = DecisionProcessExecutionError(
                         DecisionProcessErrorMessage.NO_RANK
                     )
+
+                    _logger.error(e)
+                    raise e
+
+                _logger.debug(
+                    "%s: at least one ranking produced, so randomly choosing from top",
+                    type(self).__name__,
+                )
 
                 top = list(
                     filter(lambda r: r.rank == self._ranking[0].rank, self._ranking)
                 )
                 self._chosen = random.sample(top, k=1)[0].a
+
+                _logger.debug(self._chosen)
             else:
                 self._chosen = self._potential_actions[0]
+
+                _logger.debug(
+                    "%s: only one potential action, and so selected",
+                    type(self).__name__,
+                )
+                _logger.debug(self._chosen)
         else:
-            raise DecisionProcessExecutionError(DecisionProcessErrorMessage.NO_PROPOSAL)
+            e = DecisionProcessExecutionError(DecisionProcessErrorMessage.NO_PROPOSAL)
+
+            _logger.error(e)
+            raise e
+
+        _logger.info("%s: rank phase completed", type(self).__name__)
 
         return True
 
@@ -572,14 +662,27 @@ class BaseDecisionProcess[S]:
                        action itself)
         """
 
+        _logger.info("%s: apply phase started", type(self).__name__)
+
         if self._chosen:
+            _logger.debug("%s: running chosen action", type(self).__name__)
+
             result: S | None = self._chosen(self._state, self._io)
+
+            _logger.debug(result)
+
             if result is not None:
+                _logger.debug(
+                    "%s: non-None result, so replacing state", type(self).__name__
+                )
                 self._state = result
-        else:
-            raise DecisionProcessExecutionError(
-                DecisionProcessErrorMessage.NO_CHOICE
-            )  # pragma: no cover
+        else:  # pragma: no cover
+            e = DecisionProcessExecutionError(DecisionProcessErrorMessage.NO_CHOICE)
+
+            _logger.error(e)
+            raise e
+
+        _logger.info("%s: apply phase completed", type(self).__name__)
 
         return True
 
@@ -665,6 +768,12 @@ class BaseDecisionProcess[S]:
 
         BaseDecisionProcess._set_io(self._inputs, input_key, data)
 
+        if data is None:
+            _logger.info("%s: input data (%s) removed", type(self).__name__, input_key)
+        else:
+            _logger.info("%s: input data (%s) set", type(self).__name__, input_key)
+            _logger.debug(data)
+
         return self
 
     def set_output_channel(self, output_key: str, data: Any) -> Self:
@@ -677,6 +786,14 @@ class BaseDecisionProcess[S]:
         """
 
         BaseDecisionProcess._set_io(self._outputs, output_key, data)
+
+        if data is None:
+            _logger.info(
+                "%s: output channel (%s) removed", type(self).__name__, output_key
+            )
+        else:
+            _logger.info("%s: output channel (%s) set", type(self).__name__, output_key)
+            _logger.debug(data)
 
         return self
 

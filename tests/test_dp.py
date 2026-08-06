@@ -200,7 +200,7 @@ class TestDP(unittest.TestCase):
                 return s_name
 
         s = MyState()
-        dp = DecisionProcess(lambda: s)
+        dp = DecisionProcess(stringify("just_s")(lambda: s))
 
         @dp.termination_check
         @stringify(t_name)
@@ -235,7 +235,7 @@ class TestDP(unittest.TestCase):
 
         state_start = 0
 
-        dp = DecisionProcess(lambda: state_start)
+        dp = DecisionProcess(stringify("const_start")(lambda: state_start))
 
         self.assertEqual(dp.state, state_start)
 
@@ -309,7 +309,9 @@ class TestDP(unittest.TestCase):
     def test_named_op_decorator(self) -> None:
         """Confirming named operator decorator"""
 
-        dp: DecisionProcess[bool] = DecisionProcess(lambda: False)
+        dp: DecisionProcess[bool] = DecisionProcess(
+            stringify("start_false")(lambda: False)
+        )
 
         op_name = "done"
         act_name = format_name_params(op_name, terminal=True)
@@ -353,10 +355,12 @@ class TestDP(unittest.TestCase):
         """Confirming terminal check"""
 
         dp1: DecisionProcess[str] = DecisionProcess(
-            lambda: "", enable_terminal_check=False
+            stringify("start_blank")(lambda: ""), enable_terminal_check=False
         )
 
-        dp2: DecisionProcess[str] = DecisionProcess(lambda: "")
+        dp2: DecisionProcess[str] = DecisionProcess(
+            stringify("start_blank")(lambda: "")
+        )
 
         do_regular = create_named_action(
             "do",
@@ -411,8 +415,14 @@ class TestDP(unittest.TestCase):
         bye_name: str = "bye"
         done_name: str = "done_yet?"
 
+        self.assertEqual(str(HiOp(hi_name)), f"HiOp({format_name_params(hi_name)})")
+        self.assertEqual(
+            str(HiOp(hi_name, foo="bar")),
+            f"HiOp({format_name_params(hi_name, foo="bar")})",
+        )
+
         dp: DecisionProcess[OpStage] = (
-            DecisionProcess(lambda: OpStage.SAY_HI)
+            DecisionProcess(stringify("start_hi")(lambda: OpStage.SAY_HI))
             .add_operator_c(HiOp(hi_name))
             .add_operator_c(ByeOp(bye_name))
         )
@@ -683,7 +693,9 @@ class TestDP(unittest.TestCase):
         """Checks sorting_evaluator"""
 
         init_state: int = 3
-        dp: DecisionProcess[int] = DecisionProcess(lambda: init_state)
+        dp: DecisionProcess[int] = DecisionProcess(
+            stringify("start_const")(lambda: init_state)
+        )
 
         final_val: int = 10
         goal_name: str = f"at{final_val}"
@@ -712,7 +724,7 @@ class TestDP(unittest.TestCase):
         # confirming tie-breaking
         op_param_tie: str = "foo"
 
-        dp2: DecisionProcess[int] = DecisionProcess(lambda: 42)
+        dp2: DecisionProcess[int] = DecisionProcess(stringify("start_42")(lambda: 42))
         _, a2, _ = dp2.add_operator(mult2, op_param_tie)
         _, a2b, _ = dp2.add_operator(mult2b, op_param_tie)
 
@@ -929,7 +941,7 @@ class TestDP(unittest.TestCase):
 
         # ===
 
-        dp = DecisionProcess(lambda: "")
+        dp = DecisionProcess(stringify("start_blank")(lambda: ""))
 
         # arg gets negative character code (so reverse alpha)
         dp.add_action_evaluator(

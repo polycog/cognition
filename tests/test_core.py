@@ -108,24 +108,32 @@ class TestCore(unittest.TestCase):
     def test_func_vs_imp(self) -> None:
         """Confirms flexible action execution"""
 
-        dp_f: BaseDecisionProcess[list[str]] = BaseDecisionProcess(lambda: ["hi"])
+        @stringify("list_with_hi")
+        def _list_with_hi() -> list[str]:
+            return ["hi"]
+
+        dp_f: BaseDecisionProcess[list[str]] = BaseDecisionProcess(_list_with_hi)
 
         self.assertEqual(dp_f.state, ["hi"])
 
-        dp_f.add_action_factory(lambda _s, _io: [lambda s, _: s[1:]]).run_cycles()
+        dp_f.add_action_factory(
+            stringify("always_pop")(
+                lambda _s, _io: [stringify("pop")(lambda s, _: s[1:])]
+            )
+        ).run_cycles()
 
         self.assertEqual(dp_f.state, [])
 
         # ===
 
-        dp_i: BaseDecisionProcess[list[str]] = BaseDecisionProcess(lambda: ["hi"])
+        dp_i: BaseDecisionProcess[list[str]] = BaseDecisionProcess(_list_with_hi)
 
         self.assertEqual(dp_i.state, ["hi"])
 
         def a(s: list[str], _io: IOContainer) -> None:
             del s[0]
 
-        dp_i.add_action_factory(lambda _s, _io: a).run_cycles()
+        dp_i.add_action_factory(stringify("pop")(lambda _s, _io: a)).run_cycles()
 
         self.assertEqual(dp_i.state, [])
 
@@ -133,7 +141,9 @@ class TestCore(unittest.TestCase):
         """Confirms elaborator decoration"""
 
         word = "test"
-        dp: BaseDecisionProcess[str] = BaseDecisionProcess(lambda: word)
+        dp: BaseDecisionProcess[str] = BaseDecisionProcess(
+            stringify("start_word")(lambda: word)
+        )
 
         self.assertEqual(
             str(dp),
@@ -293,7 +303,9 @@ class TestCore(unittest.TestCase):
 
         starting_point: int = 100
 
-        dp: BaseDecisionProcess[int] = BaseDecisionProcess(lambda: starting_point)
+        dp: BaseDecisionProcess[int] = BaseDecisionProcess(
+            stringify("starting_num")(lambda: starting_point)
+        )
 
         # no actions yet!
         with self.assertRaises(DecisionProcessExecutionError) as cm:
@@ -310,7 +322,9 @@ class TestCore(unittest.TestCase):
 
         # ===
 
-        dp.add_action_factory(lambda _s, _io: [a_inc, a_dec])
+        dp.add_action_factory(
+            stringify("manual_factory")(lambda _s, _io: [a_inc, a_dec])
+        )
 
         # no evaluation of multiple possibilities
         with self.assertRaises(DecisionProcessExecutionError) as cm:
@@ -323,11 +337,12 @@ class TestCore(unittest.TestCase):
 
         # ===
 
-        dp.add_action_evaluator(lambda _s, _io, _actions: [])
+        dp.add_action_evaluator(stringify("no_ranks")(lambda _s, _io, _actions: []))
 
         # ===
 
         @dp.action_evaluator
+        @stringify("dec_over_inc")
         def dec_over_inc(
             _s: int, _io: IOContainer, actions: Iterable[Action[int]]
         ) -> Iterable[ActionRank[int]]:
@@ -346,7 +361,9 @@ class TestCore(unittest.TestCase):
 
         # ===
 
-        dp.add_termination_check(lambda s, _io: s == starting_point - 2)
+        dp.add_termination_check(
+            stringify("starting_minus_2")(lambda s, _io: s == starting_point - 2)
+        )
 
         for _ in dp.cycles():
             pass
@@ -362,7 +379,9 @@ class TestCore(unittest.TestCase):
         lst_name: str = "lst"
         lst = ListInputOutput()
 
-        dp_io: BaseDecisionProcess[int] = BaseDecisionProcess(lambda: starting_point)
+        dp_io: BaseDecisionProcess[int] = BaseDecisionProcess(
+            stringify("starting_num")(lambda: starting_point)
+        )
 
         self.assertEqual(
             str(dp_io),
@@ -519,7 +538,7 @@ class TestCore(unittest.TestCase):
         # ===
 
         dp_count_until: BaseDecisionProcess[int] = (
-            BaseDecisionProcess(lambda: starting_point)
+            BaseDecisionProcess(stringify("starting_num")(lambda: starting_point))
             .add_termination_check(_make_term(e_perfect, e_prime))
             .add_elaborator(
                 create_elaborator(

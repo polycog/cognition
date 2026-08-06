@@ -4,6 +4,7 @@ Decision process (with batteries included)
 
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from collections.abc import (
     Generator,
@@ -44,6 +45,10 @@ if TYPE_CHECKING:
 
 # ===
 
+_logger = logging.getLogger(__name__)
+
+# ===
+
 OPERATOR_SELF_PARAM: str = "_op"
 """Default :class:`NamedObject` parameter key to access source operator"""
 
@@ -81,11 +86,24 @@ def _add_args[S](
     :return: supplied dp
     """
 
+    _logger.info(
+        "%s: started providing arguments (%s)",
+        type(dp).__name__,
+        namespace,
+    )
+
+    _logger.debug(info)
+
     try:
         dp.set_input_data(namespace, AttrReferral(info))
         yield dp
     finally:
         dp.set_input_data(namespace, None)
+
+        _logger.info(
+            "%s: stopped providing arguments",
+            type(dp).__name__,
+        )
 
 
 @contextmanager
@@ -192,6 +210,11 @@ class _BaseOperator[S](ABC, NamedObject):
 
         self._name = name
         self._params = MappingProxyType(kwargs.copy())
+
+    def __str__(self) -> str:
+        return (
+            f"{type(self).__name__}({format_name_params(self._name, **self._params)})"
+        )
 
     @property
     def name(self) -> str:
@@ -301,6 +324,13 @@ def add_generator[S, X](
             for op in op_generator(s, io, extra)
         )
 
+    _logger.info(
+        "%s: added operator generator (%s) to decision process",
+        type(dp).__name__,
+        gen_type.__name__,
+    )
+    _logger.debug("extra=%s, self_param=%s", extra, self_param)
+
     return action_factory
 
 
@@ -332,6 +362,13 @@ def add_operator[S](
             return [op_action]
 
         return []
+
+    _logger.info(
+        "%s: added operator (%s) to decision process",
+        type(dp).__name__,
+        op,
+    )
+    _logger.debug("self_param=%s", self_param)
 
     return action_factory, op_action
 
@@ -468,11 +505,35 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
 
         super().__init__(state_initializer)
 
+        _logger.info(
+            "%s: extra initialization started",
+            type(self).__name__,
+        )
+
         if isinstance(self._state, Elaborable):
             self.add_elaborator(self._state.elaborator)
+        else:
+            _logger.debug(
+                "%s: state is not elaborable",
+                type(self).__name__,
+            )
 
         if enable_terminal_check:
             self._phase_handlers[Phase.TERMINATIONCHECK] = self._terminal_check
+            _logger.debug(
+                "%s: adding terminal check",
+                type(self).__name__,
+            )
+        else:
+            _logger.debug(
+                "%s: terminal check not added",
+                type(self).__name__,
+            )
+
+        _logger.info(
+            "%s: extra initialization completed",
+            type(self).__name__,
+        )
 
     @contextmanager
     def args_added(
@@ -609,8 +670,22 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         Custom termination check, adding possibility of terminal actions
         """
 
+        _logger.info(
+            "%s: pre-termination phase terminal-check started", type(self).__name__
+        )
+        _logger.debug(
+            "already_terminated=%s, chosen=%s",
+            self._terminated,
+            self._chosen,
+        )
+
         if (not self._terminated) and isinstance(self._chosen, NamedObject):
             self._terminated = TERMINAL_ACTION_ATTR in self._chosen.params
+
+        _logger.debug("result: %s", self._terminated)
+        _logger.info(
+            "%s: pre-termination phase terminal-check ended", type(self).__name__
+        )
 
         return super()._termination_check()
 
@@ -632,6 +707,15 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
                  without any exceptions; ``None`` otherwise
         """
 
+        _logger.info("%s: run started", type(self).__name__)
+        _logger.debug(
+            "max_cycles=%s, suppress_errors=%s, args_namespace=%s, args=%s",
+            max_cycles,
+            suppress_errors,
+            args_namespace,
+            args,
+        )
+
         with self.args_added(namespace=args_namespace, **args):
             try:
                 if max_cycles is None:
@@ -640,9 +724,13 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
                     self.run_cycles(max_cycles)
             except Exception as err:  # pylint: disable=broad-exception-caught
                 if not suppress_errors:
+                    _logger.error(err)
                     raise RuntimeError("Failed to run") from err
 
                 return None
+
+        _logger.info("%s: run ended", type(self).__name__)
+        _logger.debug("done=%s, state=%s", self.done, self.state)
 
         if not self.done:
             return None

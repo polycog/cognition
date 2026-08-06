@@ -122,7 +122,7 @@ def create_chain_dp[CV, CA](
     )
 
     dp: DecisionProcess[ChainState[CV, CA]] = DecisionProcess(
-        lambda: ChainState[CV, CA](chain, init_accumulator)
+        stringify("chain_start")(lambda: ChainState[CV, CA](chain, init_accumulator))
     )
 
     # ===

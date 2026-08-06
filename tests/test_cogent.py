@@ -52,12 +52,22 @@ class SelfCogent(Cogent[str, DecisionProcess[str]]):
 class TestCogent(unittest.TestCase):
     """Tests for cogent code"""
 
+    @stringify("start_0")
+    @staticmethod
+    def _start_0() -> int:
+        return 0
+
+    @stringify("start_blank")
+    @staticmethod
+    def _start_blank() -> str:
+        return ""
+
     def setUp(self) -> None: ...
 
     def test_name(self) -> None:
         """tests cogent naming"""
 
-        c_none = Cogent[int, DecisionProcess[int]](DecisionProcess(lambda: 0))
+        c_none = Cogent[int, DecisionProcess[int]](DecisionProcess(TestCogent._start_0))
 
         self.assertEqual(c_none.name, Cogent.DEFAULT_NAME)
         self.assertDictEqual(dict(c_none.params), {})
@@ -66,7 +76,9 @@ class TestCogent(unittest.TestCase):
         # ===
 
         name = "soar"
-        c_name = Cogent[int, DecisionProcess[int]](DecisionProcess(lambda: 0), name)
+        c_name = Cogent[int, DecisionProcess[int]](
+            DecisionProcess(TestCogent._start_0), name
+        )
 
         self.assertEqual(c_name.name, name)
         self.assertDictEqual(dict(c_name.params), {})
@@ -77,7 +89,7 @@ class TestCogent(unittest.TestCase):
         params = {"creator": "laird", "version": 9}
 
         c_combo = Cogent[int, DecisionProcess[int]](
-            DecisionProcess(lambda: 0), name, **params
+            DecisionProcess(TestCogent._start_0), name, **params
         )
 
         self.assertEqual(c_combo.name, name)
@@ -87,7 +99,7 @@ class TestCogent(unittest.TestCase):
     def test_self(self) -> None:
         """tests s/a without env"""
 
-        c = SelfCogent(DecisionProcess(lambda: ""))
+        c = SelfCogent(DecisionProcess(TestCogent._start_blank))
         c.perceive()
 
         self.assertEqual(c.dp.io.i.get_val, SelfCogent.START_NUM)
@@ -113,7 +125,9 @@ class TestCogent(unittest.TestCase):
     def test_sensor_actuator(self) -> None:
         """tests s/a via classes"""
 
-        c: Cogent[int, DecisionProcess[int]] = Cogent(DecisionProcess(lambda: 0))
+        c: Cogent[int, DecisionProcess[int]] = Cogent(
+            DecisionProcess(TestCogent._start_0)
+        )
 
         sa_name = "lst"
         lst: list[int] = []
@@ -165,7 +179,9 @@ class TestCogent(unittest.TestCase):
     def test_as(self) -> None:
         """tests s/a via funcs"""
 
-        c: Cogent[int, DecisionProcess[int]] = Cogent(DecisionProcess(lambda: 0))
+        c: Cogent[int, DecisionProcess[int]] = Cogent(
+            DecisionProcess(TestCogent._start_0)
+        )
 
         lst: list[int] = []
 

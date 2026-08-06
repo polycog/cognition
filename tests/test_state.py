@@ -43,6 +43,9 @@ class ReinitCustomLogic(SelfReinitState):
         self.val = f"{self.val}{ self._excitement * "!" }"
         self._excitement += 1
 
+    def __str__(self) -> str:
+        return f"{type(self).__name__}({self.val}, {self._excitement})"
+
 
 @dataclass
 class ElabSimple(SelfElaborationState, SelfReinitState):
