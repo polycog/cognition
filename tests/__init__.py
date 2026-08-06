@@ -12,4 +12,4 @@ logging.basicConfig(
 )
 
 # specific module config
-# logging.getLogger("cognition.decision").setLevel(logging.INFO)
+logging.getLogger("cognition.cogent").setLevel(logging.INFO)

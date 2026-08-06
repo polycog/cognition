@@ -4,12 +4,17 @@ Environments
 
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
 from typing import Any, Protocol, cast, final
 
 from ..decision.core import BaseDecisionProcess, IOContainer
 from ..util.functypes import BiFunction, Function, Supplier
 from ..util.misc import stringify
+
+# ===
+
+_logger = logging.getLogger(__name__)
 
 # ===
 
@@ -54,6 +59,12 @@ def perceive[ST](sensor: BaseSensor[ST], dp: BaseDecisionProcess[Any]) -> None:
     :param sensor: source sensor
     :param dp: destination decision process
     """
+
+    _logger.info("Sensor perception to decision process: %s", sensor.name)
+
+    new_val = sensor.sense()
+
+    _logger.debug(new_val)
 
     dp.set_input_data(sensor.name, sensor.sense())
 
@@ -176,6 +187,8 @@ def install[AP, AF](
     :param actuator: actuator to install
     :param dp: destination decision process
     """
+
+    _logger.info("Actuator installed in decision process: %s", actuator.name)
 
     dp.set_output_channel(
         actuator.name,

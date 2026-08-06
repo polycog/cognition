@@ -2,10 +2,12 @@
 (Cog)nitive ag(ents)
 """
 
+import logging
+from types import MappingProxyType
 from typing import Any, Self
 
 from ..decision.core import BaseDecisionProcess
-from ..decision.dp import args_added
+from ..decision.dp import NamedObject, args_added, format_name_params
 from ..util.functypes import BiFunction, Function, Predicate, Supplier
 from .env import (
     BaseActuator,
@@ -15,6 +17,10 @@ from .env import (
     install,
     perceive,
 )
+
+# ===
+
+_logger = logging.getLogger(__name__)
 
 # ===
 
@@ -47,12 +53,14 @@ def self_actuator[C: Cogent[Any, Any], P, F](
     return m
 
 
-class Cogent[S, DP: BaseDecisionProcess[S]]:  # type: ignore[name-defined]
+class Cogent[S, DP: BaseDecisionProcess[S]](NamedObject):  # type: ignore[name-defined]
     """
     Base for a cognitive agent that uses type ``S``
     for decision process state, and ``DP`` as the
     type of decision process
     """
+
+    DEFAULT_NAME: str = "cogent"
 
     _self_sensors: dict[str, Function["Cogent[S, DP]", Any]]
     _self_actuators: dict[str, BiFunction["Cogent[S, DP]", Any, Any]]
@@ -94,17 +102,30 @@ class Cogent[S, DP: BaseDecisionProcess[S]]:  # type: ignore[name-defined]
 
     # ===
 
-    def __init__(self, decision_process: DP) -> None:
+    def __init__(
+        self, decision_process: DP, name: str = DEFAULT_NAME, **kwargs: Any
+    ) -> None:
         """
         :param decision_process: agent control
+        :param name: agent name
+        :param kwargs: optional parameters to describe the agent
         """
 
         self._dp = decision_process
         self._sensors: set[BaseSensor[Any]] = set()
 
+        self._name = name
+        self._params = MappingProxyType(kwargs)
+        self._str = format_name_params(name, **kwargs)
+
         # ===
 
         self._add_self_tagged()
+
+        _logger.info("Cogent (%s): initialized", self)
+
+    def __str__(self) -> str:
+        return self._str
 
     @property
     def dp(self) -> DP:
@@ -114,6 +135,22 @@ class Cogent[S, DP: BaseDecisionProcess[S]]:  # type: ignore[name-defined]
 
         return self._dp
 
+    @property
+    def name(self) -> str:
+        """
+        :return: cogent's name
+        """
+
+        return self._name
+
+    @property
+    def params(self) -> MappingProxyType[str, Any]:
+        """
+        :return: optional augmentations to the cogent
+        """
+
+        return self._params
+
     def add_sensor(self, sensor: BaseSensor[Any]) -> Self:
         """
         Add a sensor to the cogent
@@ -121,6 +158,8 @@ class Cogent[S, DP: BaseDecisionProcess[S]]:  # type: ignore[name-defined]
         :param sensor: sensor to add
         :return: this cogent (for chaining)
         """
+
+        _logger.info("Cogent (%s): sensor (%s) added", self, sensor.name)
 
         self._sensors.add(sensor)
         return self
@@ -171,6 +210,8 @@ class Cogent[S, DP: BaseDecisionProcess[S]]:  # type: ignore[name-defined]
         :return: this cogent (for chaining)
         """
 
+        _logger.info("Cogent (%s): actuator (%s) installed", self, actuator.name)
+
         install(actuator, self._dp)
         return self
 
@@ -217,6 +258,8 @@ class Cogent[S, DP: BaseDecisionProcess[S]]:  # type: ignore[name-defined]
         All added sensors are routed to the decision process IO container
         """
 
+        _logger.info("Cogent (%s): all-sensor perception", self)
+
         for s in self._sensors:
             perceive(s, self._dp)
 
@@ -224,12 +267,13 @@ class Cogent[S, DP: BaseDecisionProcess[S]]:  # type: ignore[name-defined]
         self, repeat_p: Predicate[DP], max_cycles: int | None = None, **args: Any
     ) -> Self:
         """
-        Runs a cogent loop...
+        After initialization (dp.reinit, add arguments),
+        runs a cogent loop...
 
-        1. Reinitialize the decision process
-        2. Augment io with supplied arguments
-        3. Cache sensor(s) perception to IO
-        4. Run the decision process
+        1. Cache sensor(s) perception to IO
+        2. Run the decision process
+        3. Check the gating predicate
+           (reinitialize the decision process if not done)
 
         until the supplied gating predicate returns ``False``
 
@@ -240,19 +284,32 @@ class Cogent[S, DP: BaseDecisionProcess[S]]:  # type: ignore[name-defined]
         :return: this cogent (for chaining)
         """
 
+        _logger.info("Cogent (%s): run started", self)
+        _logger.debug("repeat_p=%s, max_cycles=%s, args=%s", repeat_p, max_cycles, args)
+
         proceed = True
         self._dp.reinit()
 
         with args_added(self._dp, **args):
             while proceed:
+                _logger.debug("Cogent (%s): loop start", self)
+
                 self.perceive()
                 if max_cycles is None:
                     self._dp.run_until_done()
                 else:
                     self._dp.run_cycles(max_cycles)
 
+                _logger.debug("Cogent (%s): dp run complete", self)
+
                 proceed = repeat_p(self._dp)
+
+                _logger.debug(
+                    "Cogent (%s): gate checked (keep going: %s)", self, proceed
+                )
                 if proceed:
                     self._dp.reinit()
+
+        _logger.info("Cogent (%s): run ended", self)
 
         return self

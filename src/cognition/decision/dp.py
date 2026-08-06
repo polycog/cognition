@@ -141,7 +141,7 @@ class NamedObject(Protocol):
         """
 
 
-def _format_name_params(name: str, **kwargs: Any) -> str:
+def format_name_params(name: str, **kwargs: Any) -> str:
     """
     Naming convention for a combo of name + optional params
     (ignoring those whose name starts with an underscore)
@@ -171,7 +171,7 @@ def create_named_action[S](name: str, f: Action[S], **kwargs: Any) -> Action[S]:
     :return: :class:`NamedObject` + :func:`cognition.util.misc.stringify`
     """
 
-    new_f = stringify(_format_name_params(name, **kwargs))(f)
+    new_f = stringify(format_name_params(name, **kwargs))(f)
 
     new_f.name = name  # type: ignore[attr-defined]
     new_f.params = MappingProxyType(kwargs)  # type: ignore[attr-defined]

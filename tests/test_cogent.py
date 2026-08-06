@@ -14,8 +14,10 @@ from cognition import (
     OperatorGenerator,
     PEState,
     Sensor,
+    format_name_params,
     self_actuator,
     self_sensor,
+    stringify,
     uniform_evaluator,
 )
 
@@ -51,6 +53,36 @@ class TestCogent(unittest.TestCase):
     """Tests for cogent code"""
 
     def setUp(self) -> None: ...
+
+    def test_name(self) -> None:
+        """tests cogent naming"""
+
+        c_none = Cogent[int, DecisionProcess[int]](DecisionProcess(lambda: 0))
+
+        self.assertEqual(c_none.name, Cogent.DEFAULT_NAME)
+        self.assertDictEqual(dict(c_none.params), {})
+        self.assertEqual(str(c_none), Cogent.DEFAULT_NAME)
+
+        # ===
+
+        name = "soar"
+        c_name = Cogent[int, DecisionProcess[int]](DecisionProcess(lambda: 0), name)
+
+        self.assertEqual(c_name.name, name)
+        self.assertDictEqual(dict(c_name.params), {})
+        self.assertEqual(str(c_name), name)
+
+        # ===
+
+        params = {"creator": "laird", "version": 9}
+
+        c_combo = Cogent[int, DecisionProcess[int]](
+            DecisionProcess(lambda: 0), name, **params
+        )
+
+        self.assertEqual(c_combo.name, name)
+        self.assertDictEqual(dict(c_combo.params), params)
+        self.assertEqual(str(c_combo), format_name_params(name, **params))
 
     def test_self(self) -> None:
         """tests s/a without env"""
@@ -217,7 +249,7 @@ class TestCogent(unittest.TestCase):
                 state.p.add(self._num)
                 io.o.guess(self._num)
 
-        c(lambda _: False, 0)
+        c(stringify("stop")(lambda _: False), 0)
         self.assertFalse(c.dp.done)
         self.assertFalse(got_it)
         self.assertEqual(num_guesses, len(c.dp.state.p))
@@ -225,6 +257,7 @@ class TestCogent(unittest.TestCase):
         self.assertIsNone(c.dp.chosen_action)
         self.assertEqual(c.dp.num_cycles, 0)
 
+        @stringify("keep_guessing")
         def keep_guessing(dp: DecisionProcess[ClosedList]) -> bool:
             return not correct_val in dp.state.p
 
