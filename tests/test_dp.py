@@ -33,6 +33,7 @@ from cognition import (
     args_added,
     create_elaborator,
     create_named_action,
+    format_name_params,
     operator_sorting_key,
     sorting_evaluator,
     stringify,
@@ -311,7 +312,7 @@ class TestDP(unittest.TestCase):
         dp: DecisionProcess[bool] = DecisionProcess(lambda: False)
 
         op_name = "done"
-        act_name = f"{op_name}[terminal=True]"
+        act_name = format_name_params(op_name, terminal=True)
 
         @dp.operator(op_name, terminal=True)
         class Done(Operator[bool]):  # pylint: disable=unused-variable
@@ -533,11 +534,14 @@ class TestDP(unittest.TestCase):
         self.assertIsInstance(self.vote_yay, NamedObject)
         vote_yay_named = cast(NamedObject, self.vote_yay)
 
-        self.assertEqual(vote_yay_named.name, "vote")
+        name_yay = "vote"
+        params_yay = {"value": "yay", "volume": 12}
 
-        self.assertEqual(vote_yay_named.params, {"value": "yay", "volume": 12})
+        self.assertEqual(vote_yay_named.name, name_yay)
 
-        self.assertEqual(str(self.vote_yay), "vote[value='yay', volume=12]")
+        self.assertEqual(vote_yay_named.params, params_yay)
+
+        self.assertEqual(str(self.vote_yay), format_name_params(name_yay, **params_yay))
 
         self.assertEqual(self.vote_yay(42, self.mock_io), 1)
 
@@ -546,11 +550,14 @@ class TestDP(unittest.TestCase):
         self.assertIsInstance(self.vote_nay, NamedObject)
         vote_nay_named = cast(NamedObject, self.vote_nay)
 
-        self.assertEqual(vote_nay_named.name, "vote")
+        name_nay = "vote"
+        params_nay = {"value": "nay"}
 
-        self.assertEqual(vote_nay_named.params, {"value": "nay"})
+        self.assertEqual(vote_nay_named.name, name_nay)
 
-        self.assertEqual(str(self.vote_nay), "vote[value='nay']")
+        self.assertEqual(vote_nay_named.params, params_nay)
+
+        self.assertEqual(str(self.vote_nay), format_name_params(name_nay, **params_nay))
 
         self.assertEqual(self.vote_nay(42, self.mock_io), 0)
 
@@ -559,11 +566,16 @@ class TestDP(unittest.TestCase):
         self.assertIsInstance(self.abstain, NamedObject)
         abstrain_named = cast(NamedObject, self.abstain)
 
-        self.assertEqual(abstrain_named.name, "abstain")
+        name_abstain = "abstain"
+        params_abstain: dict[str, Any] = {}
 
-        self.assertEqual(abstrain_named.params, {})
+        self.assertEqual(abstrain_named.name, name_abstain)
 
-        self.assertEqual(str(self.abstain), "abstain")
+        self.assertEqual(abstrain_named.params, params_abstain)
+
+        self.assertEqual(
+            str(self.abstain), format_name_params(name_abstain, **params_abstain)
+        )
 
         self.assertEqual(self.abstain(42, self.mock_io), -1)
 
