@@ -6,6 +6,7 @@ cognition library
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any, Self
@@ -29,13 +30,13 @@ from rich.prompt import Prompt
 # Logging setup
 ###################################################
 
-handler = colorlog.StreamHandler()
+handler = logging.FileHandler("log.txt", mode="w", encoding="UTF-8")
 handler.setFormatter(
     colorlog.ColoredFormatter(fmt="%(log_color)s%(levelname)s\t%(name)s\t%(message)s")
 )
 
 logger = colorlog.getLogger("cognition")
-logger.setLevel(colorlog.WARNING)
+logger.setLevel(colorlog.CRITICAL)
 logger.addHandler(handler)
 
 ###################################################
