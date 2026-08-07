@@ -6,23 +6,37 @@ cognition library
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from contextlib import nullcontext
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import Self
+from typing import Any, Self
 
+import colorlog
 from cognition import (
-    AttrReferral,
+    Actuator,
     AutoDocEnum,
+    Cogent,
     DecisionProcess,
     IOContainer,
-    KWArgs,
+    Sensor,
     StagedState,
     staged_operator,
     stringify,
 )
 from rich import print as rprint
 from rich.prompt import Prompt
+
+###################################################
+# Logging setup
+###################################################
+
+handler = colorlog.StreamHandler()
+handler.setFormatter(
+    colorlog.ColoredFormatter(fmt="%(log_color)s%(levelname)s\t%(name)s\t%(message)s")
+)
+
+logger = colorlog.getLogger("cognition")
+logger.setLevel(colorlog.WARNING)
+logger.addHandler(handler)
 
 ###################################################
 # Command definition and support
@@ -116,8 +130,34 @@ def cmd_bye() -> CommandReturn:
 def cmd_history() -> CommandReturn:
     """Log of past interactions"""
 
-    return CommandReturn("\n".join(str(entry) for entry in dp.state.log), 0, False)
+    return CommandReturn("\n".join(str(entry) for entry in cli_dp.state.log), 0, False)
 
+
+###################################################
+# CLI sensing/actuating
+###################################################
+
+
+class CurrentCommand(Sensor[str], Actuator[str, None]):
+    """
+    Getting/setting the current CLI command
+    """
+
+    def __init__(self) -> None:
+        self._cmd = ""
+
+    @property
+    def name(self) -> str:
+        return "cli"
+
+    def sense(self) -> str:
+        return self._cmd
+
+    def actuate(self, param: str) -> None:
+        self._cmd = Prompt.ask(f"[bold blue]{ param }[/]")
+
+
+cli_sensor_actuator = CurrentCommand()
 
 ###################################################
 # CLI decision process and state definitions
@@ -130,6 +170,7 @@ class CLIStage(AutoDocEnum):
     INIT = "welcome the user"
     GET_CMD = "get the command"
     EXEC_CMD = "execute the command"
+    EXIT = "exit flag detected on cmd result"
 
 
 @dataclass(frozen=True)
@@ -160,7 +201,7 @@ class CLIState(StagedState[CLIStage]):
     """
 
     stage: CLIStage = CLIStage.INIT
-    """INIT -> (GET <-> EXEC)"""
+    """INIT -> (GET <-> EXEC) -?-> EXIT"""
 
     log: list[CommandLogEntry] = field(default_factory=list)
     """Log of command executions"""
@@ -186,27 +227,21 @@ class CLIState(StagedState[CLIStage]):
         self.log.append(log_entry)
         log_entry.result.print()
 
+        if log_entry.result.exit:
+            return CLIStage.EXIT
+
         return CLIStage.GET_CMD
 
 
+cli_state = CLIState()
+persistent_state = stringify("keep")(lambda: cli_state)
+
 # ===
 
-with nullcontext[dict[str, str]]({}) as cli_status:
-    # cli_status is a shared reference to a dictionary
-    # used to represent the user-entered command
-
-    dp = (
-        DecisionProcess(CLIState)
-        .set_input_data(
-            "cli", AttrReferral(cli_status)
-        )  # expose the current command via io.i.cli
-        .set_output_channel(
-            "cli_set_command", lambda c: cli_status.update(command=c)
-        )  # change current command via io.o
-    )
+cli_dp = DecisionProcess(persistent_state)
 
 
-@staged_operator(dp, CLIStage.INIT)
+@staged_operator(cli_dp, CLIStage.INIT)
 def perform_init(_s: CLIState, _io: IOContainer) -> None:
     """init action"""
 
@@ -215,29 +250,38 @@ def perform_init(_s: CLIState, _io: IOContainer) -> None:
     rprint()
 
 
-@staged_operator(dp, CLIStage.GET_CMD)
+@staged_operator(cli_dp, CLIStage.GET_CMD, terminal=True)
 def perform_get(_s: CLIState, io: IOContainer) -> None:
     """get action"""
 
-    io.o.cli_set_command(Prompt.ask(f"[bold blue]{ io.i.args.shell_sym }[/]"))
+    shell_sym = io.i.args.shell_sym
+
+    # options...
+    # cli_sensor_actuator.invoker(io, shell_sym)
+    io.o.cli(shell_sym)
 
 
-@staged_operator(dp, CLIStage.EXEC_CMD)
-def perform_exec(_s: CLIState, io: IOContainer) -> KWArgs:
+@staged_operator(cli_dp, CLIStage.EXEC_CMD, terminal=True)
+def perform_exec(_s: CLIState, io: IOContainer) -> Mapping[str, Any]:
     """exec action"""
 
-    return {"log_entry": CommandLogEntry.attempt_exec(io.i.cli.command)}
+    # options...
+    # cmd = cli_sensor_actuator.reader(io)
+    cmd = io.i.cli
+
+    return {"log_entry": CommandLogEntry.attempt_exec(cmd)}
 
 
-@dp.termination_check
-@stringify("exit_flag")
-def exit_flag(s: CLIState, _: IOContainer) -> bool:
-    """Exit if told to!"""
+###################################################
+# Cogent loop
+###################################################
 
-    if s.log:
-        return s.log[-1].result.exit
 
-    return False
+@stringify("go_until_exit")
+def go_until_exit(dp: DecisionProcess[CLIState]) -> bool:
+    """continue until exit stage"""
+
+    return dp.state.stage is not CLIStage.EXIT
 
 
 ###################################################
@@ -248,8 +292,9 @@ def exit_flag(s: CLIState, _: IOContainer) -> bool:
 def main() -> None:
     """dispatch the cli agent"""
 
-    # argument: prompt symbol (accessed via io.i.args)
-    dp(shell_sym="$")
+    Cogent(cli_dp, "cli").add_sensor(cli_sensor_actuator).add_actuator(
+        cli_sensor_actuator
+    )(go_until_exit, shell_sym="$")
 
 
 if __name__ == "__main__":
