@@ -69,7 +69,7 @@ class StagedState[T: Enum](EnumDispatch[T]):
         _logger.info(
             "%s %s: stage=%s -> stage=%s",
             StagedState.__name__,
-            self,
+            type(self).__name__,
             self.stage,
             next_stage if next_stage is not None else f"{next_stage} (no change)",
         )
