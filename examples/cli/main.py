@@ -36,9 +36,7 @@ cli_state = CLIState()
 persistent_state = stringify("keep")(lambda: cli_state)
 
 # cogent (pending operators, sensing/actuation)
-cli_cogent: Cogent[CLIState, DecisionProcess[CLIState]] = Cogent(
-    DecisionProcess(persistent_state), "cli"
-)
+cli_cogent = Cogent(DecisionProcess(persistent_state), "cli")
 
 
 ###################################################
@@ -110,10 +108,10 @@ def perform_exec(s: CLIState, io: IOContainer) -> Mapping[str, Any]:
 
 
 @stringify("go_until_exit")
-def go_until_exit(dp: DecisionProcess[CLIState]) -> bool:
+def go_until_exit(c: Cogent[DecisionProcess[CLIState]]) -> bool:
     """continue until exit stage"""
 
-    return dp.state.stage is not CLIStage.EXIT
+    return c.dp.state.stage is not CLIStage.EXIT
 
 
 ###################################################

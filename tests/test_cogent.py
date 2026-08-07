@@ -24,7 +24,7 @@ from cognition import (
 # ===
 
 
-class SelfCogent(Cogent[str, DecisionProcess[str]]):
+class SelfCogent(Cogent[DecisionProcess[str]]):
     """cogent with self sensor/actuator"""
 
     START_NUM: int = 42
@@ -67,7 +67,7 @@ class TestCogent(unittest.TestCase):
     def test_name(self) -> None:
         """tests cogent naming"""
 
-        c_none = Cogent[int, DecisionProcess[int]](DecisionProcess(TestCogent._start_0))
+        c_none = Cogent(DecisionProcess(TestCogent._start_0))
 
         self.assertEqual(c_none.name, Cogent.DEFAULT_NAME)
         self.assertDictEqual(dict(c_none.params), {})
@@ -76,9 +76,7 @@ class TestCogent(unittest.TestCase):
         # ===
 
         name = "soar"
-        c_name = Cogent[int, DecisionProcess[int]](
-            DecisionProcess(TestCogent._start_0), name
-        )
+        c_name = Cogent(DecisionProcess(TestCogent._start_0), name)
 
         self.assertEqual(c_name.name, name)
         self.assertDictEqual(dict(c_name.params), {})
@@ -88,9 +86,7 @@ class TestCogent(unittest.TestCase):
 
         params = {"creator": "laird", "version": 9}
 
-        c_combo = Cogent[int, DecisionProcess[int]](
-            DecisionProcess(TestCogent._start_0), name, **params
-        )
+        c_combo = Cogent(DecisionProcess(TestCogent._start_0), name, **params)
 
         self.assertEqual(c_combo.name, name)
         self.assertDictEqual(dict(c_combo.params), params)
@@ -125,9 +121,7 @@ class TestCogent(unittest.TestCase):
     def test_sensor_actuator(self) -> None:
         """tests s/a via classes"""
 
-        c: Cogent[int, DecisionProcess[int]] = Cogent(
-            DecisionProcess(TestCogent._start_0)
-        )
+        c = Cogent(DecisionProcess(TestCogent._start_0))
 
         sa_name = "lst"
         lst: list[int] = []
@@ -179,9 +173,7 @@ class TestCogent(unittest.TestCase):
     def test_as(self) -> None:
         """tests s/a via funcs"""
 
-        c: Cogent[int, DecisionProcess[int]] = Cogent(
-            DecisionProcess(TestCogent._start_0)
-        )
+        c = Cogent(DecisionProcess(TestCogent._start_0))
 
         lst: list[int] = []
 
@@ -216,7 +208,7 @@ class TestCogent(unittest.TestCase):
         dp = DecisionProcess[ClosedList](PEState(init_set))
         dp.add_action_evaluator(uniform_evaluator(1, name="all_guesses_same"))
 
-        c: Cogent[ClosedList, DecisionProcess[ClosedList]] = Cogent(dp)
+        c = Cogent(dp)
 
         num_guesses: int = 0
         correct_val: int = 42
@@ -274,8 +266,8 @@ class TestCogent(unittest.TestCase):
         self.assertEqual(c.dp.num_cycles, 0)
 
         @stringify("keep_guessing")
-        def keep_guessing(dp: DecisionProcess[ClosedList]) -> bool:
-            return not correct_val in dp.state.p
+        def keep_guessing(c: Cogent[DecisionProcess[ClosedList]]) -> bool:
+            return not correct_val in c.dp.state.p
 
         c(keep_guessing)
 

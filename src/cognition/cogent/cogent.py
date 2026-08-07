@@ -26,7 +26,7 @@ _logger = logging.getLogger(__name__)
 # ===
 
 
-def self_sensor[C: Cogent[Any, Any], T](m: Function[C, T]) -> Function[C, T]:
+def self_sensor[C: Cogent[Any], T](m: Function[C, T]) -> Function[C, T]:
     """
     Decorator to mark a cogent method for use as a sensor upon instance init
 
@@ -39,7 +39,7 @@ def self_sensor[C: Cogent[Any, Any], T](m: Function[C, T]) -> Function[C, T]:
     return m
 
 
-def self_actuator[C: Cogent[Any, Any], P, F](
+def self_actuator[C: Cogent[Any], P, F](
     m: BiFunction[C, P, F],
 ) -> BiFunction[C, P, F]:
     """
@@ -54,7 +54,7 @@ def self_actuator[C: Cogent[Any, Any], P, F](
     return m
 
 
-class Cogent[S, DP: BaseDecisionProcess[S]](NamedObject):  # type: ignore[name-defined]
+class Cogent[DP: BaseDecisionProcess[Any]](NamedObject):
     """
     Base for a cognitive agent that uses type ``S``
     for decision process state, and ``DP`` as the
@@ -63,8 +63,8 @@ class Cogent[S, DP: BaseDecisionProcess[S]](NamedObject):  # type: ignore[name-d
 
     DEFAULT_NAME: str = "cogent"
 
-    _self_sensors: dict[str, Function["Cogent[S, DP]", Any]]
-    _self_actuators: dict[str, BiFunction["Cogent[S, DP]", Any, Any]]
+    _self_sensors: dict[str, Function["Cogent[DP]", Any]]
+    _self_actuators: dict[str, BiFunction["Cogent[DP]", Any, Any]]
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
@@ -86,7 +86,7 @@ class Cogent[S, DP: BaseDecisionProcess[S]](NamedObject):  # type: ignore[name-d
         if hasattr(self, "_self_sensors"):
             for s_n, s_m in self._self_sensors.items():
 
-                def _self_sensor[T](orig_method: Function[Cogent[S, DP], T] = s_m) -> T:
+                def _self_sensor[T](orig_method: Function[Cogent[DP], T] = s_m) -> T:
                     return orig_method(self)
 
                 self.add_sensor(create_sensor(s_n, _self_sensor))
@@ -95,7 +95,7 @@ class Cogent[S, DP: BaseDecisionProcess[S]](NamedObject):  # type: ignore[name-d
             for a_n, a_m in self._self_actuators.items():
 
                 def _self_actuator[P, F](
-                    param: P, orig_method: BiFunction[Cogent[S, DP], P, F] = a_m
+                    param: P, orig_method: BiFunction[Cogent[DP], P, F] = a_m
                 ) -> F:
                     return orig_method(self, param)
 
@@ -265,7 +265,7 @@ class Cogent[S, DP: BaseDecisionProcess[S]](NamedObject):  # type: ignore[name-d
             perceive(s, self._dp)
 
     def __call__(
-        self, repeat_p: Predicate[DP], max_cycles: int | None = None, **args: Any
+        self, repeat_p: Predicate[Self], max_cycles: int | None = None, **args: Any
     ) -> Self:
         """
         After initialization (dp.reinit, add arguments),
@@ -303,7 +303,7 @@ class Cogent[S, DP: BaseDecisionProcess[S]](NamedObject):  # type: ignore[name-d
 
                 _logger.debug("Cogent (%s): dp run complete", self)
 
-                proceed = repeat_p(self._dp)
+                proceed = repeat_p(self)
 
                 _logger.debug(
                     "Cogent (%s): gate checked (keep going: %s)", self, proceed
