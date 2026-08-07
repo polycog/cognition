@@ -3,6 +3,7 @@
 """
 
 import logging
+from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Any, Self
 
@@ -144,7 +145,7 @@ class Cogent[S, DP: BaseDecisionProcess[S]](NamedObject):  # type: ignore[name-d
         return self._name
 
     @property
-    def params(self) -> MappingProxyType[str, Any]:
+    def params(self) -> Mapping[str, Any]:
         """
         :return: optional augmentations to the cogent
         """

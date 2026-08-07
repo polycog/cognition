@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from collections.abc import (
     Generator,
     Iterable,
+    Mapping,
 )
 from contextlib import contextmanager
 from enum import IntEnum
@@ -153,7 +154,7 @@ class NamedObject(Protocol):
         """
 
     @property
-    def params(self) -> MappingProxyType[str, Any]:
+    def params(self) -> Mapping[str, Any]:
         """
         :return: optional augmentations in the name
         """
@@ -209,7 +210,7 @@ class _BaseOperator[S](ABC, NamedObject):
         """
 
         self._name = name
-        self._params = MappingProxyType(kwargs.copy())
+        self._params = MappingProxyType(kwargs)
 
     def __str__(self) -> str:
         return (
@@ -225,7 +226,7 @@ class _BaseOperator[S](ABC, NamedObject):
         return self._name
 
     @property
-    def params(self) -> MappingProxyType[str, Any]:
+    def params(self) -> Mapping[str, Any]:
         """
         :return: params supplied upon construction
         """

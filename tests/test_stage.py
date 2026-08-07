@@ -3,15 +3,16 @@ Tests for stage code
 """
 
 import unittest
+from collections.abc import Mapping
 from dataclasses import dataclass
 from io import StringIO
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from cognition import (
     AutoDocEnum,
     DecisionProcess,
     IOContainer,
-    KWArgs,
     StagedState,
     staged_operator,
     stringify,
@@ -72,7 +73,7 @@ class TestStage(unittest.TestCase):
 
         @staged_operator(self.dp, AuthStage.ATTEMPT)
         @stringify("perform_attempt")
-        def _perform_attempt(_s: AuthState, io: IOContainer) -> KWArgs:
+        def _perform_attempt(_s: AuthState, io: IOContainer) -> Mapping[str, Any]:
             return {
                 "correct_pw": input("Enter password: ") == io.i.args.secret,
                 "max_attempts": io.i.args.max_attempts,

@@ -118,7 +118,7 @@ class SelfElaborationState(SelfReinitState):
 
     @final
     @property
-    def _elab_values(self) -> MappingProxyType[str, Any]:
+    def _elab_values(self) -> Mapping[str, Any]:
         """
         :return: read-only access to elaborated values
         """

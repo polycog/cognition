@@ -78,11 +78,8 @@ class StagedState[T: Enum](EnumDispatch[T]):
             self.stage = cast(T, next_stage)
 
 
-type KWArgs = Mapping[str, Any]
-"""Shorthand for kwarg_name=kwarg_value"""
-
 # pylint: disable=line-too-long
-type StageSupporter[E: Enum, S: StagedState[E]] = BiFunction[S, IOContainer, KWArgs | None]  # type: ignore
+type StageSupporter[E: Enum, S: StagedState[E]] = BiFunction[S, IOContainer, Mapping[str, Any] | None]  # type: ignore
 """Function to optionally provide kwargs based upon interaction with IO"""
 
 
