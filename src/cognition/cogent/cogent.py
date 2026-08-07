@@ -9,9 +9,13 @@ from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Any, Self
 
-from ..decision.core import BaseDecisionProcess
+from ..decision.core import (
+    BaseDecisionProcess,
+    DecisionProcessErrorMessage,
+    DecisionProcessExecutionError,
+)
 from ..decision.dp import NamedObject, args_added, format_name_params
-from ..util.functypes import BiFunction, Function, Predicate, Supplier
+from ..util.functypes import BiFunction, BiPredicate, Function, Predicate, Supplier
 from .env import (
     BaseActuator,
     BaseSensor,
@@ -267,7 +271,12 @@ class Cogent[DP: BaseDecisionProcess[Any]](NamedObject):
             perceive(s, self._dp)
 
     def __call__(
-        self, repeat_p: Predicate[Self], max_cycles: int | None = None, **args: Any
+        self,
+        repeat_p: Predicate[Self],
+        max_cycles: int | None = None,
+        dp_err_p: BiPredicate[DecisionProcessErrorMessage, Self] | None = None,
+        other_err_p: BiPredicate[Exception, Self] | None = None,
+        **args: Any,
     ) -> Self:
         """
         After initialization (dp.reinit, add arguments),
@@ -280,15 +289,26 @@ class Cogent[DP: BaseDecisionProcess[Any]](NamedObject):
 
         until the supplied gating predicate returns ``False``
 
-        :param repeat_p: gating predicate
+        :param repeat_p: gating predicate (assuming no errors)
         :param max_cycles: maximum dp cycles to run per loop;
                            ``None`` indicates no limit
+        :param dp_err_p: gating predicate to continue if a known
+                         error type occurs (or raise if ``None``)
+                         (see :class:`cognition.decision.core.DecisionProcessExecutionError`)
+        :param other_err_p: gating predicate to continue if an unknown
+                            error type occurs (or raise if ``None``)
         :param args: IO args to add (see :func:`cognition.decision.dp.args_added`)
         :return: this cogent (for chaining)
         """
 
         _logger.info("Cogent (%s): run started", self)
-        _logger.debug("repeat_p=%s, max_cycles=%s, args=%s", repeat_p, max_cycles, args)
+        _logger.debug(
+            "repeat_p=%s, max_cycles=%s, dp_err_p=%s, args=%s",
+            repeat_p,
+            max_cycles,
+            dp_err_p,
+            args,
+        )
 
         proceed = True
         self._dp.reinit()
@@ -297,19 +317,46 @@ class Cogent[DP: BaseDecisionProcess[Any]](NamedObject):
             while proceed:
                 _logger.debug("Cogent (%s): loop start", self)
 
-                self.perceive()
-                if max_cycles is None:
-                    self._dp.run_until_done()
-                else:
-                    self._dp.run_cycles(max_cycles)
+                try:
+                    self.perceive()
+                    if max_cycles is None:
+                        self._dp.run_until_done()
+                    else:
+                        self._dp.run_cycles(max_cycles)
 
-                _logger.debug("Cogent (%s): dp run complete", self)
+                    _logger.debug("Cogent (%s): dp run complete", self)
 
-                proceed = repeat_p(self)
+                    proceed = repeat_p(self)
+                    _logger.debug(
+                        "Cogent (%s): gate checked (keep going: %s)", self, proceed
+                    )
+                except DecisionProcessExecutionError as err_dp:
+                    _logger.error(err_dp)
 
-                _logger.debug(
-                    "Cogent (%s): gate checked (keep going: %s)", self, proceed
-                )
+                    if dp_err_p is not None:
+                        proceed = dp_err_p(err_dp.msg, self)
+
+                        _logger.debug(
+                            "Cogent (%s): known error gate checked (keep going: %s)",
+                            self,
+                            proceed,
+                        )
+                    else:
+                        raise
+                except Exception as err_other:  # pylint: disable=broad-exception-caught
+                    _logger.error(err_other)
+
+                    if other_err_p is not None:
+                        proceed = other_err_p(err_other, self)
+
+                        _logger.debug(
+                            "Cogent (%s): unknown error gate checked (keep going: %s)",
+                            self,
+                            proceed,
+                        )
+                    else:
+                        raise
+
                 if proceed:
                     self._dp.reinit()
 

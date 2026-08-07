@@ -4,19 +4,26 @@ Tests for cogent code
 
 import unittest
 from collections.abc import Iterable
-from typing import Self
+from typing import Self, cast
 
 from cognition import (
+    Action,
     Actuator,
     Cogent,
     DecisionProcess,
+    DecisionProcessErrorMessage,
+    DecisionProcessExecutionError,
     IOContainer,
+    MutableWrapper,
+    NamedObject,
+    Operator,
     OperatorGenerator,
     PEState,
     Sensor,
     format_name_params,
     self_actuator,
     self_sensor,
+    sorting_evaluator,
     stringify,
     uniform_evaluator,
 )
@@ -198,6 +205,157 @@ class TestCogent(unittest.TestCase):
         self.assertEqual(c.dp.io.i.foo, "[]")
         c.perceive()
         self.assertEqual(c.dp.io.i.foo, f"[{to_add}]")
+
+    # pylint: disable=too-many-statements
+    def test_err(self) -> None:
+        """cogent callbacks for errors"""
+
+        @stringify("never")
+        def _never(_c: Cogent[DecisionProcess[MutableWrapper[int]]]) -> bool:
+            return False
+
+        # ===
+
+        out_known: DecisionProcessErrorMessage | None = None
+
+        @stringify("handle_known")
+        def _handle_known(
+            err: DecisionProcessErrorMessage,
+            _c: Cogent[DecisionProcess[MutableWrapper[int]]],
+        ) -> bool:
+            nonlocal out_known
+
+            out_known = err
+            return False
+
+        out_unknown: Exception | None = None
+
+        @stringify("handle_unknown")
+        def _handle_unknown(
+            err: Exception, _c: Cogent[DecisionProcess[MutableWrapper[int]]]
+        ) -> bool:
+            nonlocal out_unknown
+
+            out_unknown = err
+            return False
+
+        start_value = 0
+
+        @stringify("handle_unknown_change")
+        def _handle_unknown_change(
+            err: Exception, _c: Cogent[DecisionProcess[MutableWrapper[int]]]
+        ) -> bool:
+            nonlocal out_unknown
+            nonlocal start_value
+
+            out_unknown = err
+            start_value = 1
+
+            return True
+
+        # ===
+
+        @stringify("wrapper0")
+        def _wrap0() -> MutableWrapper[int]:
+            return MutableWrapper(start_value)
+
+        c = Cogent(DecisionProcess(_wrap0))
+
+        out_known, out_unknown, start_value = None, None, 0
+        with self.assertRaises(DecisionProcessExecutionError):
+            c(_never)
+        self.assertIsNone(out_known)
+        self.assertIsNone(out_unknown)
+        self.assertFalse(c.dp.done)
+
+        out_known, out_unknown, start_value = None, None, 0
+        c(_never, dp_err_p=_handle_known)
+        self.assertEqual(out_known, DecisionProcessErrorMessage.NO_PROPOSAL)
+        self.assertIsNone(out_unknown)
+        self.assertFalse(c.dp.done)
+
+        @c.dp.operator("div")
+        class _DivOp(Operator[MutableWrapper[int]]):
+            def can_perform(self, state: MutableWrapper[int], _io: IOContainer) -> bool:
+                return state.value < 1
+
+            def perform(self, state: MutableWrapper[int], _io: IOContainer) -> None:
+                state.value = int(42 / state.value)
+
+        out_known, out_unknown, start_value = None, None, 0
+        with self.assertRaises(ZeroDivisionError):
+            c(_never, dp_err_p=_handle_known)
+        self.assertIsNone(out_known)
+        self.assertIsNone(out_unknown)
+        self.assertFalse(c.dp.done)
+
+        out_known, out_unknown, start_value = None, None, 0
+        c(_never, dp_err_p=_handle_known, other_err_p=_handle_unknown)
+        self.assertIsNone(out_known)
+        self.assertIs(type(out_unknown), ZeroDivisionError)
+        self.assertFalse(c.dp.done)
+
+        @c.dp.operator("mult", terminal=True)
+        class _MultOp(Operator[MutableWrapper[int]]):
+            def can_perform(
+                self, _state: MutableWrapper[int], _io: IOContainer
+            ) -> bool:
+                return True
+
+            def perform(self, state: MutableWrapper[int], _io: IOContainer) -> None:
+                state.value = 42 * state.value
+
+        out_known, out_unknown, start_value = None, None, 0
+        with self.assertRaises(DecisionProcessExecutionError):
+            c(_never)
+        self.assertIsNone(out_known)
+        self.assertIsNone(out_unknown)
+        self.assertFalse(c.dp.done)
+
+        out_known, out_unknown, start_value = None, None, 0
+        with self.assertRaises(DecisionProcessExecutionError):
+            c(_never, other_err_p=_handle_unknown)
+        self.assertIsNone(out_known)
+        self.assertIsNone(out_unknown)
+        self.assertFalse(c.dp.done)
+
+        out_known, out_unknown, start_value = None, None, 0
+        c(_never, dp_err_p=_handle_known, other_err_p=_handle_unknown)
+        self.assertEqual(out_known, DecisionProcessErrorMessage.NO_RANK)
+        self.assertIsNone(out_unknown)
+        self.assertFalse(c.dp.done)
+
+        def _key(
+            a: Action[MutableWrapper[int]], _s: MutableWrapper[int], _io: IOContainer
+        ) -> int:
+            na = cast(NamedObject, a)
+            if na.name == "div":
+                return 1
+
+            return 2
+
+        c.dp.add_action_evaluator(sorting_evaluator(_key, name="div_first"))
+
+        out_known, out_unknown, start_value = None, None, 0
+        with self.assertRaises(ZeroDivisionError):
+            c(_never)
+        self.assertIsNone(out_known)
+        self.assertIsNone(out_unknown)
+        self.assertFalse(c.dp.done)
+
+        out_known, out_unknown, start_value = None, None, 0
+        c(_never, dp_err_p=_handle_known, other_err_p=_handle_unknown)
+        self.assertIsNone(out_known)
+        self.assertIs(type(out_unknown), ZeroDivisionError)
+        self.assertFalse(c.dp.done)
+
+        out_known, out_unknown, start_value = None, None, 0
+        c(_never, dp_err_p=_handle_known, other_err_p=_handle_unknown_change)
+        self.assertIsNone(out_known)
+        self.assertIs(type(out_unknown), ZeroDivisionError)
+        self.assertTrue(c.dp.done)
+        self.assertEqual(start_value, 1)
+        self.assertEqual(c.dp.state.value, 42)
 
     def test_run(self) -> None:
         """cogent call"""
