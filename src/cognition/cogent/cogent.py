@@ -2,6 +2,8 @@
 (Cog)nitive ag(ents)
 """
 
+from __future__ import annotations
+
 import logging
 from collections.abc import Mapping
 from types import MappingProxyType
@@ -63,8 +65,8 @@ class Cogent[DP: BaseDecisionProcess[Any]](NamedObject):
 
     DEFAULT_NAME: str = "cogent"
 
-    _self_sensors: dict[str, Function["Cogent[DP]", Any]]
-    _self_actuators: dict[str, BiFunction["Cogent[DP]", Any, Any]]
+    _self_sensors: dict[str, Function[Cogent[DP], Any]]
+    _self_actuators: dict[str, BiFunction[Cogent[DP], Any, Any]]
 
     def __init_subclass__(cls, **kwargs: Any) -> None:
         super().__init_subclass__(**kwargs)
