@@ -333,6 +333,13 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
         )
 
         self.assertEqual(
+            EnumClassifier.classify(
+                "🧑‍💻", Fruit, model_apple, "Interpreting a shopping list", num_trials
+            ),
+            (Fruit.APPLE, EmpiricalConfidence(num_trials, num_trials)),
+        )
+
+        self.assertEqual(
             classifier("🍌", model_first_none_then_banana, num_trials=num_trials),
             (Fruit.BANANA, EmpiricalConfidence(num_trials - 1, num_trials)),
         )

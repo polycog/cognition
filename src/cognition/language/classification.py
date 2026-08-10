@@ -209,3 +209,30 @@ class EnumClassifier[T: Enum]:
         )
 
         return top_result, conf
+
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
+    @staticmethod
+    def classify(
+        utterance: str,
+        enum_type: type[T],
+        llm: Model,
+        task_desc: str | None,
+        num_trials: int = 3,
+        timeout_secs: int = 5,
+    ) -> tuple[T | None, EmpiricalConfidence]:
+        """
+        One-off instantiation and calling of a classifier
+
+        :param utterance: text to classify
+        :param enum_type: type representing options
+        :param llm: textual model to utilize
+        :param task_desc: textual description of the task
+        :param num_trials: number of classifications to perform & aggregate
+        :timeout_secs: time given per LLM call
+        :return: most common classification with confidence
+        """
+
+        return EnumClassifier(enum_type, task_desc)(
+            utterance, llm, num_trials, timeout_secs
+        )
