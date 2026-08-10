@@ -4,7 +4,10 @@ Each folder provides example apps.
 
 ## cli
 
-Demonstration of a decision process with a console I/O loop.
+Simple demonstration of a cogent implementing a console I/O loop, including...
+* sensor/actuator integration and runtime arguments (`main`)
+* operators leveraging `StagedState`: control logic and flow within an enum (`dp_state`)
+* controlled logging (`log_support`)
 
 To run:
 
@@ -12,11 +15,12 @@ To run:
 2. `pip install -r requirements.txt`
 3. `python main.py`
 
+
 ## lang
 
 Demonstration of key language features.
-* `describe.py`: `FactDescriber` to elucidate facts within a kb
-* `unit_choice.py`: `EnumClassifier` akin to a unit-test framework
+* `describe.py`: `FactDescriber` to provide NL descriptions of facts within a kb
+* `unit_choice.py`: `EnumClassifier` to select the best enum value (or ``None``) given an NL utterance
 
 To run:
 
@@ -30,7 +34,7 @@ To run:
 
 ## web-wj
 
-WaterJug via web-based (Streamlit) interface using LLM for problem configuration.
+WaterJug via web-based (Streamlit) interface using an LLM to interpret the problem configuration and a graph-search planner to solve.
 
 To run:
 
