@@ -2,21 +2,58 @@
 Tests for utility code
 """
 
-from typing import cast
-
 import unittest
+from typing import cast
 
 from cognition import (
     AttrReferral,
+    MutableWrapper,
     optionally_name,
     stringify,
+    timed,
 )
 
-#
+# ===
 
 
 class TestUtility(unittest.TestCase):
     """Tests for utility code"""
+
+    def test_timed(self) -> None:
+        """Confirming @timed"""
+
+        @timed
+        def _inc(x: int) -> int:
+            return x + 1
+
+        result1, time1 = _inc(42)  # pylint: disable=unpacking-non-sequence
+        self.assertEqual(result1, 43)
+        self.assertGreater(time1, 0)
+
+        result2, time2 = _inc(51)  # pylint: disable=unpacking-non-sequence
+        self.assertEqual(result2, 52)
+        self.assertGreater(time2, 0)
+
+    def test_mutable_wrapper(self) -> None:
+        """Confirming MutableWrapper"""
+
+        start = "start"
+        end = "end"
+
+        r1 = MutableWrapper(start)
+        r2 = r1
+
+        self.assertEqual(r1.value, start)
+        self.assertEqual(r2.value, start)
+        self.assertEqual(str(r1), start)
+        self.assertEqual(repr(r1), f"{ type(r1).__name__ }({ start !r })")
+
+        r2.value = end
+
+        self.assertEqual(r1.value, end)
+        self.assertEqual(r2.value, end)
+        self.assertEqual(str(r2), end)
+        self.assertEqual(repr(r2), f"{ type(r1).__name__ }({ end !r })")
 
     def test_optionally_name(self) -> None:
         """Confirming optionally_name"""
@@ -61,10 +98,12 @@ class TestUtility(unittest.TestCase):
         }
 
         obj = AttrReferral(src)
+        view = AttrReferral.view(obj)
 
         # should not be able to access
         # a key not in the source
         self.assertFalse(hasattr(obj, "c"))
+        self.assertFalse("c" in view)
         with self.assertRaises(AttributeError):
             _ = obj.c
 
@@ -82,27 +121,45 @@ class TestUtility(unittest.TestCase):
         src = {"a": 1, "b": "bee"}
 
         obj = AttrReferral(src)
+        view = AttrReferral.view(obj)
 
-        #
+        # ===
 
         self.assertTrue(hasattr(obj, "a"))
+        self.assertTrue("a" in view)
         self.assertEqual(obj.a, src["a"])
+        self.assertEqual(view["a"], src["a"])
 
         self.assertTrue(hasattr(obj, "b"))
+        self.assertTrue("b" in view)
         self.assertEqual(obj.b, src["b"])
+        self.assertEqual(view["b"], src["b"])
 
         self.assertFalse(hasattr(obj, "c"))
+        self.assertFalse("c" in view)
 
-        #
+        self.assertDictEqual(src, dict(view))
+        self.assertEqual(str(obj), f"AttrReferral({src})")
+
+        # ===
 
         src["a"] = cast(int, src["a"]) + 1
         src["c"] = 3.14
 
         self.assertTrue(hasattr(obj, "a"))
+        self.assertTrue("a" in view)
         self.assertEqual(obj.a, src["a"])
+        self.assertEqual(view["a"], src["a"])
 
         self.assertTrue(hasattr(obj, "b"))
+        self.assertTrue("b" in view)
         self.assertEqual(obj.b, src["b"])
+        self.assertEqual(view["b"], src["b"])
 
         self.assertTrue(hasattr(obj, "c"))
+        self.assertTrue("c" in view)
         self.assertAlmostEqual(obj.c, src["c"])
+        self.assertAlmostEqual(view["c"], src["c"])
+
+        self.assertDictEqual(src, dict(view))
+        self.assertEqual(str(obj), f"AttrReferral({src})")

@@ -2,19 +2,18 @@
 Tests for chain code
 """
 
-from typing import cast
-
-from enum import StrEnum, auto
-
 import unittest
+from enum import StrEnum, auto
+from typing import cast
 
 from cognition import (
     ChainState,
-    Task,
-    create_chain_task,
+    EnumDispatch,
+    create_chain_dp,
+    stringify,
 )
 
-#
+# ===
 
 
 class NerdFighter(StrEnum):
@@ -38,18 +37,22 @@ class TestChain(unittest.TestCase):
         def my_fact(n: int) -> int:
             """factorial via chaining"""
 
-            t: Task[ChainState[int, int]] = create_chain_task(
-                range(n),
-                lambda link, _io: cast(int, link.accumulator) * (link.value + 1),
-                1,
+            result = cast(
+                ChainState[int, int],
+                create_chain_dp(
+                    range(n),
+                    stringify("factorial_step")(
+                        lambda link, _io: cast(int, link.accumulator) * (link.value + 1)
+                    ),
+                    1,
+                )(),
             )
 
-            t.run_until_done()
-            self.assertIsNone(t.state.current_link)
+            self.assertIsNone(result.current_link)
 
-            return cast(int, t.state.accumulator)
+            return cast(int, result.accumulator)
 
-        #
+        # ===
 
         self.assertEqual(my_fact(0), 1)
 
@@ -62,11 +65,61 @@ class TestChain(unittest.TestCase):
         Chaining without accumulator
         """
 
-        t: Task[ChainState[NerdFighter, None]] = create_chain_task(
-            NerdFighter,
-            lambda link, io: print(link.value.value[0].lower(), end="", file=io.o.log),
+        self.assertEqual(
+            create_chain_dp(
+                NerdFighter,
+                stringify("first_lower_to_log")(
+                    lambda link, io: print(
+                        link.value.value[0].lower(), end="", file=io.o.log
+                    ),
+                ),
+            )
+            .run_until_done()
+            .log,
+            "dftba",
         )
 
-        t.run_until_done()
+    def test_dftba_dispatch(self) -> None:
+        """
+        Chaining to dispatch -> values
+        """
 
-        self.assertEqual(t.log, "dftba")
+        class Project(EnumDispatch[NerdFighter]):
+            """
+            Segmenting operations by enum value
+            """
+
+            def __init__(self) -> None:
+                self._result: list[str] = []
+
+            @property
+            def result(self) -> str:
+                """put it together"""
+                return " + ".join(self._result)
+
+            def don_t(self) -> None:
+                """d"""
+                self._result.append("care")
+
+            def forget(self) -> None:
+                """f"""
+                self._result.append("create")
+
+            def to(self) -> None:
+                """t"""
+                self._result.append("cultivate")
+
+            def be(self) -> None:
+                """b"""
+                self._result.append("empower")
+
+            def awesome(self) -> None:
+                """a"""
+                self._result.append("learn")
+
+        pfa = Project()
+        create_chain_dp(
+            NerdFighter,
+            stringify("pfa_dispatch")(lambda link, _io: pfa.dispatch(link.value)),
+        )()
+        self.assertEqual(pfa.result, "care + create + cultivate + empower + learn")

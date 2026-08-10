@@ -1,50 +1,45 @@
 """
-Tests for task code
+Tests for core code
 """
 
-from typing import Any, cast
-
-from collections.abc import Iterable
-
-from math import sqrt
-
 import unittest
-
+from collections.abc import Iterable
 from io import StringIO
+from math import sqrt
+from typing import Any, cast
 
 from cognition import (
     Action,
     ActionFactory,
     ActionRank,
     AttrReferral,
-    GoalCheck,
+    BaseDecisionProcess,
+    DecisionProcessErrorMessage,
+    DecisionProcessExecutionError,
     IOContainer,
     Phase,
     Rank,
-    Task,
-    TaskErrorMessage,
-    TaskExecutionError,
-    TimeSensor,
+    TerminationCheck,
     create_elaborator,
     create_named_action,
     stringify,
 )
 
-#
+# ===
 
-GOAL_NAME: str = "prime_or_perfect"
+TERMINATION_NAME: str = "prime_or_perfect"
 FACTORY_NAME: str = "always_inc"
 ELAB_NAME: str = "prime_and_perfect"
 
 
-def _make_goal(a_perfect: str, a_prime: str) -> GoalCheck[int]:
+def _make_term(a_perfect: str, a_prime: str) -> TerminationCheck[int]:
     """
-    Create the perfect/prime goal check
+    Create the perfect/prime termination check
     given the supplied elaboration
     attributes
     """
 
-    @stringify(GOAL_NAME)
+    @stringify(TERMINATION_NAME)
     def pred(_: int, io: IOContainer) -> bool:
         v_perfect = cast(bool, getattr(io.i.elaboration, a_perfect))
 
@@ -87,8 +82,8 @@ def _make_increment_factory(a_name: str) -> ActionFactory[int]:
     return factory
 
 
-class ListSensorActuator:
-    """confirms simple sensor/actuator scheme"""
+class ListInputOutput:
+    """confirms simple input/output scheme"""
 
     def __init__(self) -> None:
         """make the encapsulated list"""
@@ -97,7 +92,7 @@ class ListSensorActuator:
 
     @property
     def data(self) -> list[str]:
-        """sensor access to list contents"""
+        """input access to list contents"""
 
         return self._data.copy()
 
@@ -107,41 +102,51 @@ class ListSensorActuator:
         self._data.append(item)
 
 
-class TestTask(unittest.TestCase):
-    """Tests for task code"""
+class TestCore(unittest.TestCase):
+    """Tests for core code"""
 
     def test_func_vs_imp(self) -> None:
         """Confirms flexible action execution"""
 
-        tf: Task[list[str]] = Task(lambda: ["hi"])
+        @stringify("list_with_hi")
+        def _list_with_hi() -> list[str]:
+            return ["hi"]
 
-        self.assertEqual(tf.state, ["hi"])
+        dp_f: BaseDecisionProcess[list[str]] = BaseDecisionProcess(_list_with_hi)
 
-        tf.add_action_factory(lambda _s, _io: [lambda s, _: s[1:]]).run_cycles()
+        self.assertEqual(dp_f.state, ["hi"])
 
-        self.assertEqual(tf.state, [])
+        dp_f.add_action_factory(
+            stringify("always_pop")(
+                lambda _s, _io: [stringify("pop")(lambda s, _: s[1:])]
+            )
+        ).run_cycles()
 
-        #
+        self.assertEqual(dp_f.state, [])
 
-        ti: Task[list[str]] = Task(lambda: ["hi"])
+        # ===
 
-        self.assertEqual(ti.state, ["hi"])
+        dp_i: BaseDecisionProcess[list[str]] = BaseDecisionProcess(_list_with_hi)
+
+        self.assertEqual(dp_i.state, ["hi"])
 
         def a(s: list[str], _io: IOContainer) -> None:
             del s[0]
 
-        ti.add_action_factory(lambda _s, _io: a).run_cycles()
+        dp_i.add_action_factory(stringify("pop")(lambda _s, _io: a)).run_cycles()
 
-        self.assertEqual(ti.state, [])
+        self.assertEqual(dp_i.state, [])
 
     def test_elab_dec(self) -> None:
         """Confirms elaborator decoration"""
 
         word = "test"
-        t: Task[str] = Task(lambda: word)
+        dp: BaseDecisionProcess[str] = BaseDecisionProcess(
+            stringify("start_word")(lambda: word)
+        )
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -152,25 +157,28 @@ class TestTask(unittest.TestCase):
                     "Potential Actions=",
                     "Action Evaluators=",
                     "Rankings=",
-                    "Goal Checks=",
+                    "Termination Checks=",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
+                    ),
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
 
-        #
+        # ===
 
         e_name = "echo"
 
-        @t.elaborator
+        @dp.elaborator
         @stringify(e_name)
         def echo(s: str, _io: IOContainer) -> dict[str, Any]:
             return {e_name: s}
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -181,32 +189,39 @@ class TestTask(unittest.TestCase):
                     "Potential Actions=",
                     "Action Evaluators=",
                     "Rankings=",
-                    "Goal Checks=",
+                    "Termination Checks=",
                     f"Elaborators={e_name}",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
+                    ),
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
 
-        #
+        # ===
 
         g_name = f"check_{e_name}"
 
-        @t.goal_check
+        @dp.termination_check
         @stringify(g_name)
         def check_echo(_s: str, io: IOContainer) -> bool:
             e_result = cast(
                 str,
                 getattr(
-                    cast(AttrReferral, getattr(io.i, Task.SENSOR_ELABORATION)), e_name
+                    cast(
+                        AttrReferral,
+                        getattr(io.i, BaseDecisionProcess.INPUT_KEY_ELABORATION),
+                    ),
+                    e_name,
                 ),
             )
 
             return e_result == word
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -217,21 +232,24 @@ class TestTask(unittest.TestCase):
                     "Potential Actions=",
                     "Action Evaluators=",
                     "Rankings=",
-                    f"Goal Checks={g_name}",
+                    f"Termination Checks={g_name}",
                     f"Elaborators={e_name}",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
+                    ),
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
 
-        t.run_until_done()
+        dp.run_until_done()
 
         self.assertEqual(
-            str(t),
+            str(dp),
             "\n".join(
                 (
-                    f"Phase={Phase.GOALCHECK.name}",
+                    f"Phase={Phase.TERMINATIONCHECK.name}",
                     f"State={word}",
                     f"Done?={True}",
                     f"Chosen={None}",
@@ -239,10 +257,13 @@ class TestTask(unittest.TestCase):
                     "Potential Actions=",
                     "Action Evaluators=",
                     "Rankings=",
-                    f"Goal Checks={g_name}",
+                    f"Termination Checks={g_name}",
                     f"Elaborators={e_name}",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
+                    ),
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
@@ -250,9 +271,9 @@ class TestTask(unittest.TestCase):
     def test_phase(self) -> None:
         """Confirms phase sequencing"""
 
-        self.assertEqual(Phase.ELABORATION.next, Phase.GOALCHECK)
+        self.assertEqual(Phase.ELABORATION.next, Phase.TERMINATIONCHECK)
 
-        self.assertEqual(Phase.GOALCHECK.next, Phase.PROPOSE)
+        self.assertEqual(Phase.TERMINATIONCHECK.next, Phase.PROPOSE)
 
         self.assertEqual(Phase.PROPOSE.next, Phase.RANK)
 
@@ -261,7 +282,7 @@ class TestTask(unittest.TestCase):
         self.assertEqual(Phase.APPLY.next, Phase.ELABORATION)
 
     def test_basics(self) -> None:
-        """Confirms some task basics"""
+        """Confirms some decision process basics"""
 
         a_inc = create_named_action("inc", lambda s, _io: s + 1)
 
@@ -278,43 +299,50 @@ class TestTask(unittest.TestCase):
         with self.assertRaises(TypeError):
             _ = ar_dec_high < "not an ActionRank"
 
-        #
+        # ===
 
         starting_point: int = 100
 
-        t: Task[int] = Task(lambda: starting_point)
+        dp: BaseDecisionProcess[int] = BaseDecisionProcess(
+            stringify("starting_num")(lambda: starting_point)
+        )
 
         # no actions yet!
-        with self.assertRaises(TaskExecutionError) as cm:
-            for _ in t.phases():
+        with self.assertRaises(DecisionProcessExecutionError) as cm:
+            for _ in dp.phases():
                 pass
 
-        self.assertEqual(cm.exception.msg, TaskErrorMessage.NO_PROPOSAL)
+        self.assertEqual(cm.exception.msg, DecisionProcessErrorMessage.NO_PROPOSAL)
 
-        self.assertEqual(str(cm.exception), TaskErrorMessage.NO_PROPOSAL.value)
+        self.assertEqual(
+            str(cm.exception), DecisionProcessErrorMessage.NO_PROPOSAL.value
+        )
 
-        t.reinit()
+        dp.reinit()
 
-        #
+        # ===
 
-        t.add_action_factory(lambda _s, _io: [a_inc, a_dec])
+        dp.add_action_factory(
+            stringify("manual_factory")(lambda _s, _io: [a_inc, a_dec])
+        )
 
         # no evaluation of multiple possibilities
-        with self.assertRaises(TaskExecutionError) as cm:
-            for _ in t.cycles():
+        with self.assertRaises(DecisionProcessExecutionError) as cm:
+            for _ in dp.cycles():
                 pass
 
-        self.assertEqual(cm.exception.msg, TaskErrorMessage.NO_RANK)
+        self.assertEqual(cm.exception.msg, DecisionProcessErrorMessage.NO_RANK)
 
-        self.assertEqual(str(cm.exception), TaskErrorMessage.NO_RANK.value)
+        self.assertEqual(str(cm.exception), DecisionProcessErrorMessage.NO_RANK.value)
 
-        #
+        # ===
 
-        t.add_action_evaluator(lambda _s, _io, _actions: [])
+        dp.add_action_evaluator(stringify("no_ranks")(lambda _s, _io, _actions: []))
 
-        #
+        # ===
 
-        @t.action_evaluator
+        @dp.action_evaluator
+        @stringify("dec_over_inc")
         def dec_over_inc(
             _s: int, _io: IOContainer, actions: Iterable[Action[int]]
         ) -> Iterable[ActionRank[int]]:
@@ -326,20 +354,22 @@ class TestTask(unittest.TestCase):
                 if a in (a_dec, a_inc)
             ]
 
-        t.run_cycles()
+        dp.run_cycles()
 
-        self.assertEqual(t.state, starting_point - 1)
-        self.assertEqual(t.num_cycles, 2)
+        self.assertEqual(dp.state, starting_point - 1)
+        self.assertEqual(dp.num_cycles, 2)
 
-        #
+        # ===
 
-        t.add_goal_check(lambda s, _io: s == starting_point - 2)
+        dp.add_termination_check(
+            stringify("starting_minus_2")(lambda s, _io: s == starting_point - 2)
+        )
 
-        for _ in t.cycles():
+        for _ in dp.cycles():
             pass
 
-        self.assertEqual(t.state, starting_point - 2)
-        self.assertEqual(t.num_cycles, 3)
+        self.assertEqual(dp.state, starting_point - 2)
+        self.assertEqual(dp.num_cycles, 3)
 
     def test_io(self) -> None:
         """Confirming basic io functionality"""
@@ -347,12 +377,14 @@ class TestTask(unittest.TestCase):
         starting_point: int = 1
 
         lst_name: str = "lst"
-        lst: ListSensorActuator = ListSensorActuator()
+        lst = ListInputOutput()
 
-        task_io: Task[int] = Task(lambda: starting_point)
+        dp_io: BaseDecisionProcess[int] = BaseDecisionProcess(
+            stringify("starting_num")(lambda: starting_point)
+        )
 
         self.assertEqual(
-            str(task_io),
+            str(dp_io),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -363,20 +395,28 @@ class TestTask(unittest.TestCase):
                     "Potential Actions=",
                     "Action Evaluators=",
                     "Rankings=",
-                    "Goal Checks=",
+                    "Termination Checks=",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
+                    ),
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
 
-        # add as both sensor/actuator
-        task_io.set_sensor(lst_name, lst).set_actuator(lst_name, lst)
+        # add as both input/output
+        dp_io.set_input_data(lst_name, lst).set_output_channel(lst_name, lst)
+
+        self.assertIs(getattr(dp_io.io.o, lst_name), lst)
+        self.assertIsNot(getattr(dp_io.io.i, lst_name).data, lst.data)
+        self.assertListEqual(lst.data, [])
+        self.assertListEqual(getattr(dp_io.io.i, lst_name).data, lst.data)
 
         # confirm registration
         self.assertEqual(
-            str(task_io),
+            str(dp_io),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -387,10 +427,13 @@ class TestTask(unittest.TestCase):
                     "Potential Actions=",
                     "Action Evaluators=",
                     "Rankings=",
-                    "Goal Checks=",
+                    "Termination Checks=",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}, {lst_name}",
-                    f"Actuators={Task.ACTUATOR_LOG}, {lst_name}",
+                    (
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}, {lst_name}"
+                    ),
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}, {lst_name}",
                 )
             ),
         )
@@ -398,15 +441,20 @@ class TestTask(unittest.TestCase):
         def inc_and_add_and_log(s: int, io: IOContainer) -> int:
             """
             * logs a combo of sensed data
-            * adds sensed data to another actuator
-            * progresses the task
+            * adds sensed data to another output channel
+            * progresses the decision process
             """
 
-            sensed: str = str(cast(ListSensorActuator, getattr(io.i, lst_name)).data)
-            cast(ListSensorActuator, getattr(io.o, lst_name)).add(str(s))
+            sensed: str = str(cast(ListInputOutput, getattr(io.i, lst_name)).data)
+            cast(ListInputOutput, getattr(io.o, lst_name)).add(str(s))
 
-            log: StringIO = cast(StringIO, getattr(io.o, Task.ACTUATOR_LOG))
-            cycle: int = cast(TimeSensor[int], getattr(io.i, Task.SENSOR_TIME)).cycles
+            log: StringIO = cast(
+                StringIO, getattr(io.o, BaseDecisionProcess.OUTPUT_KEY_LOG)
+            )
+            cycle: int = getattr(
+                getattr(io.i, BaseDecisionProcess.INPUT_KEY_TIME),
+                BaseDecisionProcess.INPUT_ATTR_TIME,
+            )
 
             print(f"@{cycle}: data={sensed}", file=log)
 
@@ -423,7 +471,7 @@ class TestTask(unittest.TestCase):
 
             return a_go
 
-        task_io.add_action_factory(go_action_factory)
+        dp_io.add_action_factory(go_action_factory)
 
         goal_diff: int = 3
         goal_name: str = f"{a_name} check {goal_diff}"
@@ -434,16 +482,24 @@ class TestTask(unittest.TestCase):
 
             return s == starting_point + goal_diff
 
-        task_io.add_goal_check(go_goal).run_until_done()
+        dp_io.add_termination_check(go_goal).run_until_done()
 
-        # confirm ability to remove sensors/actuators
-        task_io.set_sensor(lst_name, None).set_actuator(lst_name, None)
+        self.assertIs(getattr(dp_io.io.o, lst_name), lst)
+        self.assertIsNot(getattr(dp_io.io.i, lst_name).data, lst.data)
+        self.assertListEqual(
+            lst.data,
+            [str(n) for n in range(starting_point, starting_point + goal_diff)],
+        )
+        self.assertListEqual(getattr(dp_io.io.i, lst_name).data, lst.data)
+
+        # confirm ability to remove input/output
+        dp_io.set_input_data(lst_name, None).set_output_channel(lst_name, None)
 
         self.assertEqual(
-            str(task_io),
+            str(dp_io),
             "\n".join(
                 (
-                    f"Phase={Phase.GOALCHECK.name}",
+                    f"Phase={Phase.TERMINATIONCHECK.name}",
                     f"State={starting_point + goal_diff}",
                     f"Done?={True}",
                     f"Chosen={a_name}",
@@ -451,22 +507,26 @@ class TestTask(unittest.TestCase):
                     f"Potential Actions={a_name}",
                     "Action Evaluators=",
                     "Rankings=",
-                    f"Goal Checks={goal_name}",
+                    f"Termination Checks={goal_name}",
                     "Elaborators=",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
+                    ),
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
 
         # confirm logging
         self.assertEqual(
-            task_io.log,
+            dp_io.log,
+            # ruff: ignore[FLY002]
             "\n".join(("@1: data=[]", "@2: data=['1']", "@3: data=['1', '2']", "")),
         )
 
     def test_count(self) -> None:
-        """Confirming simple task execution"""
+        """Confirming simple decision process execution"""
 
         starting_point: int = 1_001
         next_perfect_prime: int = 1_009
@@ -475,11 +535,11 @@ class TestTask(unittest.TestCase):
         e_perfect: str = "perfect"
         a_inc: str = "inc"
 
-        #
+        # ===
 
-        task_count_until: Task[int] = (
-            Task(lambda: starting_point)
-            .add_goal_check(_make_goal(e_perfect, e_prime))
+        dp_count_until: BaseDecisionProcess[int] = (
+            BaseDecisionProcess(stringify("starting_num")(lambda: starting_point))
+            .add_termination_check(_make_term(e_perfect, e_prime))
             .add_elaborator(
                 create_elaborator(
                     ELAB_NAME,
@@ -492,18 +552,18 @@ class TestTask(unittest.TestCase):
             .add_action_factory(_make_increment_factory(a_inc))
         )
 
-        self.assertEqual(task_count_until.num_cycles, 0)
+        self.assertEqual(dp_count_until.num_cycles, 0)
 
-        self.assertEqual(task_count_until.state, starting_point)
+        self.assertEqual(dp_count_until.state, starting_point)
 
-        self.assertFalse(task_count_until.done)
+        self.assertFalse(dp_count_until.done)
 
-        self.assertEqual(task_count_until.phase, Phase.ELABORATION)
+        self.assertEqual(dp_count_until.phase, Phase.ELABORATION)
 
-        self.assertIsNone(task_count_until.chosen_action)
+        self.assertIsNone(dp_count_until.chosen_action)
 
         self.assertEqual(
-            str(task_count_until),
+            str(dp_count_until),
             "\n".join(
                 (
                     f"Phase={Phase.ELABORATION.name}",
@@ -514,31 +574,34 @@ class TestTask(unittest.TestCase):
                     "Potential Actions=",
                     "Action Evaluators=",
                     "Rankings=",
-                    f"Goal Checks={GOAL_NAME}",
+                    f"Termination Checks={TERMINATION_NAME}",
                     f"Elaborators={ELAB_NAME}",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
+                    ),
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )
 
-        task_count_until.run_until_done()
+        dp_count_until.run_until_done()
 
-        self.assertEqual(task_count_until.num_cycles, 9)
+        self.assertEqual(dp_count_until.num_cycles, 9)
 
-        self.assertEqual(task_count_until.state, next_perfect_prime)
+        self.assertEqual(dp_count_until.state, next_perfect_prime)
 
-        self.assertTrue(task_count_until.done)
+        self.assertTrue(dp_count_until.done)
 
-        self.assertEqual(task_count_until.phase, Phase.GOALCHECK)
+        self.assertEqual(dp_count_until.phase, Phase.TERMINATIONCHECK)
 
-        self.assertEqual(task_count_until.chosen_action, a_inc)
+        self.assertEqual(dp_count_until.chosen_action, a_inc)
 
         self.assertEqual(
-            str(task_count_until),
+            str(dp_count_until),
             "\n".join(
                 (
-                    f"Phase={Phase.GOALCHECK.name}",
+                    f"Phase={Phase.TERMINATIONCHECK.name}",
                     f"State={next_perfect_prime}",
                     f"Done?={True}",
                     f"Chosen={a_inc}",
@@ -546,10 +609,13 @@ class TestTask(unittest.TestCase):
                     f"Potential Actions={a_inc}",
                     "Action Evaluators=",
                     "Rankings=",
-                    f"Goal Checks={GOAL_NAME}",
+                    f"Termination Checks={TERMINATION_NAME}",
                     f"Elaborators={ELAB_NAME}",
-                    f"Sensors={Task.SENSOR_TIME}, {Task.SENSOR_ELABORATION}",
-                    f"Actuators={Task.ACTUATOR_LOG}",
+                    (
+                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
+                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
+                    ),
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
                 )
             ),
         )

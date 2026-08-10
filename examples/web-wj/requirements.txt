@@ -1,0 +1,6 @@
+streamlit==1.59.2
+python-dotenv==1.2.2
+watchdog==6.0.0
+
+# adding cognition
+../..

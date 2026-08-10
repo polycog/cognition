@@ -2,11 +2,10 @@
 LLM code for WaterJug
 """
 
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 from pydantic_ai.models import Model
-
-from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -14,7 +13,7 @@ load_dotenv()
 
 AGENT_FILE: str = "agent.yaml"
 
-#
+# ===
 
 
 class LLMException(Exception):
@@ -44,7 +43,7 @@ class ConfigFail(BaseModel):
 type WJConfig = ProblemConfig | ConfigFail
 
 
-#
+# ===
 
 
 LLM_EXAMPLE_INPUT: str = (

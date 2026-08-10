@@ -24,7 +24,7 @@ autoapi_options = [
     # 'private-members',
     'show-inheritance',
     'show-module-summary',
-    # 'special-members',
+    'special-members',
     # 'imported-members',
 ]
 
@@ -48,3 +48,21 @@ html_static_path = ['_static']
 html_theme_options = {
 }
 html_favicon = "_static/favicon.ico"
+
+
+# ===
+
+# pylint: disable=missing-function-docstring
+def skip_member(_app, _what, name, _obj, skip, _options): # type: ignore
+    private_but_keep = (
+        "cognition.decision.state.SelfReinitState._reinit",
+        "cognition.decision.state.SelfElaborationState._elaborate"
+    )
+    if name in private_but_keep:
+        return False
+
+    return skip
+
+# pylint: disable=missing-function-docstring
+def setup(sphinx): # type: ignore
+    sphinx.connect("autoapi-skip-member", skip_member)

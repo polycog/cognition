@@ -6,6 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "polycog-cognition"
 dynamic = ["version"]
 dependencies = [
+    "pydantic-ai-slim[spec] ~= 2.9.1",
+    "networkx ~= 3.6.1",
+    "types-networkx ~= 3.6.1.0",
 ]
 requires-python = ">=3.13"
 authors = [
@@ -38,3 +41,13 @@ where = ["src"]
 
 [tool.black]
 target-version = ["py313",]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+
+[tool.pylint.MAIN]
+ignored-classes = ["AttrReferral"]
+
+[tool.pylint.similarities]
+min-similarity-lines=8

@@ -7,7 +7,7 @@ https://docs.oracle.com/javase/8/docs/api/java/util/function/package-summary.htm
 
 from collections.abc import Callable
 
-#
+# ===
 
 type Supplier[X] = Callable[[], X]
 """Represents a supplier of results."""

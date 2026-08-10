@@ -4,208 +4,115 @@ demonstration of the
 cognition library
 """
 
-from __future__ import annotations
-
-from collections.abc import Callable
-
-from dataclasses import dataclass
-
-from enum import IntEnum
+from collections.abc import Mapping
+from typing import Any, overload
 
 from cognition import (
-    AttrReferral,
-    EnhancedTask,
+    Cogent,
+    DecisionProcess,
     IOContainer,
-    NamedOperator,
+    self_actuator,
+    self_sensor,
+    staged_operator,
     stringify,
 )
-
 from rich import print as rprint
 from rich.prompt import Prompt
 
-#
+from commands import CommandLogEntry
+from dp_state import CLIStage, CLIState
+from log_support import setup_logging
+
+# ===
+
+setup_logging()
+
+###################################################
+# Agent construction
+###################################################
 
 
-@dataclass(frozen=True)
-class CommandLogEntry:
-    """Logging past commands with result"""
-
-    cmd: str
-    result: CommandReturn
-
-
-class CLIStage(IntEnum):
-    """Step of CLI processing"""
-
-    GET_CMD = 0
-    EXEC_CMD = 1
-
-    def next(self) -> CLIStage:
-        """Next stage"""
-
-        return CLIStage((self + 1) % len(CLIStage))
-
-
-@dataclass
-class CLIState:
+class CLICogent(Cogent[DecisionProcess[CLIState]]):
     """
-    Get/Process cmd
-    +
-    cmd log
+    Cogent, with integrated sensing/actuation
     """
 
-    stage: CLIStage
-    log: list[CommandLogEntry]
+    def __init__(self, name: str = "cli", **kwargs: Any) -> None:
+        super().__init__(DecisionProcess(CLIState()), name=name, **kwargs)
+
+        self._cmd = ""
+
+    @overload
+    def cmd(self) -> str:
+        """cmd sensor"""
+
+    @overload
+    def cmd(self, param: str) -> None:
+        """cmd actuator"""
+
+    @self_actuator  # type: ignore
+    @self_sensor
+    def cmd(self, param: str | None = None) -> str | None:
+        """get/set current cmd"""
+
+        if param is None:
+            return self._cmd
+
+        self._cmd = Prompt.ask(f"[bold blue]{ param }[/]")
+        return None
 
 
-#
+cli_cogent = CLICogent()
 
-# shared reference to
-# command input buffer
-cli_status: dict[str, str] = {}
-
-#
+###################################################
+# Decision process via state stage
+###################################################
 
 
-@dataclass(frozen=True)
-class CommandReturn:
-    """CLI return: code and exit flag"""
-
-    text: str
-    code: int
-    exit: bool
-
-
-type Command = Callable[[], CommandReturn]
-
-
-def register_command(dest: dict[str, Command]) -> Callable[[Command], Command]:
-    """adds a command to the destination"""
-
-    def dec(cmd: Command) -> Command:
-        """actually registers the command"""
-
-        dest[str(cmd)] = cmd
-        return cmd
-
-    return dec
-
-
-#
-
-commands: dict[str, Command] = {}
-
-
-@register_command(commands)
-@stringify("help")
-def cmd_help() -> CommandReturn:
-    """List of available commands"""
-
-    return CommandReturn(f"Available commands: {", ".join(commands.keys())}", 0, False)
-
-
-@register_command(commands)
-@stringify("hello")
-def cmd_hello() -> CommandReturn:
-    """Friendly!!"""
-
-    return CommandReturn(":smile:", 0, False)
-
-
-@register_command(commands)
-@stringify("err")
-def cmd_err() -> CommandReturn:
-    """Badness"""
-
-    return CommandReturn(
-        ":scream: What we've got here is... failure to communicate", 1, False
-    )
-
-
-@register_command(commands)
-@stringify("bye")
-def cmd_bye() -> CommandReturn:
-    """Exit"""
-
-    return CommandReturn(":waving_hand:", 0, True)
-
-
-@register_command(commands)
-@stringify("history")
-def cmd_history() -> CommandReturn:
-    """Log of past interactions"""
-
-    return CommandReturn("\n".join(str(entry) for entry in t.state.log), 0, False)
-
-
-#
-
-t = EnhancedTask(lambda: CLIState(CLIStage.GET_CMD, [])).set_sensor(
-    "cli", AttrReferral(cli_status)
-)
-
-
-@t.operator("get_command")
-class GetCommand(NamedOperator[CLIState]):
-    """GET_CMD -> $"""
-
-    def can_perform(self, state: CLIState, _io: IOContainer) -> bool:
-        return state.stage == CLIStage.GET_CMD
-
-    def perform(self, state: CLIState, _io: IOContainer) -> None:
-        cli_status["command"] = Prompt.ask("[bold blue]$[/]")
-        state.stage = state.stage.next()
-
-
-@t.operator("exec_command")
-class ExecCommand(NamedOperator[CLIState]):
-    """EXEC_CMD -> execute"""
-
-    def can_perform(self, state: CLIState, _io: IOContainer) -> bool:
-        return state.stage == CLIStage.EXEC_CMD
-
-    def perform(self, state: CLIState, io: IOContainer) -> None:
-        cmd = io.i.cli.command
-
-        if cmd in commands:
-            log_entry = CommandLogEntry(cmd, commands[cmd]())
-        else:
-            log_entry = CommandLogEntry(
-                cmd, CommandReturn(f"Invalid command: {cmd}", 1, False)
-            )
-
-        state.log.append(log_entry)
-
-        if log_entry.result.code != 0:
-            rprint(f"[bold red]{log_entry.result.text}[/]")
-        else:
-            rprint(log_entry.result.text)
-        print()
-
-        state.stage = state.stage.next()
-
-
-@t.goal_check
-def exit_flag(s: CLIState, _: IOContainer) -> bool:
-    """Exit if told to!"""
-
-    if s.log:
-        return s.log[-1].result.exit
-
-    return False
-
-
-#
-
-
-def main() -> None:
-    """Start the CLI"""
+@staged_operator(cli_cogent.dp, CLIStage.INIT)
+def perform_init(_s: CLIState, _io: IOContainer) -> None:
+    """init action"""
 
     rprint("Welcome to SimpleCLI")
     rprint("Enter [code]help[/] to see available commands.")
     rprint()
 
-    t.run_until_done()
+
+@staged_operator(cli_cogent.dp, CLIStage.GET_CMD, terminal=True)
+def perform_get(_s: CLIState, io: IOContainer) -> None:
+    """get action"""
+
+    io.o.cmd(io.i.args.shell_sym)
+
+
+@staged_operator(cli_cogent.dp, CLIStage.EXEC_CMD, terminal=True)
+def perform_exec(s: CLIState, io: IOContainer) -> Mapping[str, Any]:
+    """exec action"""
+
+    return {"log_entry": CommandLogEntry.attempt_exec(io.i.cmd, s.log)}
+
+
+###################################################
+# Cogent loop gating
+###################################################
+
+
+@stringify("go_until_exit")
+def go_until_exit(c: Cogent[DecisionProcess[CLIState]]) -> bool:
+    """continue until exit stage"""
+
+    return c.dp.state.stage is not CLIStage.EXIT
+
+
+###################################################
+# Start the app
+###################################################
+
+
+def main() -> None:
+    """dispatch the cli agent"""
+
+    cli_cogent(go_until_exit, shell_sym="$")
 
 
 if __name__ == "__main__":
