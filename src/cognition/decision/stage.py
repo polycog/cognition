@@ -64,7 +64,7 @@ class StagedState[T: Enum](EnumDispatch[T]):
             kwargs,
         )
 
-        next_stage = self(self.stage, *args, **kwargs)
+        next_stage = self.dispatch(self.stage, *args, **kwargs)
 
         _logger.info(
             "%s %s: stage=%s -> stage=%s",

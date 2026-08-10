@@ -4,7 +4,7 @@ Definitions for DP state
 
 from dataclasses import dataclass, field
 
-from cognition import AutoDocEnum, StagedState
+from cognition import AutoDocEnum, SelfReinitState, StagedState
 
 from commands import CommandLogEntry
 
@@ -21,7 +21,7 @@ class CLIStage(AutoDocEnum):
 
 
 @dataclass
-class CLIState(StagedState[CLIStage]):
+class CLIState(StagedState[CLIStage], SelfReinitState):
     """
     State of the CLI program
     """

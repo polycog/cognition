@@ -119,6 +119,7 @@ class TestChain(unittest.TestCase):
 
         pfa = Project()
         create_chain_dp(
-            NerdFighter, stringify("pfa_dispatch")(lambda link, _io: pfa(link.value))
+            NerdFighter,
+            stringify("pfa_dispatch")(lambda link, _io: pfa.dispatch(link.value)),
         )()
         self.assertEqual(pfa.result, "care + create + cultivate + empower + learn")

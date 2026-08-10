@@ -103,7 +103,7 @@ class TestCogent(unittest.TestCase):
         """tests s/a without env"""
 
         c = SelfCogent(DecisionProcess(TestCogent._start_blank))
-        c.perceive()
+        c.perception()
 
         self.assertEqual(c.dp.io.i.get_val, SelfCogent.START_NUM)
 
@@ -113,7 +113,7 @@ class TestCogent(unittest.TestCase):
 
         self.assertTrue(c.dp.io.o.inc_val(to_add1))
         self.assertEqual(c.dp.io.i.get_val, SelfCogent.START_NUM)
-        c.perceive()
+        c.perception()
         self.assertEqual(c.dp.io.i.get_val, SelfCogent.START_NUM + to_add1)
 
         # ===
@@ -122,7 +122,7 @@ class TestCogent(unittest.TestCase):
 
         self.assertFalse(c.dp.io.o.inc_val(to_add2))
         self.assertEqual(c.dp.io.i.get_val, SelfCogent.START_NUM + to_add1)
-        c.perceive()
+        c.perception()
         self.assertEqual(c.dp.io.i.get_val, SelfCogent.START_NUM + to_add1 + to_add2)
 
     def test_sensor_actuator(self) -> None:
@@ -164,7 +164,7 @@ class TestCogent(unittest.TestCase):
 
         # ===
 
-        c.perceive()
+        c.perception()
 
         self.assertEqual(c.dp.io.i.lst, "[]")
 
@@ -174,7 +174,7 @@ class TestCogent(unittest.TestCase):
 
         self.assertEqual(c.dp.io.o.lst(to_add), 1)
         self.assertEqual(c.dp.io.i.lst, "[]")
-        c.perceive()
+        c.perception()
         self.assertEqual(c.dp.io.i.lst, f"[{to_add}]")
 
     def test_as(self) -> None:
@@ -193,7 +193,7 @@ class TestCogent(unittest.TestCase):
             lst.append(n)
             return len(lst)
 
-        c.perceive()
+        c.perception()
 
         self.assertEqual(c.dp.io.i.foo, "[]")
 
@@ -203,18 +203,12 @@ class TestCogent(unittest.TestCase):
 
         self.assertEqual(c.dp.io.o.bar(to_add), 1)
         self.assertEqual(c.dp.io.i.foo, "[]")
-        c.perceive()
+        c.perception()
         self.assertEqual(c.dp.io.i.foo, f"[{to_add}]")
 
     # pylint: disable=too-many-statements
     def test_err(self) -> None:
         """cogent callbacks for errors"""
-
-        @stringify("never")
-        def _never(_c: Cogent[DecisionProcess[MutableWrapper[int]]]) -> bool:
-            return False
-
-        # ===
 
         out_known: DecisionProcessErrorMessage | None = None
 
@@ -263,13 +257,13 @@ class TestCogent(unittest.TestCase):
 
         out_known, out_unknown, start_value = None, None, 0
         with self.assertRaises(DecisionProcessExecutionError):
-            c(_never)
+            c()
         self.assertIsNone(out_known)
         self.assertIsNone(out_unknown)
         self.assertFalse(c.dp.done)
 
         out_known, out_unknown, start_value = None, None, 0
-        c(_never, dp_err_p=_handle_known)
+        c(dp_err_p=_handle_known)
         self.assertEqual(out_known, DecisionProcessErrorMessage.NO_PROPOSAL)
         self.assertIsNone(out_unknown)
         self.assertFalse(c.dp.done)
@@ -284,13 +278,13 @@ class TestCogent(unittest.TestCase):
 
         out_known, out_unknown, start_value = None, None, 0
         with self.assertRaises(ZeroDivisionError):
-            c(_never, dp_err_p=_handle_known)
+            c(dp_err_p=_handle_known)
         self.assertIsNone(out_known)
         self.assertIsNone(out_unknown)
         self.assertFalse(c.dp.done)
 
         out_known, out_unknown, start_value = None, None, 0
-        c(_never, dp_err_p=_handle_known, other_err_p=_handle_unknown)
+        c(dp_err_p=_handle_known, other_err_p=_handle_unknown)
         self.assertIsNone(out_known)
         self.assertIs(type(out_unknown), ZeroDivisionError)
         self.assertFalse(c.dp.done)
@@ -307,20 +301,20 @@ class TestCogent(unittest.TestCase):
 
         out_known, out_unknown, start_value = None, None, 0
         with self.assertRaises(DecisionProcessExecutionError):
-            c(_never)
+            c()
         self.assertIsNone(out_known)
         self.assertIsNone(out_unknown)
         self.assertFalse(c.dp.done)
 
         out_known, out_unknown, start_value = None, None, 0
         with self.assertRaises(DecisionProcessExecutionError):
-            c(_never, other_err_p=_handle_unknown)
+            c(other_err_p=_handle_unknown)
         self.assertIsNone(out_known)
         self.assertIsNone(out_unknown)
         self.assertFalse(c.dp.done)
 
         out_known, out_unknown, start_value = None, None, 0
-        c(_never, dp_err_p=_handle_known, other_err_p=_handle_unknown)
+        c(dp_err_p=_handle_known, other_err_p=_handle_unknown)
         self.assertEqual(out_known, DecisionProcessErrorMessage.NO_RANK)
         self.assertIsNone(out_unknown)
         self.assertFalse(c.dp.done)
@@ -338,19 +332,19 @@ class TestCogent(unittest.TestCase):
 
         out_known, out_unknown, start_value = None, None, 0
         with self.assertRaises(ZeroDivisionError):
-            c(_never)
+            c()
         self.assertIsNone(out_known)
         self.assertIsNone(out_unknown)
         self.assertFalse(c.dp.done)
 
         out_known, out_unknown, start_value = None, None, 0
-        c(_never, dp_err_p=_handle_known, other_err_p=_handle_unknown)
+        c(dp_err_p=_handle_known, other_err_p=_handle_unknown)
         self.assertIsNone(out_known)
         self.assertIs(type(out_unknown), ZeroDivisionError)
         self.assertFalse(c.dp.done)
 
         out_known, out_unknown, start_value = None, None, 0
-        c(_never, dp_err_p=_handle_known, other_err_p=_handle_unknown_change)
+        c(dp_err_p=_handle_known, other_err_p=_handle_unknown_change)
         self.assertIsNone(out_known)
         self.assertIs(type(out_unknown), ZeroDivisionError)
         self.assertTrue(c.dp.done)
@@ -415,7 +409,7 @@ class TestCogent(unittest.TestCase):
                 state.p.add(self._num)
                 io.o.guess(self._num)
 
-        c(stringify("stop")(lambda _: False), 0)
+        c(max_cycles=0)
         self.assertFalse(c.dp.done)
         self.assertFalse(got_it)
         self.assertEqual(num_guesses, len(c.dp.state.p))

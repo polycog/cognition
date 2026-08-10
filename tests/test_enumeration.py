@@ -81,6 +81,6 @@ class TestEnumeration(unittest.TestCase):
 
         o = PhraseDispatch()
 
-        self.assertEqual(o(DocPhrase.SALUTATION), o.salutation())
-        self.assertEqual(o(DocPhrase.VALEDICTION, 3), o.valediction(3))
-        self.assertIsNone(o(DocPhrase.OTHER))
+        self.assertEqual(o.dispatch(DocPhrase.SALUTATION), o.salutation())
+        self.assertEqual(o.dispatch(DocPhrase.VALEDICTION, 3), o.valediction(3))
+        self.assertIsNone(o.dispatch(DocPhrase.OTHER))

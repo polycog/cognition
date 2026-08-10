@@ -61,7 +61,7 @@ class EnumDispatch[T: Enum]:
     methods based upon supplied enum name
     """
 
-    def __call__(self, v: T, *args: Any, **kwargs: Any) -> Any:
+    def dispatch(self, v: T, *args: Any, **kwargs: Any) -> Any:
         """
         If it exists, returns the result of calling the
         method with the enumeration's name (lower-case).

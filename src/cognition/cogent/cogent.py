@@ -16,6 +16,7 @@ from ..decision.core import (
 )
 from ..decision.dp import NamedObject, args_added, format_name_params
 from ..util.functypes import BiFunction, BiPredicate, Function, Predicate, Supplier
+from ..util.misc import stringify
 from .env import (
     BaseActuator,
     BaseSensor,
@@ -260,7 +261,7 @@ class Cogent[DP: BaseDecisionProcess[Any]](NamedObject):
 
         return dec
 
-    def perceive(self) -> None:
+    def perception(self) -> None:
         """
         All added sensors are routed to the decision process IO container
         """
@@ -270,9 +271,13 @@ class Cogent[DP: BaseDecisionProcess[Any]](NamedObject):
         for s in self._sensors:
             perceive(s, self._dp)
 
+    @stringify("run_once")
+    def _run_once(self) -> bool:
+        return False
+
     def __call__(
         self,
-        repeat_p: Predicate[Self],
+        repeat_p: Predicate[Self] = _run_once,
         max_cycles: int | None = None,
         dp_err_p: BiPredicate[DecisionProcessErrorMessage, Self] | None = None,
         other_err_p: BiPredicate[Exception, Self] | None = None,
@@ -318,7 +323,7 @@ class Cogent[DP: BaseDecisionProcess[Any]](NamedObject):
                 _logger.debug("Cogent (%s): loop start", self)
 
                 try:
-                    self.perceive()
+                    self.perception()
                     if max_cycles is None:
                         self._dp.run_until_done()
                     else:
