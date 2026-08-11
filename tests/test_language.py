@@ -350,6 +350,24 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
             (list(Fruit)[0], EmpiricalConfidence(2, num_trials)),
         )
 
+        # ===
+
+        assume_guest = FunctionModel(
+            CountingModelFunc.always(UserRoleSchema(value=UserRole.GUEST)),
+            model_name="always_guest",
+        )
+
+        self.assertEqual(
+            EnumClassifier.classify(
+                "total sketch",
+                UserRole,
+                assume_guest,
+                "assign user rights on the server",
+                num_trials=num_trials,
+            ),
+            (UserRole.GUEST, EmpiricalConfidence(num_trials, num_trials)),
+        )
+
     def test_empirical_confidence(self) -> None:
         """Tests for empirical confidence"""
 

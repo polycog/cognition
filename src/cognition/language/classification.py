@@ -86,7 +86,7 @@ class EnumClassifier[T: Enum]:
             (
                 f"{enum_type.__name__}",
                 " (",
-                ", ".join(member.value for member in enum_type),
+                ", ".join(str(member.value) for member in enum_type),
                 ")",
             )
         )
