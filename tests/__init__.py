@@ -2,14 +2,15 @@
 Testing config
 """
 
-import logging
+# import logging
 
-# ===
+# # ===
 
-# global logging config
-logging.basicConfig(
-    level=logging.CRITICAL, format="%(name)s\t%(levelname)s\t%(message)s"
-)
+# handler = logging.StreamHandler()
+# handler.setFormatter(
+#     logging.Formatter("%(levelname)s\t%(name)s\t%(asctime)s\t%(message)s")
+# )
 
-# specific module config
-# logging.getLogger("cognition.decision").setLevel(logging.INFO)
+# logger = logging.getLogger("cognition.cogent")
+# logger.setLevel(logging.INFO)
+# logger.addHandler(handler)
