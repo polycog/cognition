@@ -2,6 +2,7 @@
 Tests for cogent code
 """
 
+import pickle
 import unittest
 from collections.abc import Iterable
 from typing import Self, cast
@@ -56,6 +57,10 @@ class SelfCogent(Cogent[DecisionProcess[str]]):
         return self._v > 0
 
 
+def _zilch() -> int:
+    return 0
+
+
 class TestCogent(unittest.TestCase):
     """Tests for cogent code"""
 
@@ -70,6 +75,12 @@ class TestCogent(unittest.TestCase):
         return ""
 
     def setUp(self) -> None: ...
+
+    def test_pickle(self) -> None:
+        """Confirms pickle/depickle"""
+
+        serialized = pickle.dumps(Cogent(DecisionProcess(_zilch)))
+        _ = pickle.loads(serialized)
 
     def test_name(self) -> None:
         """tests cogent naming"""

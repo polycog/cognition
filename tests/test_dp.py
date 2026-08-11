@@ -4,6 +4,7 @@ Tests for dp code
 
 from __future__ import annotations
 
+import pickle
 import unittest
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -149,6 +150,10 @@ class ChangeOp(Operator[int]):
 # ===
 
 
+def _zilch() -> int:
+    return 0
+
+
 class TestDP(unittest.TestCase):
     """Tests for dp code"""
 
@@ -172,6 +177,12 @@ class TestDP(unittest.TestCase):
         self.mock_io = IOContainer(
             AttrReferral(self.io_source), AttrReferral(self.io_source)
         )
+
+    def test_pickle(self) -> None:
+        """Confirms pickle/depickle"""
+
+        serialized = pickle.dumps(DecisionProcess(_zilch))
+        _ = pickle.loads(serialized)
 
     def test_elaborable(self) -> None:
         """Confirming elaboration is added upon dp init"""

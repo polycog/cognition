@@ -123,7 +123,7 @@ class Cogent[DP: BaseDecisionProcess[Any]](NamedObject):
         self._sensors: set[BaseSensor[Any]] = set()
 
         self._name = name
-        self._params = MappingProxyType(kwargs)
+        self._params = kwargs
         self._str = format_name_params(name, **kwargs)
 
         # ===
@@ -157,7 +157,7 @@ class Cogent[DP: BaseDecisionProcess[Any]](NamedObject):
         :return: optional augmentations to the cogent
         """
 
-        return self._params
+        return MappingProxyType(self._params)
 
     def add_sensor(self, sensor: BaseSensor[Any]) -> Self:
         """

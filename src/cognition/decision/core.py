@@ -19,6 +19,7 @@ from typing import (
     Any,
     Self,
     cast,
+    no_type_check,
 )
 
 from ..util.functypes import (
@@ -231,6 +232,24 @@ class BaseDecisionProcess[S]:
 
     # ===
 
+    @no_type_check
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state["_io"]
+        del state["_inputs"][BaseDecisionProcess.INPUT_KEY_ELABORATION]
+        return state
+
+    @no_type_check
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self._setup_io()
+
+    def _setup_io(self) -> None:
+        self._io = IOContainer(AttrReferral(self._inputs), AttrReferral(self._outputs))
+        self._inputs[BaseDecisionProcess.INPUT_KEY_ELABORATION] = AttrReferral(
+            self._elaboration
+        )
+
     def __init__(self, state_initializer: Supplier[S]) -> None:
         """
         :param state_initializer: produces state initially (and on :meth:`reinit`)
@@ -247,32 +266,11 @@ class BaseDecisionProcess[S]:
 
         self._elaboration = {}
 
-        # pylint: disable=too-few-public-methods
-        class _InnerClock:
-            def __init__(self, dp: BaseDecisionProcess[S]):
-                setattr(
-                    type(self),
-                    BaseDecisionProcess.INPUT_ATTR_TIME,
-                    property(lambda _: dp.num_cycles),
-                )
-
-            def __str__(self) -> str:
-                return (
-                    f"{_InnerClock.__name__}"
-                    f"({BaseDecisionProcess.INPUT_ATTR_TIME}="
-                    f"{getattr(self, BaseDecisionProcess.INPUT_ATTR_TIME)})"
-                )
-
-        class _InnerLog(StringIO):
-            def __str__(self) -> str:
-                return self.getvalue()
-
         self._inputs = {
             BaseDecisionProcess.INPUT_KEY_TIME: _InnerClock(self),
-            BaseDecisionProcess.INPUT_KEY_ELABORATION: AttrReferral(self._elaboration),
         }
         self._outputs = {BaseDecisionProcess.OUTPUT_KEY_LOG: _InnerLog()}
-        self._io = IOContainer(AttrReferral(self._inputs), AttrReferral(self._outputs))
+        self._setup_io()
 
         # establish phase handling
         # (order dictated by enum)
@@ -803,10 +801,50 @@ class BaseDecisionProcess[S]:
         :return: any data provided to the :attr:`OUTPUT_KEY_LOG` channel
         """
 
-        logger: StringIO = cast(
-            StringIO, self._outputs[BaseDecisionProcess.OUTPUT_KEY_LOG]
+        logger = cast(_InnerLog, self._outputs[BaseDecisionProcess.OUTPUT_KEY_LOG])
+        return str(logger)
+
+    def clear_log(self) -> Self:
+        """
+        Clears any data provided to the :attr:`OUTPUT_KEY_LOG` channel
+
+        :return: this decision process (for chaining)
+        """
+
+        logger = cast(_InnerLog, self._outputs[BaseDecisionProcess.OUTPUT_KEY_LOG])
+        logger.clear()
+
+        return self
+
+
+# pylint: disable=too-few-public-methods
+class _InnerClock[S]:
+    def __init__(self, dp: BaseDecisionProcess[S]):
+        setattr(
+            type(self),
+            BaseDecisionProcess.INPUT_ATTR_TIME,
+            property(lambda _: dp.num_cycles),
         )
-        return logger.getvalue()
+
+    def __str__(self) -> str:
+        return (
+            f"{_InnerClock.__name__}"
+            f"({BaseDecisionProcess.INPUT_ATTR_TIME}="
+            f"{getattr(self, BaseDecisionProcess.INPUT_ATTR_TIME)})"
+        )
+
+
+class _InnerLog(StringIO):
+    def __str__(self) -> str:
+        return self.getvalue()
+
+    def clear(self) -> None:
+        """
+        Clears the buffer
+        """
+
+        self.truncate(0)
+        self.seek(0)
 
 
 # pylint: disable=too-few-public-methods

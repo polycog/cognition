@@ -2,6 +2,7 @@
 Tests for core code
 """
 
+import pickle
 import unittest
 from collections.abc import Iterable
 from io import StringIO
@@ -102,8 +103,18 @@ class ListInputOutput:
         self._data.append(item)
 
 
+def _zilch() -> int:
+    return 0
+
+
 class TestCore(unittest.TestCase):
     """Tests for core code"""
+
+    def test_pickle(self) -> None:
+        """Confirms pickle/depickle"""
+
+        serialized = pickle.dumps(BaseDecisionProcess(_zilch))
+        _ = pickle.loads(serialized)
 
     def test_func_vs_imp(self) -> None:
         """Confirms flexible action execution"""
@@ -523,6 +534,13 @@ class TestCore(unittest.TestCase):
             dp_io.log,
             # ruff: ignore[FLY002]
             "\n".join(("@1: data=[]", "@2: data=['1']", "@3: data=['1', '2']", "")),
+        )
+
+        # confirm log clear
+        dp_io.clear_log()
+        self.assertEqual(
+            dp_io.log,
+            "",
         )
 
     def test_count(self) -> None:
