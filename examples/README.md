@@ -16,6 +16,21 @@ To run:
 3. `python main.py`
 
 
+## choice
+
+Simple demonstration of a cogent making sequential decisions under constraint, including...
+* organization of dynamic sensors/actuators, as well as facilitated reading/invoking (`env`)
+* dynamic action proposal (`OperatorGenerator` in `dp` + `main`)
+* integrated ranking knowledge (`ActionEvaluator` in `dp` + `main`)
+
+To run:
+
+1. Create & activate a virtual environment
+2. `pip install -r requirements.txt`
+3. Modify `main` to desired number of trials and ranking knowledge
+4. `python main.py`
+
+
 ## lang
 
 Demonstration of key language features.
@@ -31,6 +46,7 @@ To run:
 4. Set appropriate environmental variables (e.g., `OPENAI_BASE_URL`, `OPENAI_API_KEY`)
    * For convenience, `python-dotenv` will load from `.env`
 5. `python <filename>.py`
+
 
 ## web-wj
 
