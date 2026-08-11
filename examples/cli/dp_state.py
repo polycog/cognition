@@ -48,6 +48,7 @@ class CLIState(StagedState[CLIStage], SelfReinitState):
         """
         process the log entry;
         then transition to... getting the (next) command
+        (or exit if last result was to do so)
         """
 
         self.log.append(log_entry)
