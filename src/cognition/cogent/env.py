@@ -66,7 +66,7 @@ def perceive[ST](sensor: BaseSensor[ST], dp: BaseDecisionProcess[Any]) -> None:
 
     _logger.debug(new_val)
 
-    dp.set_input_data(sensor.name, sensor.sense())
+    dp.set_input_data(sensor.name, new_val)
 
 
 def read_sensor_data[ST](sensor: BaseSensor[ST], io: IOContainer) -> ST:
