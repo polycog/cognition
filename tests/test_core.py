@@ -2,7 +2,6 @@
 Tests for core code
 """
 
-import pickle
 import unittest
 from collections.abc import Iterable
 from io import StringIO
@@ -25,6 +24,8 @@ from cognition import (
     create_named_action,
     stringify,
 )
+
+from . import _test_pickle
 
 # ===
 
@@ -113,8 +114,7 @@ class TestCore(unittest.TestCase):
     def test_pickle(self) -> None:
         """Confirms pickle/depickle"""
 
-        serialized = pickle.dumps(BaseDecisionProcess(_zilch))
-        _ = pickle.loads(serialized)
+        _test_pickle(BaseDecisionProcess(_zilch))
 
     def test_func_vs_imp(self) -> None:
         """Confirms flexible action execution"""

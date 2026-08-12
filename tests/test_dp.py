@@ -4,7 +4,6 @@ Tests for dp code
 
 from __future__ import annotations
 
-import pickle
 import unittest
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -40,6 +39,8 @@ from cognition import (
     stringify,
     uniform_evaluator,
 )
+
+from . import _test_pickle
 
 # ===
 
@@ -181,8 +182,7 @@ class TestDP(unittest.TestCase):
     def test_pickle(self) -> None:
         """Confirms pickle/depickle"""
 
-        serialized = pickle.dumps(DecisionProcess(_zilch))
-        _ = pickle.loads(serialized)
+        _test_pickle(DecisionProcess(_zilch))
 
     def test_elaborable(self) -> None:
         """Confirming elaboration is added upon dp init"""

@@ -2,7 +2,6 @@
 Tests for cogent code
 """
 
-import pickle
 import unittest
 from collections.abc import Iterable
 from typing import Self, cast
@@ -28,6 +27,8 @@ from cognition import (
     stringify,
     uniform_evaluator,
 )
+
+from . import _test_pickle
 
 # ===
 
@@ -79,8 +80,7 @@ class TestCogent(unittest.TestCase):
     def test_pickle(self) -> None:
         """Confirms pickle/depickle"""
 
-        serialized = pickle.dumps(Cogent(DecisionProcess(_zilch)))
-        _ = pickle.loads(serialized)
+        _test_pickle(Cogent(DecisionProcess(_zilch)))
 
     def test_name(self) -> None:
         """tests cogent naming"""
