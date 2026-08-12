@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Mapping
 from types import MappingProxyType
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 from ..decision.core import (
     BaseDecisionProcess,
@@ -272,12 +272,26 @@ class Cogent[DP: BaseDecisionProcess[Any]](NamedObject):
             perceive(s, self._dp)
 
     @stringify("run_once")
-    def _run_once(self) -> bool:
+    @staticmethod
+    def gate_run_once(_c: Cogent[Any]) -> Literal[False]:
+        """
+        Immediate end upon decision process termination
+        """
+
         return False
+
+    @stringify("run_forever")
+    @staticmethod
+    def gate_run_forever(_c: Cogent[Any]) -> Literal[True]:
+        """
+        Restarts decision process upon termination
+        """
+
+        return True
 
     def __call__(
         self,
-        repeat_p: Predicate[Self] = _run_once,
+        repeat_p: Predicate[Cogent[DP]] = gate_run_once,
         max_cycles: int | None = None,
         dp_err_p: BiPredicate[DecisionProcessErrorMessage, Self] | None = None,
         other_err_p: BiPredicate[Exception, Self] | None = None,

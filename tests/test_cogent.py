@@ -217,6 +217,40 @@ class TestCogent(unittest.TestCase):
         c.perception()
         self.assertEqual(c.dp.io.i.foo, f"[{to_add}]")
 
+    def test_forever(self) -> None:
+        """cogent gate forever"""
+
+        state = MutableWrapper(0)
+
+        @stringify("wrapper0")
+        def _wrap0() -> MutableWrapper[int]:
+            return state
+
+        c = Cogent(DecisionProcess(_wrap0))
+
+        class _ToOneOp(Operator[MutableWrapper[int]]):
+            def can_perform(self, state: MutableWrapper[int], _io: IOContainer) -> bool:
+                return state.value == 0
+
+            def perform(self, state: MutableWrapper[int], _io: IOContainer) -> None:
+                state.value = 1
+
+        c.dp.add_operator(_ToOneOp("to1", terminal=True))
+
+        c()
+        self.assertEqual(state.value, 1)
+
+        with self.assertRaises(DecisionProcessExecutionError):
+            c()
+
+        state.value = 0
+        c()
+        self.assertEqual(state.value, 1)
+
+        state.value = 0
+        with self.assertRaises(DecisionProcessExecutionError):
+            c(Cogent.gate_run_forever)
+
     # pylint: disable=too-many-statements
     def test_err(self) -> None:
         """cogent callbacks for errors"""
