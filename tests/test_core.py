@@ -12,7 +12,6 @@ from cognition import (
     Action,
     ActionFactory,
     ActionRank,
-    AttrReferral,
     BaseDecisionProcess,
     DecisionProcessErrorMessage,
     DecisionProcessExecutionError,
@@ -43,9 +42,8 @@ def _make_term(a_perfect: str, a_prime: str) -> TerminationCheck[int]:
 
     @stringify(TERMINATION_NAME)
     def pred(_: int, io: IOContainer) -> bool:
-        v_perfect = cast(bool, getattr(io.i.elaboration, a_perfect))
-
-        v_prime = cast(bool, getattr(io.i.elaboration, a_prime))
+        v_perfect = cast(bool, getattr(io.e, a_perfect))
+        v_prime = cast(bool, getattr(io.e, a_prime))
 
         return v_perfect or v_prime
 
@@ -170,11 +168,10 @@ class TestCore(unittest.TestCase):
                     "Rankings=",
                     "Termination Checks=",
                     "Elaborators=",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -182,11 +179,12 @@ class TestCore(unittest.TestCase):
         # ===
 
         e_name = "echo"
+        ek_name = "echo-key"
 
         @dp.elaborator
         @stringify(e_name)
         def echo(s: str, _io: IOContainer) -> dict[str, Any]:
-            return {e_name: s}
+            return {ek_name: s}
 
         self.assertEqual(
             str(dp),
@@ -202,11 +200,10 @@ class TestCore(unittest.TestCase):
                     "Rankings=",
                     "Termination Checks=",
                     f"Elaborators={e_name}",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -221,11 +218,8 @@ class TestCore(unittest.TestCase):
             e_result = cast(
                 str,
                 getattr(
-                    cast(
-                        AttrReferral,
-                        getattr(io.i, BaseDecisionProcess.INPUT_KEY_ELABORATION),
-                    ),
-                    e_name,
+                    io.e,
+                    ek_name,
                 ),
             )
 
@@ -245,11 +239,10 @@ class TestCore(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={g_name}",
                     f"Elaborators={e_name}",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -270,11 +263,10 @@ class TestCore(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={g_name}",
                     f"Elaborators={e_name}",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    f"Elaborated Data={ek_name}:{word}",
+                    "Argument Values=",
                 )
             ),
         )
@@ -408,11 +400,10 @@ class TestCore(unittest.TestCase):
                     "Rankings=",
                     "Termination Checks=",
                     "Elaborators=",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -440,11 +431,10 @@ class TestCore(unittest.TestCase):
                     "Rankings=",
                     "Termination Checks=",
                     "Elaborators=",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}, {lst_name}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, {lst_name}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}, {lst_name}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -520,11 +510,10 @@ class TestCore(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -543,6 +532,87 @@ class TestCore(unittest.TestCase):
             "",
         )
 
+    def test_args(self) -> None:
+        """Confirming simple arg"""
+
+        word = "test"
+        dp: BaseDecisionProcess[str] = BaseDecisionProcess(
+            stringify("start_word")(lambda: word)
+        )
+
+        self.assertEqual(
+            str(dp),
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={word}",
+                    f"Done?={False}",
+                    f"Chosen={None}",
+                    "Action Factories=",
+                    "Potential Actions=",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    "Termination Checks=",
+                    "Elaborators=",
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
+                )
+            ),
+        )
+
+        key = "key"
+        value = 42
+
+        dp.set_arg_value(key, value)
+
+        self.assertEqual(
+            str(dp),
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={word}",
+                    f"Done?={False}",
+                    f"Chosen={None}",
+                    "Action Factories=",
+                    "Potential Actions=",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    "Termination Checks=",
+                    "Elaborators=",
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    f"Argument Values={key}:{value}",
+                )
+            ),
+        )
+
+        dp.set_arg_value(key, None)
+
+        self.assertEqual(
+            str(dp),
+            "\n".join(
+                (
+                    f"Phase={Phase.ELABORATION.name}",
+                    f"State={word}",
+                    f"Done?={False}",
+                    f"Chosen={None}",
+                    "Action Factories=",
+                    "Potential Actions=",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    "Termination Checks=",
+                    "Elaborators=",
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
+                )
+            ),
+        )
+
     def test_count(self) -> None:
         """Confirming simple decision process execution"""
 
@@ -555,6 +625,9 @@ class TestCore(unittest.TestCase):
 
         # ===
 
+        def _is_perfect(n: int) -> bool:
+            return sqrt(n) % 1 == 0
+
         dp_count_until: BaseDecisionProcess[int] = (
             BaseDecisionProcess(stringify("starting_num")(lambda: starting_point))
             .add_termination_check(_make_term(e_perfect, e_prime))
@@ -563,7 +636,7 @@ class TestCore(unittest.TestCase):
                     ELAB_NAME,
                     **{
                         e_prime: lambda s, _: _is_prime(s),
-                        e_perfect: lambda s, _: sqrt(s) % 1 == 0,
+                        e_perfect: lambda s, _: _is_perfect(s),
                     },
                 )
             )
@@ -594,11 +667,10 @@ class TestCore(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={TERMINATION_NAME}",
                     f"Elaborators={ELAB_NAME}",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -629,11 +701,13 @@ class TestCore(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={TERMINATION_NAME}",
                     f"Elaborators={ELAB_NAME}",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    (
+                        f"Elaborated Data={e_prime}:{_is_prime(next_perfect_prime)}, "
+                        f"{e_perfect}:{_is_perfect(next_perfect_prime)}"
+                    ),
+                    "Argument Values=",
                 )
             ),
         )

@@ -23,7 +23,6 @@ from .core import (
     TerminationCheck,
 )
 from .dp import (
-    ARGS_ATTR,
     OPERATOR_SELF_PARAM,
     TERMINAL_ACTION_ATTR,
     DecisionProcess,
@@ -54,7 +53,6 @@ from .state import (
 )
 
 __all__ = [
-    "ARGS_ATTR",
     "OPERATOR_SELF_PARAM",
     "TERMINAL_ACTION_ATTR",
     "Action",

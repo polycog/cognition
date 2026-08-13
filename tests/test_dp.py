@@ -176,7 +176,10 @@ class TestDP(unittest.TestCase):
 
         self.io_source: Mapping[str, Any] = {}
         self.mock_io = IOContainer(
-            AttrReferral(self.io_source), AttrReferral(self.io_source)
+            AttrReferral(self.io_source),
+            AttrReferral(self.io_source),
+            AttrReferral(self.io_source),
+            AttrReferral(self.io_source),
         )
 
     def test_pickle(self) -> None:
@@ -191,19 +194,29 @@ class TestDP(unittest.TestCase):
         e_name = "crafty_name"
         t_name = "tautology"
 
+        v_name = "value"
+
         class MyState:
             """Example state"""
 
             def __init__(self) -> None:
                 self._num = 42
 
+            @staticmethod
+            def func(s: MyState, io: IOContainer) -> int:
+                """custom logic"""
+
+                return s._num + (  # pylint: disable=protected-access
+                    1 if io.i.clock.cycles >= 0 else 0
+                )
+
             @property
             def elaborator(self) -> Elaborator[MyState]:
                 """example to combine state + io"""
 
                 @stringify(e_name)
-                def _elab(_state: MyState, io: IOContainer) -> dict[str, Any]:
-                    return {"value": self._num + io.i.clock.cycles}
+                def _elab(state: MyState, io: IOContainer) -> dict[str, Any]:
+                    return {v_name: self.func(state, io)}
 
                 return _elab
 
@@ -232,11 +245,34 @@ class TestDP(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={t_name}",
                     f"Elaborators={e_name}",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
+                )
+            ),
+        )
+
+        dp.run_cycles(10)
+
+        self.assertEqual(
+            str(dp),
+            "\n".join(
+                (
+                    f"Phase={Phase.TERMINATIONCHECK.name}",
+                    f"State={s_name}",
+                    f"Done?={True}",
+                    f"Chosen={None}",
+                    "Action Factories=",
+                    "Potential Actions=",
+                    "Action Evaluators=",
+                    "Rankings=",
+                    f"Termination Checks={t_name}",
+                    f"Elaborators={e_name}",
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
+                    f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    f"Elaborated Data={v_name}:{MyState.func(dp.state, dp.io)}",
+                    "Argument Values=",
                 )
             ),
         )
@@ -252,7 +288,6 @@ class TestDP(unittest.TestCase):
 
         # ===
 
-        namespace = "foo"
         arg_name = "bar"
         arg_val = 42
 
@@ -269,10 +304,9 @@ class TestDP(unittest.TestCase):
                 return True
 
             def perform(self, _state: int, io: IOContainer) -> int:
-                args = getattr(io.i, namespace)
-                return cast(int, getattr(args, self._arg))
+                return cast(int, getattr(io.a, self._arg))
 
-        with args_added(dp, namespace=namespace, **{arg_name: arg_val}):
+        with args_added(dp, **{arg_name: arg_val}):
             dp.run_until_done()
 
         self.assertTrue(dp.done)
@@ -287,7 +321,6 @@ class TestDP(unittest.TestCase):
             dp(
                 max_cycles=2,
                 suppress_errors=True,
-                args_namespace=namespace,
                 **{arg_name: arg_val},
             ),
             arg_val,
@@ -300,7 +333,6 @@ class TestDP(unittest.TestCase):
             dp(
                 max_cycles=0,
                 suppress_errors=True,
-                args_namespace=namespace,
                 **{arg_name: arg_val},
             ),
             arg_val,
@@ -353,11 +385,10 @@ class TestDP(unittest.TestCase):
                     "Rankings=",
                     "Termination Checks=",
                     "Elaborators=",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -459,11 +490,10 @@ class TestDP(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={done_name}",
                     "Elaborators=",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -484,11 +514,10 @@ class TestDP(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={done_name}",
                     "Elaborators=",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -511,11 +540,10 @@ class TestDP(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={done_name}",
                     "Elaborators=",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -538,11 +566,10 @@ class TestDP(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={done_name}",
                     "Elaborators=",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -776,11 +803,10 @@ class TestDP(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -812,11 +838,10 @@ class TestDP(unittest.TestCase):
                 }",
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -852,11 +877,10 @@ class TestDP(unittest.TestCase):
                 }",
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -883,11 +907,10 @@ class TestDP(unittest.TestCase):
                     "Rankings=",
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -923,11 +946,10 @@ class TestDP(unittest.TestCase):
                 }",
                     f"Termination Checks={goal_name}",
                     "Elaborators=",
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -989,7 +1011,7 @@ class TestDP(unittest.TestCase):
             def generate(
                 cls, state: str, io: IOContainer, _extra: None
             ) -> Iterable[Self]:
-                yield from (cls(s) for s in io.i.args.incoming if s not in state)
+                yield from (cls(s) for s in io.a.incoming if s not in state)
 
             def perform(self, state: str, _io: IOContainer) -> str:
                 return f"{state}{self.s}"

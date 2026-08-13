@@ -147,11 +147,10 @@ class TestState(unittest.TestCase):
                         "Elaborators="
                         f"{type(state_simple).ELABORATOR_NAME}({type(state_simple).__name__})"
                     ),
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -177,11 +176,10 @@ class TestState(unittest.TestCase):
                         "Elaborators="
                         f"{type(state_simple).ELABORATOR_NAME}({type(state_simple).__name__})"
                     ),
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -210,11 +208,10 @@ class TestState(unittest.TestCase):
                         "Elaborators="
                         f"{type(state_simple).ELABORATOR_NAME}({type(state_custom).__name__})"
                     ),
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )
@@ -240,11 +237,10 @@ class TestState(unittest.TestCase):
                         "Elaborators="
                         f"{type(state_simple).ELABORATOR_NAME}({type(state_custom).__name__})"
                     ),
-                    (
-                        f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}, "
-                        f"{BaseDecisionProcess.INPUT_KEY_ELABORATION}"
-                    ),
+                    f"Input Sources={BaseDecisionProcess.INPUT_KEY_TIME}",
                     f"Output Channels={BaseDecisionProcess.OUTPUT_KEY_LOG}",
+                    "Elaborated Data=",
+                    "Argument Values=",
                 )
             ),
         )

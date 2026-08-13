@@ -66,17 +66,15 @@ class TestStage(unittest.TestCase):
         @stringify("perform_init")
         def _perform_init(_s: AuthState, io: IOContainer) -> None:
             print("Howdy!!")
-            print(
-                f"Please provide the secret within {io.i.args.max_attempts} attempt(s)."
-            )
+            print(f"Please provide the secret within {io.a.max_attempts} attempt(s).")
             print()
 
         @staged_operator(self.dp, AuthStage.ATTEMPT)
         @stringify("perform_attempt")
         def _perform_attempt(_s: AuthState, io: IOContainer) -> Mapping[str, Any]:
             return {
-                "correct_pw": input("Enter password: ") == io.i.args.secret,
-                "max_attempts": io.i.args.max_attempts,
+                "correct_pw": input("Enter password: ") == io.a.secret,
+                "max_attempts": io.a.max_attempts,
             }
 
         @staged_operator(self.dp, AuthStage.IN, terminal=True)

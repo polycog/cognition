@@ -41,6 +41,7 @@ _logger = logging.getLogger(__name__)
 # ===
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass(frozen=True)
 class IOContainer:
     """
@@ -53,15 +54,29 @@ class IOContainer:
     o: AttrReferral
     """.key access to (o)utput channels"""
 
+    e: AttrReferral
+    """.key access to (e)laborated values"""
+
+    a: AttrReferral
+    """.key access to (a)rguments"""
+
     input: MappingProxyType[str, Any] = field(init=False)
     """Mapping view of i"""
 
     output: MappingProxyType[str, Any] = field(init=False)
     """Mapping view of o"""
 
+    elab: MappingProxyType[str, Any] = field(init=False)
+    """Mapping view of e"""
+
+    args: MappingProxyType[str, Any] = field(init=False)
+    """Mapping view of a"""
+
     def __post_init__(self) -> None:
         object.__setattr__(self, "input", AttrReferral.view(self.i))
         object.__setattr__(self, "output", AttrReferral.view(self.o))
+        object.__setattr__(self, "elab", AttrReferral.view(self.e))
+        object.__setattr__(self, "args", AttrReferral.view(self.a))
 
 
 class Phase(IntEnum):
@@ -195,9 +210,6 @@ class BaseDecisionProcess[S]:
     INPUT_ATTR_TIME: str = "cycles"
     """Attribute produced by the cycle input data"""
 
-    INPUT_KEY_ELABORATION: str = "elaboration"
-    """Key for the elaboration input data"""
-
     OUTPUT_KEY_LOG: str = "log"
     """Key associated with the log output channel"""
 
@@ -220,11 +232,12 @@ class BaseDecisionProcess[S]:
     _ranking: list[ActionRank[S]]  # last computed set of action ranking
     _chosen: Action[S] | None  # last selected action
     _step_count: int  # number of decision cycles since last initialization
-    _elaboration: dict[str, Any]  # summary description of cycle state/io
 
-    # Input/Output
+    # Input/Output/Elaboration/Args
     _inputs: dict[str, Any]
     _outputs: dict[str, Any]
+    _elabs: dict[str, Any]
+    _args: dict[str, Any]
     _io: IOContainer
 
     # Phase handling
@@ -236,7 +249,6 @@ class BaseDecisionProcess[S]:
     def __getstate__(self):
         state = self.__dict__.copy()
         del state["_io"]
-        del state["_inputs"][BaseDecisionProcess.INPUT_KEY_ELABORATION]
         return state
 
     @no_type_check
@@ -245,9 +257,11 @@ class BaseDecisionProcess[S]:
         self._setup_io()
 
     def _setup_io(self) -> None:
-        self._io = IOContainer(AttrReferral(self._inputs), AttrReferral(self._outputs))
-        self._inputs[BaseDecisionProcess.INPUT_KEY_ELABORATION] = AttrReferral(
-            self._elaboration
+        self._io = IOContainer(
+            AttrReferral(self._inputs),
+            AttrReferral(self._outputs),
+            AttrReferral(self._elabs),
+            AttrReferral(self._args),
         )
 
     def __init__(self, state_initializer: Supplier[S]) -> None:
@@ -264,12 +278,12 @@ class BaseDecisionProcess[S]:
         self._action_factories = []
         self._action_evaluators = []
 
-        self._elaboration = {}
-
         self._inputs = {
             BaseDecisionProcess.INPUT_KEY_TIME: _InnerClock(self),
         }
         self._outputs = {BaseDecisionProcess.OUTPUT_KEY_LOG: _InnerLog()}
+        self._elabs = {}
+        self._args = {}
         self._setup_io()
 
         # establish phase handling
@@ -307,7 +321,7 @@ class BaseDecisionProcess[S]:
         self._ranking = []
         self._chosen = None
         self._step_count = 0
-        self._elaboration.clear()
+        self._elabs.clear()
 
         _logger.info("%s: reinit complete", type(self).__name__)
 
@@ -333,6 +347,12 @@ class BaseDecisionProcess[S]:
                 "Elaborators": ", ".join(str(e) for e in self._elaborators),
                 "Input Sources": ", ".join(s for s in self._inputs),
                 "Output Channels": ", ".join(a for a in self._outputs),
+                "Elaborated Data": ", ".join(
+                    f"{k}:{v!s}" for k, v in self._elabs.items()
+                ),
+                "Argument Values": ", ".join(
+                    f"{k}:{v!s}" for k, v in self._args.items()
+                ),
             }.items()
         )
 
@@ -425,7 +445,7 @@ class BaseDecisionProcess[S]:
             {k: str(v) for k, v in self._io.output.items()},
         )
 
-        self._elaboration.clear()
+        self._elabs.clear()
 
         _logger.debug("%s: prior elaboration values cleared", type(self).__name__)
 
@@ -434,9 +454,9 @@ class BaseDecisionProcess[S]:
             result = e(self._state, self._io)
             _logger.debug(result)
 
-            self._elaboration |= result
+            self._elabs |= result
 
-        _logger.debug("%s: union=%s", type(self).__name__, self._elaboration)
+        _logger.debug("%s: union=%s", type(self).__name__, self._elabs)
         _logger.info("%s: elaboration phase complete", type(self).__name__)
 
         return True
@@ -700,7 +720,7 @@ class BaseDecisionProcess[S]:
 
     def run_cycles(self, n: int = 1) -> Self:
         """
-        Executes n cycles of the full phases
+        Executes (up to) n cycles of the full phases
 
         :param n: number of phases to run
         :return: this decision process (for chaining)
@@ -748,12 +768,28 @@ class BaseDecisionProcess[S]:
 
     @staticmethod
     def _set_io(d: dict[str, Any], key: str, data: Any) -> None:
-        """Abstraction for input/output setting"""
+        """Abstraction for io setting"""
 
         if data is None:
             d.pop(key, None)
         else:
             d[key] = data
+
+    def _set_io_key_value(
+        self, d: dict[str, Any], key: str, data: Any, key_name: str
+    ) -> Self:
+        """Abstraction for logged io setting"""
+
+        BaseDecisionProcess._set_io(d, key, data)
+
+        type_name = type(self).__name__
+        if data is None:
+            _logger.info("%s: %s (%s) removed", type_name, key_name, key)
+        else:
+            _logger.info("%s: %s (%s) set", type_name, key_name, key)
+            _logger.debug(data)
+
+        return self
 
     def set_input_data(self, input_key: str, data: Any) -> Self:
         """
@@ -764,15 +800,7 @@ class BaseDecisionProcess[S]:
         :return: this decision process (for chaining)
         """
 
-        BaseDecisionProcess._set_io(self._inputs, input_key, data)
-
-        if data is None:
-            _logger.info("%s: input data (%s) removed", type(self).__name__, input_key)
-        else:
-            _logger.info("%s: input data (%s) set", type(self).__name__, input_key)
-            _logger.debug(data)
-
-        return self
+        return self._set_io_key_value(self._inputs, input_key, data, "input data")
 
     def set_output_channel(self, output_key: str, data: Any) -> Self:
         """
@@ -783,17 +811,18 @@ class BaseDecisionProcess[S]:
         :return: this decision process (for chaining)
         """
 
-        BaseDecisionProcess._set_io(self._outputs, output_key, data)
+        return self._set_io_key_value(self._outputs, output_key, data, "output channel")
 
-        if data is None:
-            _logger.info(
-                "%s: output channel (%s) removed", type(self).__name__, output_key
-            )
-        else:
-            _logger.info("%s: output channel (%s) set", type(self).__name__, output_key)
-            _logger.debug(data)
+    def set_arg_value(self, arg_key: str, data: Any) -> Self:
+        """
+        Sets value of ``io.a.arg_key``
 
-        return self
+        :param name: argument key
+        :param buffer: arbitrary object reference (or ``None`` to remove)
+        :return: this decision process (for chaining)
+        """
+
+        return self._set_io_key_value(self._args, arg_key, data, "argument value")
 
     @property
     def log(self) -> str:
@@ -819,6 +848,8 @@ class BaseDecisionProcess[S]:
 
 # pylint: disable=too-few-public-methods
 class _InnerClock[S]:
+    """action access to dp cycles"""
+
     def __init__(self, dp: BaseDecisionProcess[S]):
         setattr(
             type(self),
@@ -835,6 +866,8 @@ class _InnerClock[S]:
 
 
 class _InnerLog(StringIO):
+    """string i/o + convenience methods"""
+
     def __str__(self) -> str:
         return self.getvalue()
 

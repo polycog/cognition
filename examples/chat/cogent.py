@@ -79,7 +79,7 @@ class JokeOperator(Operator[BotState]):
         super().__init__("jokes", terminal=True)
 
     def can_perform(self, _state: BotState, io: IOContainer) -> bool:
-        return io.i.args.intent is BotAbilities.JOKE
+        return io.a.intent is BotAbilities.JOKE
 
     def perform(self, state: BotState, io: IOContainer) -> None:
         num_jokes = len(self.JOKES)
@@ -96,7 +96,7 @@ class TimeOperator(Operator[BotState]):
         super().__init__("time", terminal=True)
 
     def can_perform(self, _state: BotState, io: IOContainer) -> bool:
-        return io.i.args.intent is BotAbilities.TELL_TIME
+        return io.a.intent is BotAbilities.TELL_TIME
 
     def perform(self, _state: BotState, io: IOContainer) -> None:
         current_time = datetime.now().astimezone().strftime("%I:%M:%S %p")
@@ -110,7 +110,7 @@ class IDKOperator(Operator[BotState]):
         super().__init__("idk", terminal=True)
 
     def can_perform(self, _state: BotState, io: IOContainer) -> bool:
-        return io.i.args.intent is None
+        return io.a.intent is None
 
     def perform(self, state: BotState, io: IOContainer) -> None:
         _log(io, "Sorry, I do not know how to help you with that :(")

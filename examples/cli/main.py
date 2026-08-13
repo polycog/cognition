@@ -82,7 +82,7 @@ def perform_init(_s: CLIState, _io: IOContainer) -> None:
 def perform_get(_s: CLIState, io: IOContainer) -> None:
     """get action"""
 
-    io.o.cmd(io.i.args.shell_sym)
+    io.o.cmd(io.a.shell_sym)
 
 
 @staged_operator(cli_cogent.dp, CLIStage.EXEC_CMD, terminal=True)

@@ -25,7 +25,6 @@ from ..util.functypes import (
     TriFunction,
 )
 from ..util.misc import (
-    AttrReferral,
     ImplementsLessThan,
     optionally_name,
     stringify,
@@ -53,9 +52,6 @@ _logger = logging.getLogger(__name__)
 OPERATOR_SELF_PARAM: str = "_op"
 """Default :class:`NamedObject` parameter key to access source operator"""
 
-ARGS_ATTR: str = "args"
-"""io.i.name for run arguments"""
-
 
 class Rank(IntEnum):
     """
@@ -76,30 +72,31 @@ class Rank(IntEnum):
 
 
 def _add_args[S](
-    dp: BaseDecisionProcess[S], namespace: str, **info: Any
+    dp: BaseDecisionProcess[S], **info: Any
 ) -> Generator[BaseDecisionProcess[S]]:
     """
-    Provides `io.i.namespace` temporarily
+    Provides `io.a` values temporarily
 
     :param dp: decision process for which to provide arguments
-    :param namespace: input source name
-    :param info: io.i.namespace.key=value
+    :param info: io.a.key=value
     :return: supplied dp
     """
 
     _logger.info(
-        "%s: started providing arguments (%s)",
+        "%s: started providing arguments",
         type(dp).__name__,
-        namespace,
     )
 
     _logger.debug(info)
 
     try:
-        dp.set_input_data(namespace, AttrReferral(info))
+        for k, v in info.items():
+            dp.set_arg_value(k, v)
+
         yield dp
     finally:
-        dp.set_input_data(namespace, None)
+        for k in info:
+            dp.set_arg_value(k, None)
 
         _logger.info(
             "%s: stopped providing arguments",
@@ -109,18 +106,17 @@ def _add_args[S](
 
 @contextmanager
 def args_added[S](
-    dp: BaseDecisionProcess[S], namespace: str = ARGS_ATTR, **info: Any
+    dp: BaseDecisionProcess[S], **info: Any
 ) -> Generator[BaseDecisionProcess[S]]:
     """
-    Provides `io.i.namespace` temporarily
+    Provides `io.a` values temporarily
 
     :param dp: decision process for which to provide arguments
-    :param namespace: input source name
-    :param info: io.i.namespace.key=value
+    :param info: io.a.key=value
     :return: supplied dp
     """
 
-    yield from _add_args(dp, namespace, **info)
+    yield from _add_args(dp, **info)
 
 
 def create_elaborator[S](
@@ -537,16 +533,14 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         )
 
     @contextmanager
-    def args_added(
-        self, namespace: str = ARGS_ATTR, **info: Any
-    ) -> Generator[BaseDecisionProcess[S]]:
+    def args_added(self, **info: Any) -> Generator[BaseDecisionProcess[S]]:
         """
         Pass-thru to :func:`args_added`
 
-        :param info: io.i.namespace.key=value
+        :param info: io.a.key=value
         """
 
-        yield from _add_args(self, namespace, **info)
+        yield from _add_args(self, **info)
 
     def add_generator[X](
         self,
@@ -694,7 +688,6 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         self,
         max_cycles: int | None = None,
         suppress_errors: bool = True,
-        args_namespace: str = ARGS_ATTR,
         **args: Any,
     ) -> S | None:
         """
@@ -702,7 +695,6 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
 
         :param max_cycles: maximum steps to execute (or ``None`` for no limit)
         :param suppress_errors: if ``True``, does not raise any errors from execution
-        :param args_namespace: input source name
         :param args: arguments to supply
         :return: the final state if the decision process completed
                  without any exceptions; ``None`` otherwise
@@ -710,14 +702,13 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
 
         _logger.info("%s: run started", type(self).__name__)
         _logger.debug(
-            "max_cycles=%s, suppress_errors=%s, args_namespace=%s, args=%s",
+            "max_cycles=%s, suppress_errors=%s, args=%s",
             max_cycles,
             suppress_errors,
-            args_namespace,
             args,
         )
 
-        with self.args_added(namespace=args_namespace, **args):
+        with self.args_added(**args):
             try:
                 if max_cycles is None:
                     self.run_until_done()
