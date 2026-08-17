@@ -7,6 +7,6 @@ Welcome to the docs!! 🎉
    This project is under active development!
 
 .. toctree::
-   tutorial/index
-   concepts/index
+   .. tutorial/index
+   .. concepts/index
    :hidden:
