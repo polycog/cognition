@@ -318,6 +318,7 @@ class Cogent[DP: BaseDecisionProcess[Any]](NamedObject):
                             error type occurs (or raise if ``None``)
         :param args: IO args to add (see :func:`cognition.decision.dp.args_added`)
         :return: this cogent (for chaining)
+        :raises ValueError: ``None`` supplied as an argument value
         """
 
         _logger.info("Cogent (%s): run started", self)
