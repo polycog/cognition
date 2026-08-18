@@ -354,7 +354,7 @@ class FactDescriber[T: BaseModel]:
             A block
             """
 
-            name: str = Field(description="name of the block")
+            name: str = Field(description="name of the block", frozen=True)
             color: EgColor = Field(description="block color")
 
         class EgSurface(Entity):
@@ -362,16 +362,16 @@ class FactDescriber[T: BaseModel]:
             A surface for blocks
             """
 
-            name: str = Field(description="name of the surface")
+            name: str = Field(description="name of the surface", frozen=True)
 
         class EgOnTop(BinaryRelation):
             """
             Represents spatial relations between blocks
             """
 
-            entity1: EgBlock = Field(description="block on top")
+            entity1: EgBlock = Field(description="block on top", frozen=True)
             entity2: EgBlock | EgSurface = Field(
-                description="block or surface below the block"
+                description="block or surface below the block", frozen=True
             )
 
         b1 = EgBlock(name="B1", color=EgColor.BLUE)

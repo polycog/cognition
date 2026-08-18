@@ -8,17 +8,21 @@ from .organization import (
     WorldSnapshot,
 )
 from .representation import (
+    BaseSchema,
     BinaryRelation,
     Entity,
     Fact,
-    TypedSchema,
+    Freezable,
+    Thawable,
 )
 
 __all__ = [
+    "BaseSchema",
     "BinaryRelation",
     "Entity",
     "Fact",
-    "TypedSchema",
+    "Freezable",
+    "Thawable",
     "WorldGraph",
     "WorldSnapshot",
     "organization",

@@ -5,16 +5,15 @@ Knowledge organization
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterable, Iterator
+from collections.abc import Hashable, Iterable, Iterator
 from dataclasses import dataclass
-from functools import singledispatchmethod
 from itertools import chain
-from typing import Any, Self, cast
+from typing import Any, Literal, Self, cast, overload
 
 import networkx as nx
 
 from ..util.functypes import Predicate
-from .representation import BinaryRelation, Entity, Fact
+from .representation import BinaryRelation, Entity, Fact, Thawable
 
 # ===
 
@@ -53,9 +52,16 @@ class WorldSnapshot:
 
     def __contains__(self, item: Fact) -> bool:
         """
+        Checks for set containment, freezing
+        the fact if necessary
+
         :param item: fact of interest
         :return: ``True`` if supplied fact is in this set
         """
+
+        if not isinstance(item, Hashable):
+            item = item.freeze()
+
         return item in self.items
 
     def __eq__(self, other: object) -> bool:
@@ -98,17 +104,30 @@ class WorldSnapshot:
 
         yield from self.items
 
+    # ===
+
+    @staticmethod
+    def __maybe_freeze(f: Fact) -> Fact:
+        if not f.model_config.get("frozen", False):
+            return f.freeze()
+
+        return f
+
     @classmethod
     def click(cls, *facts: Fact) -> Self:
         """
         Convenience method for producing
-        a snapshot from a supplied source
+        a snapshot from a supplied source.
+
+        Note: each fact is checked for
+        immutability and frozen if it is
+        not already.
 
         :param facts: source of facts
         :return: resulting snapshot
         """
 
-        return cls(frozenset(facts))
+        return cls(frozenset(cls.__maybe_freeze(f) for f in facts))
 
     def copy(self, add: Iterable[Fact] = (), remove: Iterable[Fact] = ()) -> Self:
         """
@@ -117,12 +136,21 @@ class WorldSnapshot:
         of this snapshot + some added facts
         - some removed facts.
 
+        Note: each fact is checked for
+        immutability and frozen if it is
+        not already.
+
         :param add: fact(s) to add
         :param remove: fact(s) to remove
         :return: resulting snapshot
         """
 
-        return self.click(*(self.items - set(remove) | set(add)))
+        return self.click(
+            *(
+                self.items - {self.__maybe_freeze(r) for r in remove}
+                | {self.__maybe_freeze(a) for a in add}
+            )
+        )
 
     def by[FT](
         self, cls_t: _ClassInfo[FT], check: Predicate[FT] = lambda _: True
@@ -197,6 +225,74 @@ class WorldSnapshot:
         )
 
 
+@dataclass(frozen=True)
+class LinkedEntity[E: Entity]:
+    """
+    Entity and the linked world graph
+    """
+
+    e: E
+    """Entity instance"""
+
+    wg: WorldGraph
+    """Associated graph instance"""
+
+    # ===
+
+    def update(self) -> None:
+        """
+        Adds the entity to the graph
+        (updating any values)
+        """
+
+        self.wg.add_entity(self.e)
+
+    def remove(self) -> None:
+        """
+        Removes the entity (by name) from the graph
+        """
+
+        self.wg.remove_node(self.e.name)
+
+    @property
+    def outgoing(self) -> Iterable[LinkedBinaryRelation[Any]]:
+        """
+        :return: the linked outgoing relations from this entity
+        """
+
+        yield from self.wg.outgoing_relations(self.e)
+
+
+@dataclass(frozen=True)
+class LinkedBinaryRelation[R: BinaryRelation]:
+    """
+    Relation and the linked world graph
+    """
+
+    r: R
+    """Relation instance"""
+
+    wg: WorldGraph
+    """Associated graph instance"""
+
+    # ===
+
+    def update(self) -> None:
+        """
+        Adds the relation to the graph
+        (updating any values)
+        """
+
+        self.wg.add_relation(self.r)
+
+    def remove(self) -> None:
+        """
+        Removes the relation (by entity names + relation type) from the graph
+        """
+
+        self.wg.remove_edge(self.r.entity1.name, self.r.entity2.name, self.r.type)
+
+
 class WorldGraph:
     """
     Graph of binary relations (edges) between entities (nodes)
@@ -221,49 +317,13 @@ class WorldGraph:
 
         _logger.info("Initialized an empty %s", type(self).__name__)
 
-    @singledispatchmethod
-    def add(self, data: Fact) -> Self:
-        """
-        Base method for adding graph data.
-
-        This method is only invoked if called with improper data.
-
-        :param data: item to add
-        :return: reference to this graph
-        :raises NotImplementedError: bad type
-        """
-
-        raise NotImplementedError("Unsupported type")
-
-    @add.register
-    def _(self, data: Entity) -> Self:
-        """
-        Convenience redirect to :meth:`WorldGraph.add_entity`
-
-        :param data: entity to add
-        :return: reference to this graph
-        """
-
-        return self.add_entity(data)
-
-    @add.register
-    def _(self, data: BinaryRelation) -> Self:
-        """
-        Convenience redirect to :meth:`WorldGraph.add_relation`
-
-        :param data: relation to add
-        :return: reference to this graph
-        """
-
-        return self.add_relation(data)
-
-    def add_entity(self, e: Entity) -> Self:
+    def add_entity[E: Entity](self, e: E) -> LinkedEntity[E]:
         """
         Using the entity name as id, sets the associated
         node data within the graph
 
         :param e: entity with node data
-        :return: reference to this graph
+        :return: object holding the added entity and this graph
         """
 
         _logger.info("Adding entity to %s", type(self).__name__)
@@ -284,15 +344,15 @@ class WorldGraph:
             },
         )
 
-        return self
+        return LinkedEntity(e, self)
 
-    def add_relation(self, r: BinaryRelation) -> Self:
+    def add_relation[R: BinaryRelation](self, r: R) -> LinkedBinaryRelation[R]:
         """
         Using the (entity1 -[key=r.type]-> entity2) as id,
         sets the associated edge data within the graph
 
         :param r: relation with edge data
-        :return: reference to this graph
+        :return: object holding the added relation and this graph
         :raises KeyError: supplied node not in the graph
         """
 
@@ -322,13 +382,27 @@ class WorldGraph:
             },
         )
 
-        return self
+        return LinkedBinaryRelation(r, self)
 
-    def get_entity(self, entity_name: str) -> Entity:
+    @overload
+    def get_entity(self, entity_name: str) -> LinkedEntity[Any]: ...
+
+    @overload
+    def get_entity(
+        self, entity_name: str, linked: Literal[True]
+    ) -> LinkedEntity[Any]: ...
+
+    @overload
+    def get_entity(self, entity_name: str, linked: Literal[False]) -> Entity: ...
+
+    def get_entity(
+        self, entity_name: str, linked: bool = True
+    ) -> LinkedEntity[Any] | Entity:
         """
         Retrieves an entity given its name
 
         :param entity_name: node to find
+        :param linked: whether to link result to this graph
         :return: node data
         :raises KeyError: supplied entity name not in the graph
         """
@@ -342,8 +416,12 @@ class WorldGraph:
             raise
 
         cls = node[WorldGraph._TYPE_ATTR]
+        e = cast(Entity, cls(name=entity_name, **node[WorldGraph._FIELDS_ATTR]))
 
-        return cls(name=entity_name, **node[WorldGraph._FIELDS_ATTR])  # type: ignore
+        if linked:
+            return LinkedEntity(e, self)
+
+        return e
 
     @property
     def entities(self) -> Iterable[Entity]:
@@ -353,7 +431,40 @@ class WorldGraph:
         :return: data from all graph nodes
         """
 
-        yield from (self.get_entity(id) for id in self.g)
+        yield from (self.get_entity(id, linked=False) for id in self.g)
+
+    @overload
+    def outgoing_relations(
+        self, start: Entity
+    ) -> Iterable[LinkedBinaryRelation[Any]]: ...
+
+    @overload
+    def outgoing_relations(
+        self, start: Entity, linked: Literal[True]
+    ) -> Iterable[LinkedBinaryRelation[Any]]: ...
+
+    @overload
+    def outgoing_relations(
+        self, start: Entity, linked: Literal[False]
+    ) -> Iterable[BinaryRelation]: ...
+
+    def outgoing_relations(
+        self, start: Entity, linked: bool = True
+    ) -> Iterable[LinkedBinaryRelation[Any]] | Iterable[BinaryRelation]:
+        """
+        :param start: originating graph entity
+        :param linked: ``True`` to produce linked relations
+        :return: outgoing relations from an entity
+        """
+
+        for oe in self.g.out_edges(start.name, data=True):
+            oe_e2 = self.get_entity(oe[1], linked=False)
+            r = self.produce_relation(start, oe_e2, oe[2])
+
+            if linked:
+                yield LinkedBinaryRelation(r, self)
+            else:
+                yield r
 
     def produce_relation(
         self, entity1: Entity, entity2: Entity, edge_info: dict[str, Any]
@@ -376,9 +487,32 @@ class WorldGraph:
             **edge_info[WorldGraph._FIELDS_ATTR],
         )
 
+    @overload
     def get_relation(
         self, entity1_name: str, entity2_name: str, edge_type: str
-    ) -> BinaryRelation:
+    ) -> LinkedBinaryRelation[Any]: ...
+
+    @overload
+    def get_relation(
+        self,
+        entity1_name: str,
+        entity2_name: str,
+        edge_type: str,
+        linked: Literal[True],
+    ) -> LinkedBinaryRelation[Any]: ...
+
+    @overload
+    def get_relation(
+        self,
+        entity1_name: str,
+        entity2_name: str,
+        edge_type: str,
+        linked: Literal[False],
+    ) -> BinaryRelation: ...
+
+    def get_relation(
+        self, entity1_name: str, entity2_name: str, edge_type: str, linked: bool = True
+    ) -> LinkedBinaryRelation[Any] | BinaryRelation:
         """
         Retrieves a relation give the names of the
         associated entities and the relation type
@@ -386,6 +520,7 @@ class WorldGraph:
         :param entity1_name: starting node name
         :param entity2_name: ending node name
         :param edge_type: edge schema type
+        :param linked: whether to link result to this graph
         :return: edge data
         :raises KeyError: supplied entity name not in the graph
         """
@@ -398,11 +533,16 @@ class WorldGraph:
         )
 
         try:
-            return self.produce_relation(
-                self.get_entity(entity1_name),
-                self.get_entity(entity2_name),
+            r = self.produce_relation(
+                self.get_entity(entity1_name, linked=False),
+                self.get_entity(entity2_name, linked=False),
                 self.g[entity1_name][entity2_name][edge_type],
             )
+
+            if linked:
+                return LinkedBinaryRelation(r, self)
+
+            return r
         except KeyError as e:
             _logger.error("Unknown entity/edge related to key: %s", e)
             raise
@@ -416,7 +556,9 @@ class WorldGraph:
         """
 
         yield from (
-            self.produce_relation(self.get_entity(u), self.get_entity(v), d)
+            self.produce_relation(
+                self.get_entity(u, linked=False), self.get_entity(v, linked=False), d
+            )
             for u, v, d in self.g.edges(data=True)
         )
 
@@ -435,18 +577,18 @@ class WorldGraph:
     @classmethod
     def from_snapshot(cls, snap: WorldSnapshot) -> Self:
         """
-        Create a graph from a snapshot
+        Create a graph from (the thawed contents of) a snapshot
 
         :param snap: set of entities/relations
-        :return: resulting graph
+        :return: resulting (thawed) graph
         """
 
         wg = cls()
         for e in snap.by(Entity):
-            wg.add_entity(e)
+            wg.add_entity(cast(Thawable[Entity], e).thaw())
 
         for r in snap.by(BinaryRelation):
-            wg.add_relation(r)
+            wg.add_relation(cast(Thawable[BinaryRelation], r).thaw())
 
         return wg
 
