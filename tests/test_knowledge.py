@@ -472,7 +472,6 @@ class TestKnowledge(unittest.TestCase):
         self.assertEqual(len(oe), 1)
         self.assertEqual(oe[0], self.r2)
 
-
         lf1.remove()
 
         self.assertEqual(
