@@ -9,6 +9,7 @@ from math import sqrt
 from typing import Any, cast
 
 from cognition import (
+    IO_REMOVE,
     Action,
     ActionFactory,
     ActionRank,
@@ -494,7 +495,9 @@ class TestCore(unittest.TestCase):
         self.assertListEqual(getattr(dp_io.io.i, lst_name).data, lst.data)
 
         # confirm ability to remove input/output
-        dp_io.set_input_data(lst_name, None).set_output_channel(lst_name, None)
+        dp_io.set_input_data(lst_name, IO_REMOVE).set_output_channel(
+            lst_name, IO_REMOVE
+        )
 
         self.assertEqual(
             str(dp_io),
@@ -589,7 +592,7 @@ class TestCore(unittest.TestCase):
             ),
         )
 
-        dp.set_arg_value(key, None)
+        dp.set_arg_value(key, IO_REMOVE)
 
         self.assertEqual(
             str(dp),

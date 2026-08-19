@@ -9,6 +9,7 @@ from .chain import (
     create_chain_dp,
 )
 from .core import (
+    IO_REMOVE,
     Action,
     ActionEvaluator,
     ActionFactory,
@@ -53,6 +54,7 @@ from .state import (
 )
 
 __all__ = [
+    "IO_REMOVE",
     "OPERATOR_SELF_PARAM",
     "TERMINAL_ACTION_ATTR",
     "Action",

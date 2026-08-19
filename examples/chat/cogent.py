@@ -110,7 +110,7 @@ class IDKOperator(Operator[BotState]):
         super().__init__("idk", terminal=True)
 
     def can_perform(self, _state: BotState, io: IOContainer) -> bool:
-        return isinstance(io.a.intent, str)
+        return io.a.intent is None
 
     def perform(self, state: BotState, io: IOContainer) -> None:
         _log(io, "Sorry, I do not know how to help you with that :(")
@@ -150,7 +150,7 @@ class CogentBot:
             ability = None
 
         self._cogent.dp.clear_log()
-        self._cogent(intent=ability if ability is not None else "idk")
+        self._cogent(intent=ability)
         response = self._cogent.dp.log
 
         self._history.append(f"Bot: {response}")

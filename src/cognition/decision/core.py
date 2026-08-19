@@ -17,6 +17,7 @@ from itertools import chain
 from types import MappingProxyType
 from typing import (
     Any,
+    Final,
     Self,
     cast,
     no_type_check,
@@ -39,6 +40,9 @@ from ..util.misc import (
 _logger = logging.getLogger(__name__)
 
 # ===
+
+IO_REMOVE: Final[object] = object()
+"""Sentinel to used in IO setting to indicate a removal"""
 
 
 # pylint: disable=too-many-instance-attributes
@@ -204,13 +208,13 @@ class BaseDecisionProcess[S]:
     """
 
     # Constants
-    INPUT_KEY_TIME: str = "clock"
+    INPUT_KEY_TIME: Final[str] = "clock"
     """Key associated with cycle input data"""
 
-    INPUT_ATTR_TIME: str = "cycles"
+    INPUT_ATTR_TIME: Final[str] = "cycles"
     """Attribute produced by the cycle input data"""
 
-    OUTPUT_KEY_LOG: str = "log"
+    OUTPUT_KEY_LOG: Final[str] = "log"
     """Key associated with the log output channel"""
 
     # Supplied components...
@@ -770,7 +774,7 @@ class BaseDecisionProcess[S]:
     def _set_io(d: dict[str, Any], key: str, data: Any) -> None:
         """Abstraction for io setting"""
 
-        if data is None:
+        if data is IO_REMOVE:
             d.pop(key, None)
         else:
             d[key] = data
@@ -783,7 +787,7 @@ class BaseDecisionProcess[S]:
         BaseDecisionProcess._set_io(d, key, data)
 
         type_name = type(self).__name__
-        if data is None:
+        if data is IO_REMOVE:
             _logger.info("%s: %s (%s) removed", type_name, key_name, key)
         else:
             _logger.info("%s: %s (%s) set", type_name, key_name, key)
@@ -796,7 +800,7 @@ class BaseDecisionProcess[S]:
         Sets value of ``io.i.input_key``
 
         :param name: input data key
-        :param buffer: arbitrary object reference (or ``None`` to remove)
+        :param buffer: arbitrary object reference (or ``IO_REMOVE`` to remove)
         :return: this decision process (for chaining)
         """
 
@@ -807,7 +811,7 @@ class BaseDecisionProcess[S]:
         Sets value of ``io.o.output_key``
 
         :param name: output channel key
-        :param buffer: arbitrary object reference (or ``None`` to remove)
+        :param buffer: arbitrary object reference (or ``IO_REMOVE`` to remove)
         :return: this decision process (for chaining)
         """
 
@@ -818,11 +822,13 @@ class BaseDecisionProcess[S]:
         Sets value of ``io.a.arg_key``
 
         :param name: argument key
-        :param buffer: arbitrary object reference (or ``None`` to remove)
+        :param buffer: arbitrary object reference (or ``IO_REMOVE`` to remove)
         :return: this decision process (for chaining)
         """
 
         return self._set_io_key_value(self._args, arg_key, data, "argument value")
+
+    # ===
 
     @property
     def log(self) -> str:

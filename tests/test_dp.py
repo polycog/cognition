@@ -306,9 +306,6 @@ class TestDP(unittest.TestCase):
             def perform(self, _state: int, io: IOContainer) -> int:
                 return cast(int, getattr(io.a, self._arg))
 
-        with self.assertRaises(ValueError), args_added(dp, foo=None):
-            dp.run_until_done()
-
         with args_added(dp, **{arg_name: arg_val}):
             dp.run_until_done()
 

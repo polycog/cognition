@@ -30,6 +30,7 @@ from ..util.misc import (
     stringify,
 )
 from .core import (
+    IO_REMOVE,
     Action,
     ActionEvaluator,
     ActionFactory,
@@ -80,7 +81,6 @@ def _add_args[S](
     :param dp: decision process for which to provide arguments
     :param info: io.a.key=value
     :return: supplied dp
-    :raises ValueError: ``None`` supplied as a value
     """
 
     _logger.info(
@@ -92,17 +92,12 @@ def _add_args[S](
 
     try:
         for k, v in info.items():
-            if v is None:
-                e = ValueError(f"{v} supplied as an io argument for {k}")
-                _logger.error(e)
-                raise e
-
             dp.set_arg_value(k, v)
 
         yield dp
     finally:
         for k in info:
-            dp.set_arg_value(k, None)
+            dp.set_arg_value(k, IO_REMOVE)
 
         _logger.info(
             "%s: stopped providing arguments",
@@ -120,7 +115,6 @@ def args_added[S](
     :param dp: decision process for which to provide arguments
     :param info: io.a.key=value
     :return: supplied dp
-    :raises ValueError: ``None`` supplied as a value
     """
 
     yield from _add_args(dp, **info)
@@ -545,7 +539,6 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         Pass-thru to :func:`args_added`
 
         :param info: io.a.key=value
-        :raises ValueError: ``None`` supplied as a value
         """
 
         yield from _add_args(self, **info)
@@ -706,7 +699,6 @@ class DecisionProcess[S](BaseDecisionProcess[S]):
         :param args: arguments to supply
         :return: the final state if the decision process completed
                  without any exceptions; ``None`` otherwise
-        :raises ValueError: ``None`` supplied as an argument value
         """
 
         _logger.info("%s: run started", type(self).__name__)
