@@ -215,6 +215,7 @@ class ComplexSchema(BaseModel):
 
     a: int = Field(description="apple")
     b: str | None
+    c: list[str] = Field(description="annotation")
     e: BinaryResponse = Field(description="binary")
     q: FruitSchema | BinaryResponseSchema | UserRoleSchema = Field(
         description="ternary"
@@ -224,6 +225,7 @@ class ComplexSchema(BaseModel):
 DOC_COMPLEX_SCHEMA: str = f"{ComplexSchema.__name__} ({ ComplexSchema.__doc__ })"
 DOC_COMPLEX_A: str = "a (int; apple)"
 DOC_COMPLEX_B: str = "b (str | NoneType)"
+DOC_COMPLEX_C: str = "c (list[str]; annotation)"
 DOC_COMPLEX_E: str = "e (BinaryResponse; binary)"
 DOC_COMPLEX_Q: str = "q (FruitSchema | BinaryResponseSchema | UserRoleSchema; ternary)"
 
@@ -232,6 +234,7 @@ DESC_COMPLEX_SCHEMA_SHALLOW: str = (
     ", fields...\n"
     f"* { DOC_COMPLEX_A }\n"
     f"* { DOC_COMPLEX_B }\n"
+    f"* { DOC_COMPLEX_C }\n"
     f"* { DOC_COMPLEX_E }\n"
     f"* { DOC_COMPLEX_Q }\n"
     "\n"
@@ -524,6 +527,8 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
         )
 
         # ===
+
+        _ = FactDescriber(ComplexSchema, "")  # just confirming it does not error
 
         self.assertEqual(basemodel_name_doc(ComplexSchema), DOC_COMPLEX_SCHEMA)
         self.assertEqual(

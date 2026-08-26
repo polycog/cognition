@@ -6,7 +6,7 @@ import logging
 from collections.abc import Iterable, Sequence
 from enum import Enum
 from string import Template
-from types import UnionType
+from types import GenericAlias, UnionType
 from typing import Union, cast, get_args, get_origin
 
 from pydantic import BaseModel
@@ -159,7 +159,10 @@ def basemodel_field_doc(field_name: str, field_info: FieldInfo) -> str:
         field_types,
     )
 
-    types_names = " | ".join(t.__name__ for t in field_types)
+    def _name(thing: type | GenericAlias) -> str:
+        return str(thing) if isinstance(thing, GenericAlias) else thing.__name__
+
+    types_names = " | ".join(_name(t) for t in field_types)
 
     return f"{field_name} ({types_names}{ _sub_if(_t_sc, field_info.description) })"
 
@@ -175,6 +178,9 @@ def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> Iterable[t
     """
 
     def _supported_type(t: type) -> bool:
+        origin = get_origin(t)
+        t = t if origin is None else origin
+
         return issubclass(t, BaseModel) or issubclass(t, Enum)
 
     def _basemodel_field_types(schema_type: type[BaseModel]) -> Iterable[type]:
