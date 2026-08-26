@@ -160,7 +160,13 @@ def basemodel_field_doc(field_name: str, field_info: FieldInfo) -> str:
     )
 
     def _name(thing: type | GenericAlias) -> str:
-        return str(thing) if isinstance(thing, GenericAlias) else thing.__name__
+        if isinstance(thing, GenericAlias):
+            origin = get_origin(thing)
+            args = ", ".join(_name(a) for a in get_args(thing))
+
+            return f"{origin.__name__}[{args}]"
+
+        return thing.__name__
 
     types_names = " | ".join(_name(t) for t in field_types)
 
