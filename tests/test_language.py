@@ -79,6 +79,10 @@ Your task is to provide a 1-sentence description of a supplied fact.
 == Object to Describe ==
 value=<Fruit.APPLE: 'apple'>
 
+== Extra Information ==
+* things
+* stuffs
+
 == Other Facts ==
 value=<Fruit.BANANA: 'banana'>
 value=<Fruit.CHERRY: 'cherry'>
@@ -449,6 +453,8 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
             describer.prompt(
                 target,
                 others,
+                "things",
+                "stuffs",
             ),
             DESC_FRUIT_PROMPT__FRUIT_TASK__A_BC,
         )

@@ -415,13 +415,17 @@ class FactDescriber[T: BaseModel]:
             )
         )
 
-        self._template = Template(f"{prompt_part1}$instance\n\n$others{prompt_part2}")
+        self._template = Template(
+            f"{prompt_part1}$instance\n\n$extra$others{prompt_part2}"
+        )
 
-    def prompt(self, instance: T, others: Iterable[T]) -> str:
+    def prompt(self, instance: T, others: Iterable[T], *extra: str) -> str:
         """
         Produces the prompt for a supplied instance
 
         :param instance: instance to describe
+        :param others: other facts for consideration
+        :param extra: dynamic extra context to supply
         :return: resulting describer llm prompt
         """
 
@@ -429,10 +433,22 @@ class FactDescriber[T: BaseModel]:
         if others_s:
             others_s = f"== Other Facts ==\n{others_s}\n\n"
 
-        return self._template.substitute(instance=str(instance), others=others_s)
+        extra_s = ""
+        if extra:
+            extra_s = "\n".join(f"* {e}" for e in extra)
+            extra_s = f"== Extra Information ==\n{extra_s}\n\n"
+
+        return self._template.substitute(
+            instance=str(instance), others=others_s, extra=extra_s
+        )
 
     def __call__(
-        self, instance: T, others: Iterable[T], llm: Model, timeout_secs: int = 5
+        self,
+        instance: T,
+        others: Iterable[T],
+        llm: Model,
+        *extra: str,
+        timeout_secs: int = 5,
     ) -> str:
         """
         Describes the instance
@@ -441,6 +457,7 @@ class FactDescriber[T: BaseModel]:
         :param instance: instance to describe
         :param others: other facts for consideration
         :param llm: textual model to utilize
+        :param extra: dynamic extra context to supply
         :timeout_secs: time given per LLM call
         :return: description
         """
@@ -466,7 +483,7 @@ class FactDescriber[T: BaseModel]:
                 system_prompt="You are a helpful assistant.",
                 model_settings={"timeout": timeout_secs},
             )
-            .run_sync(self.prompt(instance, others_t))
+            .run_sync(self.prompt(instance, others_t, *extra))
             .output
         )
 
@@ -480,6 +497,7 @@ class FactDescriber[T: BaseModel]:
         task_desc: str | None,
         others: Iterable[T],
         llm: Model,
+        *extra: str,
         timeout_secs: int = 5,
     ) -> str:
         """
@@ -489,10 +507,11 @@ class FactDescriber[T: BaseModel]:
         :param task_desc: textual description of the task
         :param others: other facts for consideration
         :param llm: textual model to utilize
+        :param extra: dynamic extra context to supply
         :timeout_secs: time given per LLM call
         :return: description
         """
 
         return FactDescriber(type(instance), task_desc)(
-            instance, others, llm, timeout_secs
+            instance, others, llm, *extra, timeout_secs=timeout_secs
         )
