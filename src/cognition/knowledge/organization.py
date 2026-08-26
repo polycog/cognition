@@ -124,15 +124,20 @@ class WorldSnapshot:
 
         return self.click(*(self.items - set(remove) | set(add)))
 
-    def by[FT](self, cls_t: _ClassInfo[FT]) -> Iterable[FT]:
+    def by[FT](
+        self, cls_t: _ClassInfo[FT], check: Predicate[FT] = lambda _: True
+    ) -> Iterable[FT]:
         """
-        Access by fact type
+        Access by fact type and an optional check
 
         :param cls_t: filter type
-        :return: facts matching the filter
+        :param check: optional return gate
+        :return: fact(s) matching the filter and gate
         """
 
-        return tuple(item for item in self.items if isinstance(item, cls_t))
+        yield from (
+            item for item in self.items if isinstance(item, cls_t) and check(item)
+        )
 
     def find_first[FT](
         self, cls_t: type[FT], check: Predicate[FT] = lambda _: True
@@ -146,9 +151,8 @@ class WorldSnapshot:
         :raises ValueError: no fact of the supplied type satisfies the check
         """
 
-        for item in self.by(cls_t):
-            if check(item):
-                return item
+        for item in self.by(cls_t, check):
+            return item
 
         raise ValueError("Could not find a satisfying fact")
 
@@ -189,7 +193,7 @@ class WorldSnapshot:
             )
 
         yield from (
-            r for r in self.by(cls_t if cls_t is not None else BinaryRelation) if _p(r)
+            r for r in self.by(cls_t if cls_t is not None else BinaryRelation, _p)
         )
 
 
