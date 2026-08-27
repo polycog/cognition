@@ -212,8 +212,9 @@ class EnumClassifier[T: Enum]:
 
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-positional-arguments
-    @staticmethod
+    @classmethod
     def classify(
+        cls,
         utterance: str,
         enum_type: type[T],
         llm: Model,
@@ -233,6 +234,4 @@ class EnumClassifier[T: Enum]:
         :return: most common classification with confidence
         """
 
-        return EnumClassifier(enum_type, task_desc)(
-            utterance, llm, num_trials, timeout_secs
-        )
+        return cls(enum_type, task_desc)(utterance, llm, num_trials, timeout_secs)

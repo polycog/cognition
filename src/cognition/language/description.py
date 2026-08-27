@@ -491,8 +491,9 @@ class FactDescriber[T: BaseModel]:
 
         return result
 
-    @staticmethod
+    @classmethod
     def describe(
+        cls,
         instance: T,
         task_desc: str | None,
         others: Iterable[T],
@@ -512,6 +513,6 @@ class FactDescriber[T: BaseModel]:
         :return: description
         """
 
-        return FactDescriber(type(instance), task_desc)(
+        return cls(type(instance), task_desc)(
             instance, others, llm, *extra, timeout_secs=timeout_secs
         )
