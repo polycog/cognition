@@ -471,10 +471,11 @@ class FactDescriber[T: BaseModel]:
         )
 
         _logger.debug(
-            "type=%s, timeout=%ss; others=%s",
+            "type=%s, timeout=%ss; others=%s; extra=%s",
             type(instance).__name__,
             timeout_secs,
             others_t,
+            extra,
         )
 
         result = (
