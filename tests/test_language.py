@@ -18,6 +18,7 @@ from cognition import (
     EnumClassifier,
     FactDescriber,
     Function,
+    ModelPopulator,
     basemodel_dep_types,
     basemodel_description,
     basemodel_field_doc,
@@ -259,6 +260,45 @@ DESC_COMPLEX_SCHEMA_SHALLOW: str = (
 
 DESC_COMPLEX_SCHEMA_DEEP: str = (
     f"{DESC_COMPLEX_SCHEMA_SHALLOW}\n\n{DESC_FRUIT}\n\n{DESC_USERROLE}"
+)
+
+
+class NestedSchema(BaseModel):
+    """wide and deep"""
+
+    f: Fruit
+    yn: BinaryResponseSchema
+    name: str
+
+
+PROMPT_NESTED: str = (
+    "== Context =="
+    "\n"
+    "Nested Task"
+    "\n\n"
+    "== Task Description =="
+    "\n"
+    "Your task is to instantiate the supplied schema with "
+    "values that best match the supplied utterance."
+    "\n\n"
+    "== Schema Description =="
+    "\n"
+    f"{basemodel_description(NestedSchema, True)}"
+    "\n\n"
+    "== Utterance =="
+    "\n"
+    "utterance"
+    "\n\n"
+    "== Extra Information =="
+    "\n"
+    "* things"
+    "\n"
+    "* stuffs"
+    "\n\n"
+    "\n\n\n"
+    "Please choose field values that best matches the utterance."
+    "\n"
+    "Return ONLY valid JSON from the schema."
 )
 
 
@@ -591,4 +631,32 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             basemodel_description(ComplexSchema, True),
             DESC_COMPLEX_SCHEMA_DEEP,
+        )
+
+    def test_bm_population(self) -> None:
+        """Tests for base model population"""
+
+        task_desc = "Nested Task"
+
+        nest = NestedSchema(
+            f=Fruit.APPLE, yn=BinaryResponseSchema(yn=None), name="name"
+        )
+
+        model_nest = FunctionModel(
+            lambda *args, **kwargs: ModelResponse(
+                parts=(TextPart(nest.model_dump_json()),)
+            ),
+            model_name="nest",
+        )
+
+        populator = ModelPopulator(NestedSchema, task_desc)
+
+        self.assertEqual(populator("utterance", model_nest, "things", "stuffs"), nest)
+        self.assertEqual(
+            populator.prompt("utterance", "things", "stuffs"), PROMPT_NESTED
+        )
+
+        self.assertEqual(
+            ModelPopulator.populate("utterance", NestedSchema, model_nest, task_desc),
+            nest,
         )

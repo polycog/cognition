@@ -2,7 +2,7 @@
 Language sub-module
 """
 
-from . import classification, description
+from . import classification, description, population
 from .classification import (
     DEFAULT_SCHEMA_FIELD_NAME,
     EmpiricalConfidence,
@@ -19,12 +19,16 @@ from .description import (
     enum_item_doc,
     enum_name_doc,
 )
+from .population import (
+    ModelPopulator,
+)
 
 __all__ = [
     "DEFAULT_SCHEMA_FIELD_NAME",
     "EmpiricalConfidence",
     "EnumClassifier",
     "FactDescriber",
+    "ModelPopulator",
     "basemodel_dep_types",
     "basemodel_description",
     "basemodel_field_doc",
@@ -35,4 +39,5 @@ __all__ = [
     "enum_item_doc",
     "enum_name_doc",
     "enum_schema",
+    "population",
 ]
