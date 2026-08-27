@@ -3,10 +3,11 @@ Tests for knowledge code
 """
 
 import unittest
+import warnings
 from typing import cast
 
 from networkx import NetworkXError
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, ValidationError
 
 from cognition import (
     BaseSchema,
@@ -64,6 +65,41 @@ class Relation2(BinaryRelation):
 
 class TestSchema(unittest.TestCase):
     """Tests for knowledge representation code"""
+
+    def test_replace(self) -> None:
+        """confirming replace"""
+
+        f2_name = "f2"
+        f2_a1 = 42
+        f2_a2 = "howdy"
+
+        f2 = Fact2(name=f2_name, a1=f2_a1, a2=f2_a2)
+        ff2 = f2.freeze()
+
+        self.assertEqual(f2, cast(Thawable[Fact2], ff2).thaw())
+
+        with self.assertRaises(ValidationError):
+            ff2.a1 += 1
+
+        f2.a1 += 1
+
+        self.assertNotEqual(f2.a1, ff2.a1)
+        self.assertNotEqual(f2, cast(Thawable[Fact2], ff2).thaw())
+
+        new_ff2 = ff2.replace(a1=f2.a1)
+
+        self.assertEqual(f2.a1, new_ff2.a1)
+        self.assertEqual(f2, cast(Thawable[Fact2], new_ff2).thaw())
+
+        with self.assertRaises(KeyError):
+            ff2.replace(name="cannot do")
+
+        with self.assertRaises(KeyError):
+            ff2.replace(weird="where did this come from")
+
+        with self.assertRaises(ValidationError), warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            ff2.replace(a1="type mismatch")
 
     # pylint: disable=too-many-locals
     def test_freeze(self) -> None:

@@ -93,6 +93,32 @@ class BaseSchema(TypedMixin, BaseModel, ABC):
 
         return f"{start})"
 
+    def replace(self, **fields: Any) -> Self:
+        """
+        Produces a copy with optional field changes
+
+        :param fields: name=new value
+        :return: copy
+        :raises KeyError: invalid (non-required) field
+        :raises ValidationError: violates schema
+        """
+
+        allowed_to_change = tuple(f for f, _ in self.custom_fields)
+
+        for k in fields:
+            if k not in allowed_to_change:
+                raise KeyError(f"{k} is not a custom field in {type(self).__name__}")
+
+        new_obj = self.model_copy(update=fields)
+        type(self).model_validate(new_obj.model_dump(), strict=True)
+
+        if isinstance(self, Thawable):
+            object.__setattr__(
+                new_obj, "thaw", lambda: self.thaw().model_copy(update=fields)
+            )
+
+        return new_obj
+
     # ===
 
     @staticmethod
