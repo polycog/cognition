@@ -4,6 +4,8 @@ Knowledge sub-module
 
 from . import organization, representation
 from .organization import (
+    LinkedBinaryRelation,
+    LinkedEntity,
     WorldGraph,
     WorldSnapshot,
 )
@@ -22,6 +24,8 @@ __all__ = [
     "Entity",
     "Fact",
     "Freezable",
+    "LinkedBinaryRelation",
+    "LinkedEntity",
     "Thawable",
     "WorldGraph",
     "WorldSnapshot",
