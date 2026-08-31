@@ -173,11 +173,13 @@ def basemodel_field_doc(field_name: str, field_info: FieldInfo) -> str:
     return f"{field_name} ({types_names}{ _sub_if(_t_sc, field_info.description) })"
 
 
-def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> Iterable[type]:
+def basemodel_dep_types(
+    start_schema: type[BaseModel] | Iterable[type[BaseModel]], deep: bool
+) -> Iterable[type]:
     """
     Accounts for a base model's dependent types
 
-    :param start_schema: source type
+    :param start_schema: source type(s)
     :param deep: if ``True``, recursively includes base model fields
     :return: :class:`enum.Enum` and :class:`pydantic.BaseModel` types
              needed to understand the schema (including itself)
@@ -206,20 +208,34 @@ def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> Iterable[t
 
     # ===
 
+    start: tuple[type, ...]
+
+    if not isinstance(start_schema, Iterable):
+        start = (start_schema,)
+    else:
+        start = tuple(start_schema)
+
+    todo: list[type] = list(start)
+
+    # ===
+
     _logger.debug(
-        "%s(%s, deep=%s): start",
+        "%s(%s; deep=%s): start",
         basemodel_dep_types.__name__,
-        start_schema.__name__,
+        ", ".join(s.__name__ for s in start),
         deep,
     )
 
     # ===
 
-    todo: list[type] = [start_schema]
     explored: set[type] = set()
 
-    result: list[type] = [start_schema]
-    added: set[type] = {start_schema}
+    result: list[type] = []
+    for s in start:
+        if s not in result:
+            result.append(s)
+
+    added: set[type] = set(start)
 
     while todo:
         t = todo.pop(0)
@@ -256,9 +272,9 @@ def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> Iterable[t
     # ===
 
     _logger.debug(
-        "%s(%s, deep=%s): done (explored=%s, result=%s)",
+        "%s(%s; deep=%s): done (explored=%s, result=%s)",
         basemodel_dep_types.__name__,
-        start_schema.__name__,
+        ", ".join(s.__name__ for s in start),
         deep,
         explored,
         result,
@@ -267,29 +283,39 @@ def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> Iterable[t
     return result
 
 
-def basemodel_description(schema_type: type[BaseModel], deep: bool) -> str:
+def basemodel_description(
+    schema_types: type[BaseModel] | Iterable[type[BaseModel]], deep: bool
+) -> str:
     """
-    Description of an basemodel type
-    and its members
+    Description of basemodel type(s)
+    and their members
 
-    :param schema_type: type to describe
+    :param schema_types: type(s) to describe
     :param deep: if ``True``, recursively includes fields' types
-    :return: type description
+    :return: description
     """
+
+    start: tuple[type, ...]
+
+    if not isinstance(schema_types, Iterable):
+        start = (schema_types,)
+    else:
+        start = tuple(schema_types)
+
+    # ===
 
     _logger.debug(
-        "%s(%s, deep=%s): mro=%s",
+        "%s(%s; deep=%s)",
         basemodel_description.__name__,
-        schema_type.__name__,
+        ", ".join(s.__name__ for s in start),
         deep,
-        schema_type.__mro__,
     )
 
     # ===
 
     lines: list[str] = []
 
-    todo = basemodel_dep_types(schema_type, deep)
+    todo = basemodel_dep_types(start, deep)
 
     for t in todo:
         if lines:

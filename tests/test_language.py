@@ -262,6 +262,34 @@ DESC_COMPLEX_SCHEMA_DEEP: str = (
     f"{DESC_COMPLEX_SCHEMA_SHALLOW}\n\n{DESC_FRUIT}\n\n{DESC_USERROLE}"
 )
 
+COMBO_COMPLEX_SCHEMA_SHALLOW: str = (
+    f"Base Model: { DOC_FRUIT_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_FRUIT_VALUE }\n"
+    "\n"
+    f"Base Model: { DOC_COMPLEX_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_COMPLEX_A }\n"
+    f"* { DOC_COMPLEX_B }\n"
+    f"* { DOC_COMPLEX_C }\n"
+    f"* { DOC_COMPLEX_E }\n"
+    f"* { DOC_COMPLEX_Q }\n"
+    "\n"
+    f"{DESC_FRUIT}\n"
+    "\n"
+    f"{DESC_BINARYRESPONSE}\n"
+    "\n"
+    f"Base Model: { DOC_BINARYRESPONSE_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_BINARYRESPONSE_YN }\n"
+    "\n"
+    f"Base Model: { DOC_USERROLE_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_USERROLE_VALUE }"
+)
+
+COMBO_COMPLEX_SCHEMA_DEEP: str = f"{COMBO_COMPLEX_SCHEMA_SHALLOW}\n\n{DESC_USERROLE}"
+
 
 class NestedSchema(BaseModel):
     """wide and deep"""
@@ -631,6 +659,41 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             basemodel_description(ComplexSchema, True),
             DESC_COMPLEX_SCHEMA_DEEP,
+        )
+
+        # ===
+
+        self.assertListEqual(
+            list(basemodel_dep_types((FruitSchema, ComplexSchema, FruitSchema), False)),
+            [
+                FruitSchema,
+                ComplexSchema,
+                Fruit,
+                BinaryResponse,
+                BinaryResponseSchema,
+                UserRoleSchema,
+            ],
+        )
+        self.assertListEqual(
+            list(basemodel_dep_types((FruitSchema, ComplexSchema, FruitSchema), True)),
+            [
+                FruitSchema,
+                ComplexSchema,
+                Fruit,
+                BinaryResponse,
+                BinaryResponseSchema,
+                UserRoleSchema,
+                UserRole,
+            ],
+        )
+
+        self.assertEqual(
+            basemodel_description((FruitSchema, ComplexSchema, FruitSchema), False),
+            COMBO_COMPLEX_SCHEMA_SHALLOW,
+        )
+        self.assertEqual(
+            basemodel_description((FruitSchema, ComplexSchema, FruitSchema), True),
+            COMBO_COMPLEX_SCHEMA_DEEP,
         )
 
     def test_bm_population(self) -> None:
