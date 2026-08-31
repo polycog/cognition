@@ -23,6 +23,7 @@ from cognition import (
     basemodel_description,
     basemodel_field_doc,
     basemodel_name_doc,
+    describe_facts,
     enum_description,
     enum_item_doc,
     enum_name_doc,
@@ -134,6 +135,60 @@ Good descriptions include...
   There is a block named 'B1' that has the color 'blue'
 * EgOnTop(entity1=EgBlock(name=B2, color=EgColor.RED), entity2=EgSurface(name=table))
   The red block named 'B2' is on top of the surface named 'table'"""
+
+# pylint: disable=line-too-long
+DESC_FRUITS: str = """== Context ==
+Fruit Task
+
+== Task Description ==
+Your task is to provide a concise description of a supplied set of facts.
+
+== Objects to Describe ==
+value=<Fruit.APPLE: 'apple'>
+value=<Fruit.BANANA: 'banana'>
+value=<Fruit.CHERRY: 'cherry'>
+
+== Structural Description ==
+Base Model: FruitSchema (Response schema for Fruit), fields...
+* value (Fruit | NoneType)
+
+Enumeration: Fruit (Available fruits), options...
+* apple
+* banana
+* cherry
+
+== Guiding Style ==
+* Do NOT use any markup or superfluous punctuation.
+* Do NOT reproduce an object in its description, nor its type, nor explicitly refer to words like 'object', 'field', or 'attribute'.
+* Limit factual knowledge to the objects and the structural description.
+* If possible, and effective in communication, do not provide a separate sentence for each fact, but rather combine them into an appropriate set of summative statement(s).
+
+== Example ==
+Given the following structural description...
+
+Base Model: EgOnTop (Represents spatial relations between blocks), fields...
+* entity1 (EgBlock; block on top)
+* entity2 (EgBlock | EgSurface; block or surface below the block)
+
+Base Model: EgBlock (A block), fields...
+* name (str; name of the block)
+* color (EgColor; block color)
+
+Base Model: EgSurface (A surface for blocks), fields...
+* name (str; name of the surface)
+
+Enumeration: EgColor (Example choice of colors), options...
+* 1 (the color red)
+* 2 (the color green)
+* 3 (the color blue)
+
+Good descriptions include...
+* (EgBlock(name=B1, color=EgColor.BLUE),)
+  There is a block named 'B1' that has the color 'blue'
+* (EgOnTop(entity1=EgBlock(name=B2, color=EgColor.RED), entity2=EgSurface(name=table)),)
+  The red block named 'B2' is on top of the surface named 'table'
+* (EgOnTop(entity1=EgBlock(name=B1, color=EgColor.BLUE), entity2=EgBlock(name=B2, color=EgColor.RED)), EgOnTop(entity1=EgBlock(name=B2, color=EgColor.RED), entity2=EgSurface(name=table)),)
+  The blue block named 'B1' is on top of the red block named 'B2', which is on top of the surface named 'table'"""
 
 
 class BinaryResponse(DocEnum):
@@ -541,6 +596,16 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(
             FactDescriber.describe(target, task_desc, others, model_mphg),
+            knights_who_say,
+        )
+
+        self.assertEqual(
+            describe_facts((target, f_b, f_c), task_desc, model_mphg, debug=True),
+            DESC_FRUITS,
+        )
+
+        self.assertEqual(
+            describe_facts((target, f_b, f_c), task_desc, model_mphg, debug=False),
             knights_who_say,
         )
 

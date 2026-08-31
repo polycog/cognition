@@ -332,6 +332,52 @@ def basemodel_description(
     return "\n".join(lines)
 
 
+# ===
+
+
+class EgColor(AutoDocEnum):
+    """
+    Example choice of colors
+    """
+
+    RED = "the color red"
+    GREEN = "the color green"
+    BLUE = "the color blue"
+
+
+class EgBlock(Entity):
+    """
+    A block
+    """
+
+    name: str = Field(description="name of the block")
+    color: EgColor = Field(description="block color")
+
+
+class EgSurface(Entity):
+    """
+    A surface for blocks
+    """
+
+    name: str = Field(description="name of the surface")
+
+
+class EgOnTop(BinaryRelation):
+    """
+    Represents spatial relations between blocks
+    """
+
+    entity1: EgBlock = Field(description="block on top")
+    entity2: EgBlock | EgSurface = Field(description="block or surface below the block")
+
+
+_B1 = EgBlock(name="B1", color=EgColor.BLUE)
+_B2 = EgBlock(name="B2", color=EgColor.RED)
+_T = EgSurface(name="table")
+_OT1 = EgOnTop(entity1=_B1, entity2=_B2)
+_OT2 = EgOnTop(entity1=_B2, entity2=_T)
+
+
 # pylint: disable=too-few-public-methods
 class FactDescriber[T: BaseModel]:
     """
@@ -366,46 +412,6 @@ class FactDescriber[T: BaseModel]:
             "\n"
         )
 
-        class EgColor(AutoDocEnum):
-            """
-            Example choice of colors
-            """
-
-            RED = "the color red"
-            GREEN = "the color green"
-            BLUE = "the color blue"
-
-        class EgBlock(Entity):
-            """
-            A block
-            """
-
-            name: str = Field(description="name of the block")
-            color: EgColor = Field(description="block color")
-
-        class EgSurface(Entity):
-            """
-            A surface for blocks
-            """
-
-            name: str = Field(description="name of the surface")
-
-        class EgOnTop(BinaryRelation):
-            """
-            Represents spatial relations between blocks
-            """
-
-            entity1: EgBlock = Field(description="block on top")
-            entity2: EgBlock | EgSurface = Field(
-                description="block or surface below the block"
-            )
-
-        b1 = EgBlock(name="B1", color=EgColor.BLUE)
-        b2 = EgBlock(name="B2", color=EgColor.RED)
-        t = EgSurface(name="table")
-        ot1 = EgOnTop(entity1=b1, entity2=b2)
-        ot2 = EgOnTop(entity1=b2, entity2=t)
-
         prompt_part2: str = "".join(
             (
                 "== Structural Description ==",
@@ -427,15 +433,15 @@ class FactDescriber[T: BaseModel]:
                 "\n\n",
                 "And the following additional known facts...",
                 "\n\n",
-                "\n".join(str(f) for f in (b1, b2, t, ot1, ot2)),
+                "\n".join(str(f) for f in (_B1, _B2, _T, _OT1, _OT2)),
                 "\n\n",
                 "Good descriptions include...",
                 "\n",
-                f"* {b1 !s}",
+                f"* {_B1 !s}",
                 "\n",
                 "  There is a block named 'B1' that has the color 'blue'",
                 "\n",
-                f"* {ot2 !s}",
+                f"* {_OT2 !s}",
                 "\n",
                 "  The red block named 'B2' is on top of the surface named 'table'",
             )
@@ -484,7 +490,7 @@ class FactDescriber[T: BaseModel]:
         :param others: other facts for consideration
         :param llm: textual model to utilize
         :param extra: dynamic extra context to supply
-        :timeout_secs: time given per LLM call
+        :param timeout_secs: time given per LLM call
         :return: description
         """
 
@@ -536,10 +542,105 @@ class FactDescriber[T: BaseModel]:
         :param others: other facts for consideration
         :param llm: textual model to utilize
         :param extra: dynamic extra context to supply
-        :timeout_secs: time given per LLM call
+        :parm timeout_secs: time given per LLM call
         :return: description
         """
 
         return cls(type(instance), task_desc)(
             instance, others, llm, *extra, timeout_secs=timeout_secs
         )
+
+
+def describe_facts(
+    instances: Iterable[BaseModel],
+    task_desc: str | None,
+    llm: Model,
+    timeout_secs: int = 5,
+    debug: bool = False,
+) -> str:
+    """
+    One-off description of a supplied set of facts
+
+    :param instance: instance(s) to describe
+    :param task_desc: textual description of the task
+    :param llm: textual model to utilize
+    :param timeout_secs: time given per LLM call
+    :param debug: returns the prompt instead of the description
+    :return: description (or prompt it debug)
+    """
+
+    facts = tuple(instances)
+
+    _logger.info(
+        "Describing instances (%s) using %s (timeout=%ss)",
+        ", ".join(f"{f!s}" for f in instances),
+        llm.model_name,
+        timeout_secs,
+    )
+
+    task_prefix = ""
+    if task_desc:
+        task_prefix = f"== Context ==\n{ task_desc }\n\n"
+
+    prompt: str = (
+        f"{task_prefix}"
+        "== Task Description =="
+        "\n"
+        "Your task is to provide a concise description of a supplied set of facts."
+        "\n\n"
+        "== Objects to Describe =="
+        "\n"
+        f"{"\n".join(str(f) for f in facts)}"
+        "\n\n"
+        "== Structural Description =="
+        "\n"
+        f"{basemodel_description((type(f) for f in facts), True)}"
+        "\n\n"
+        "== Guiding Style =="
+        "\n"
+        "* Do NOT use any markup or superfluous punctuation.\n"
+        "* Do NOT reproduce an object in its description, nor its type, "
+        "nor explicitly refer to words like 'object', 'field', or 'attribute'.\n"
+        "* Limit factual knowledge to the objects and the structural description.\n"
+        "* If possible, and effective in communication, "
+        "do not provide a separate sentence for each fact, "
+        "but rather combine them into an appropriate set of summative statement(s).\n"
+        "\n"
+        "== Example =="
+        "\n"
+        "Given the following structural description..."
+        "\n\n"
+        f"{basemodel_description(EgOnTop, True)}"
+        "\n\n"
+        "Good descriptions include..."
+        "\n"
+        f"* ({_B1 !s},)"
+        "\n"
+        "  There is a block named 'B1' that has the color 'blue'"
+        "\n"
+        f"* ({_OT2 !s},)"
+        "\n"
+        "  The red block named 'B2' is on top of the surface named 'table'"
+        "\n"
+        f"* ({_OT1 !s}, {_OT2 !s},)"
+        "\n"
+        "  The blue block named 'B1' is on top of the red block named 'B2', "
+        "which is on top of the surface named 'table'"
+    )
+
+    if debug:
+        return prompt
+
+    result = (
+        LanguageConvo(
+            model=llm,
+            system_prompt="You are a helpful assistant.",
+            model_settings={"timeout": timeout_secs},
+        )
+        .run_sync(prompt)
+        .output
+    )
+
+    _logger.info("Description: '%s'", result)
+
+    return result
