@@ -173,11 +173,13 @@ def basemodel_field_doc(field_name: str, field_info: FieldInfo) -> str:
     return f"{field_name} ({types_names}{ _sub_if(_t_sc, field_info.description) })"
 
 
-def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> Iterable[type]:
+def basemodel_dep_types(
+    start_schema: type[BaseModel] | Iterable[type[BaseModel]], deep: bool
+) -> Iterable[type]:
     """
     Accounts for a base model's dependent types
 
-    :param start_schema: source type
+    :param start_schema: source type(s)
     :param deep: if ``True``, recursively includes base model fields
     :return: :class:`enum.Enum` and :class:`pydantic.BaseModel` types
              needed to understand the schema (including itself)
@@ -206,20 +208,34 @@ def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> Iterable[t
 
     # ===
 
+    start: tuple[type, ...]
+
+    if not isinstance(start_schema, Iterable):
+        start = (start_schema,)
+    else:
+        start = tuple(start_schema)
+
+    todo: list[type] = list(start)
+
+    # ===
+
     _logger.debug(
-        "%s(%s, deep=%s): start",
+        "%s(%s; deep=%s): start",
         basemodel_dep_types.__name__,
-        start_schema.__name__,
+        ", ".join(s.__name__ for s in start),
         deep,
     )
 
     # ===
 
-    todo: list[type] = [start_schema]
     explored: set[type] = set()
 
-    result: list[type] = [start_schema]
-    added: set[type] = {start_schema}
+    result: list[type] = []
+    for s in start:
+        if s not in result:
+            result.append(s)
+
+    added: set[type] = set(start)
 
     while todo:
         t = todo.pop(0)
@@ -256,9 +272,9 @@ def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> Iterable[t
     # ===
 
     _logger.debug(
-        "%s(%s, deep=%s): done (explored=%s, result=%s)",
+        "%s(%s; deep=%s): done (explored=%s, result=%s)",
         basemodel_dep_types.__name__,
-        start_schema.__name__,
+        ", ".join(s.__name__ for s in start),
         deep,
         explored,
         result,
@@ -267,29 +283,39 @@ def basemodel_dep_types(start_schema: type[BaseModel], deep: bool) -> Iterable[t
     return result
 
 
-def basemodel_description(schema_type: type[BaseModel], deep: bool) -> str:
+def basemodel_description(
+    schema_types: type[BaseModel] | Iterable[type[BaseModel]], deep: bool
+) -> str:
     """
-    Description of an basemodel type
-    and its members
+    Description of basemodel type(s)
+    and their members
 
-    :param schema_type: type to describe
+    :param schema_types: type(s) to describe
     :param deep: if ``True``, recursively includes fields' types
-    :return: type description
+    :return: description
     """
+
+    start: tuple[type, ...]
+
+    if not isinstance(schema_types, Iterable):
+        start = (schema_types,)
+    else:
+        start = tuple(schema_types)
+
+    # ===
 
     _logger.debug(
-        "%s(%s, deep=%s): mro=%s",
+        "%s(%s; deep=%s)",
         basemodel_description.__name__,
-        schema_type.__name__,
+        ", ".join(s.__name__ for s in start),
         deep,
-        schema_type.__mro__,
     )
 
     # ===
 
     lines: list[str] = []
 
-    todo = basemodel_dep_types(schema_type, deep)
+    todo = basemodel_dep_types(start, deep)
 
     for t in todo:
         if lines:
@@ -304,6 +330,54 @@ def basemodel_description(schema_type: type[BaseModel], deep: bool) -> str:
             lines.append(enum_description(t))
 
     return "\n".join(lines)
+
+
+# ===
+
+
+class EgColor(AutoDocEnum):
+    """
+    Example choice of colors
+    """
+
+    RED = "the color red"
+    GREEN = "the color green"
+    BLUE = "the color blue"
+
+
+class EgBlock(Entity):
+    """
+    A block
+    """
+
+    name: str = Field(description="name of the block", frozen=True)
+    color: EgColor = Field(description="block color")
+
+
+class EgSurface(Entity):
+    """
+    A surface for blocks
+    """
+
+    name: str = Field(description="name of the surface", frozen=True)
+
+
+class EgOnTop(BinaryRelation):
+    """
+    Represents spatial relations between blocks
+    """
+
+    entity1: EgBlock = Field(description="block on top", frozen=True)
+    entity2: EgBlock | EgSurface = Field(
+        description="block or surface below the block", frozen=True
+    )
+
+
+_B1 = EgBlock(name="B1", color=EgColor.BLUE)
+_B2 = EgBlock(name="B2", color=EgColor.RED)
+_T = EgSurface(name="table")
+_OT1 = EgOnTop(entity1=_B1, entity2=_B2)
+_OT2 = EgOnTop(entity1=_B2, entity2=_T)
 
 
 # pylint: disable=too-few-public-methods
@@ -340,46 +414,6 @@ class FactDescriber[T: BaseModel]:
             "\n"
         )
 
-        class EgColor(AutoDocEnum):
-            """
-            Example choice of colors
-            """
-
-            RED = "the color red"
-            GREEN = "the color green"
-            BLUE = "the color blue"
-
-        class EgBlock(Entity):
-            """
-            A block
-            """
-
-            name: str = Field(description="name of the block", frozen=True)
-            color: EgColor = Field(description="block color")
-
-        class EgSurface(Entity):
-            """
-            A surface for blocks
-            """
-
-            name: str = Field(description="name of the surface", frozen=True)
-
-        class EgOnTop(BinaryRelation):
-            """
-            Represents spatial relations between blocks
-            """
-
-            entity1: EgBlock = Field(description="block on top", frozen=True)
-            entity2: EgBlock | EgSurface = Field(
-                description="block or surface below the block", frozen=True
-            )
-
-        b1 = EgBlock(name="B1", color=EgColor.BLUE)
-        b2 = EgBlock(name="B2", color=EgColor.RED)
-        t = EgSurface(name="table")
-        ot1 = EgOnTop(entity1=b1, entity2=b2)
-        ot2 = EgOnTop(entity1=b2, entity2=t)
-
         prompt_part2: str = "".join(
             (
                 "== Structural Description ==",
@@ -401,15 +435,15 @@ class FactDescriber[T: BaseModel]:
                 "\n\n",
                 "And the following additional known facts...",
                 "\n\n",
-                "\n".join(str(f) for f in (b1, b2, t, ot1, ot2)),
+                "\n".join(str(f) for f in (_B1, _B2, _T, _OT1, _OT2)),
                 "\n\n",
                 "Good descriptions include...",
                 "\n",
-                f"* {b1 !s}",
+                f"* {_B1 !s}",
                 "\n",
                 "  There is a block named 'B1' that has the color 'blue'",
                 "\n",
-                f"* {ot2 !s}",
+                f"* {_OT2 !s}",
                 "\n",
                 "  The red block named 'B2' is on top of the surface named 'table'",
             )
@@ -458,7 +492,7 @@ class FactDescriber[T: BaseModel]:
         :param others: other facts for consideration
         :param llm: textual model to utilize
         :param extra: dynamic extra context to supply
-        :timeout_secs: time given per LLM call
+        :param timeout_secs: time given per LLM call
         :return: description
         """
 
@@ -510,10 +544,105 @@ class FactDescriber[T: BaseModel]:
         :param others: other facts for consideration
         :param llm: textual model to utilize
         :param extra: dynamic extra context to supply
-        :timeout_secs: time given per LLM call
+        :parm timeout_secs: time given per LLM call
         :return: description
         """
 
         return cls(type(instance), task_desc)(
             instance, others, llm, *extra, timeout_secs=timeout_secs
         )
+
+
+def describe_facts(
+    instances: Iterable[BaseModel],
+    task_desc: str | None,
+    llm: Model,
+    timeout_secs: int = 5,
+    debug: bool = False,
+) -> str:
+    """
+    One-off description of a supplied set of facts
+
+    :param instance: instance(s) to describe
+    :param task_desc: textual description of the task
+    :param llm: textual model to utilize
+    :param timeout_secs: time given per LLM call
+    :param debug: returns the prompt instead of the description
+    :return: description (or prompt it debug)
+    """
+
+    facts = tuple(instances)
+
+    _logger.info(
+        "Describing instances (%s) using %s (timeout=%ss)",
+        ", ".join(f"{f!s}" for f in instances),
+        llm.model_name,
+        timeout_secs,
+    )
+
+    task_prefix = ""
+    if task_desc:
+        task_prefix = f"== Context ==\n{ task_desc }\n\n"
+
+    prompt: str = (
+        f"{task_prefix}"
+        "== Task Description =="
+        "\n"
+        "Your task is to provide a concise description of a supplied set of facts."
+        "\n\n"
+        "== Objects to Describe =="
+        "\n"
+        f"{"\n".join(str(f) for f in facts)}"
+        "\n\n"
+        "== Structural Description =="
+        "\n"
+        f"{basemodel_description((type(f) for f in facts), True)}"
+        "\n\n"
+        "== Guiding Style =="
+        "\n"
+        "* Do NOT use any markup or superfluous punctuation.\n"
+        "* Do NOT reproduce an object in its description, nor its type, "
+        "nor explicitly refer to words like 'object', 'field', or 'attribute'.\n"
+        "* Limit factual knowledge to the objects and the structural description.\n"
+        "* If possible, and effective in communication, "
+        "do not provide a separate sentence for each fact, "
+        "but rather combine them into an appropriate set of summative statement(s).\n"
+        "\n"
+        "== Example =="
+        "\n"
+        "Given the following structural description..."
+        "\n\n"
+        f"{basemodel_description(EgOnTop, True)}"
+        "\n\n"
+        "Good descriptions include..."
+        "\n"
+        f"* ({_B1 !s},)"
+        "\n"
+        "  There is a block named 'B1' that has the color 'blue'"
+        "\n"
+        f"* ({_OT2 !s},)"
+        "\n"
+        "  The red block named 'B2' is on top of the surface named 'table'"
+        "\n"
+        f"* ({_OT1 !s}, {_OT2 !s},)"
+        "\n"
+        "  The blue block named 'B1' is on top of the red block named 'B2', "
+        "which is on top of the surface named 'table'"
+    )
+
+    if debug:
+        return prompt
+
+    result = (
+        LanguageConvo(
+            model=llm,
+            system_prompt="You are a helpful assistant.",
+            model_settings={"timeout": timeout_secs},
+        )
+        .run_sync(prompt)
+        .output
+    )
+
+    _logger.info("Description: '%s'", result)
+
+    return result
