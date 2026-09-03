@@ -8,4 +8,5 @@ Welcome to the docs!! 🎉
 
 .. toctree::
    ideas/index
+   cook/index
    :hidden:
