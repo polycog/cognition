@@ -12,12 +12,65 @@ from collections.abc import (
 from functools import wraps
 from types import MappingProxyType
 from typing import (
+    Annotated,
     Any,
     Protocol,
     cast,
+    get_args,
+    get_origin,
 )
 
 # ===
+
+
+# pylint: disable=too-few-public-methods
+class TypedMixin:
+    """Provides convenient access to class type name"""
+
+    @property
+    def type(self) -> str:
+        """
+        Access to type name
+
+        :return: class name
+        """
+
+        return type(self).__name__
+
+
+def _is_type(query: type[Any], target: type[Any]) -> bool:
+    if get_origin(query) is Annotated:
+        query = get_args(query)[0]
+
+    origin = get_origin(query)
+    base_class = origin if origin is not None else query
+
+    try:
+        return issubclass(base_class, target)
+    except TypeError:
+        return False
+
+
+def is_set(tp: type[Any]) -> bool:
+    """
+    Determines if the supplied type annotation is a set
+
+    :param tp: type to check
+    :return: ``True`` if supplied a set type
+    """
+
+    return _is_type(tp, set)
+
+
+def is_list(tp: type[Any]) -> bool:
+    """
+    Determines if the supplied type annotation is a list
+
+    :param tp: type to check
+    :return: ``True`` if supplied a list type
+    """
+
+    return _is_type(tp, list)
 
 
 # pylint: disable=too-few-public-methods

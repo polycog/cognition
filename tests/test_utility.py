@@ -3,11 +3,15 @@ Tests for utility code
 """
 
 import unittest
-from typing import cast
+from collections.abc import Iterable
+from typing import Annotated, Any, List, Set, cast  # ruff: ignore[UP035]
 
 from cognition import (
     AttrReferral,
     MutableWrapper,
+    TypedMixin,
+    is_list,
+    is_set,
     optionally_name,
     stringify,
     timed,
@@ -18,6 +22,64 @@ from cognition import (
 
 class TestUtility(unittest.TestCase):
     """Tests for utility code"""
+
+    def test_typecheck(self) -> None:
+        """Confirming is_list/set"""
+
+        bad_both: Iterable[Any] = (
+            "howdy",
+            (1, 2, 3),
+            float,
+            frozenset({"a", "b", "c"}),
+            dict[str, int],
+        )
+
+        # ===
+
+        good_list: Iterable[object] = (
+            list[int],
+            list,
+            type([] + ["a"]),
+            List,  # ruff: ignore[UP006]
+            List[str],  # ruff: ignore[UP006]
+            Annotated[list[float], "costs"],
+        )
+
+        for bad in bad_both:
+            self.assertFalse(is_list(bad))
+            self.assertFalse(is_list(type(bad)))
+
+        for gl in good_list:
+            gl = cast(type[Any], gl)
+            self.assertTrue(is_list(gl))
+
+        # ===
+
+        good_set: Iterable[object] = (
+            set[int],
+            set,
+            type({"a"} | {"a", "b"}),
+            Set,  # ruff: ignore[UP006]
+            Set[str],  # ruff: ignore[UP006]
+            Annotated[set[float], "rational"],
+        )
+
+        for bad in bad_both:
+            self.assertFalse(is_set(bad))
+            self.assertFalse(is_set(type(bad)))
+
+        for gs in good_set:
+            gs = cast(type[Any], gs)
+            self.assertTrue(is_set(gs))
+
+    def test_typed(self) -> None:
+        """Confirming typed classes"""
+
+        # pylint: disable=too-few-public-methods
+        class _Foo(TypedMixin): ...
+
+        test_foo = _Foo()
+        self.assertEqual(test_foo.type, "_Foo")
 
     def test_timed(self) -> None:
         """Confirming @timed"""

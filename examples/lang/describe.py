@@ -84,24 +84,24 @@ class Airplane(Vehicle):
 class TruckRoute(BinaryRelation):
     """A truck route that allows for transporting goods."""
 
-    entity1: Office = Field(description="Starting city of the route")
-    entity2: Office = Field(description="Ending city of the route")
+    entity1: Office = Field(description="Starting city of the route", frozen=True)
+    entity2: Office = Field(description="Ending city of the route", frozen=True)
     distance: int = Field(description="Distance in miles to drive this route")
 
 
 class AirRoute(BinaryRelation):
     """An air route that allows for transporting goods."""
 
-    entity1: Airport = Field(description="Starting airport of the route")
-    entity2: Airport = Field(description="Ending airport of the route")
+    entity1: Airport = Field(description="Starting airport of the route", frozen=True)
+    entity2: Airport = Field(description="Ending airport of the route", frozen=True)
     price: int = Field(description="Cost in USD to fly this route")
 
 
 class At(BinaryRelation):
     """The location of an object"""
 
-    entity1: Package | Vehicle = Field(description="The object of interest")
-    entity2: Office | Airport | Vehicle = Field(description="The object's location")
+    entity1: Package | Vehicle = Field(description="The object of interest", frozen=True)
+    entity2: Office | Airport | Vehicle = Field(description="The object's location", frozen=True)
 
 
 # ===
@@ -164,7 +164,7 @@ def main() -> None:
 
         rprint("[bold underline]Facts[/]")
         for typed_fact in (f for f in facts if isinstance(f, fact_type)):
-            others = set(facts) - {typed_fact}
+            others = tuple(f for f in facts if f != typed_fact)
 
             @timed
             def _describe():  # type: ignore

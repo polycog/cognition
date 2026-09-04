@@ -350,7 +350,7 @@ class EgBlock(Entity):
     A block
     """
 
-    name: str = Field(description="name of the block")
+    name: str = Field(description="name of the block", frozen=True)
     color: EgColor = Field(description="block color")
 
 
@@ -359,7 +359,7 @@ class EgSurface(Entity):
     A surface for blocks
     """
 
-    name: str = Field(description="name of the surface")
+    name: str = Field(description="name of the surface", frozen=True)
 
 
 class EgOnTop(BinaryRelation):
@@ -367,8 +367,10 @@ class EgOnTop(BinaryRelation):
     Represents spatial relations between blocks
     """
 
-    entity1: EgBlock = Field(description="block on top")
-    entity2: EgBlock | EgSurface = Field(description="block or surface below the block")
+    entity1: EgBlock = Field(description="block on top", frozen=True)
+    entity2: EgBlock | EgSurface = Field(
+        description="block or surface below the block", frozen=True
+    )
 
 
 _B1 = EgBlock(name="B1", color=EgColor.BLUE)
