@@ -480,7 +480,7 @@ class FactDescriber[T: BaseModel]:
         others: Iterable[T],
         llm: Model,
         *extra: str,
-        timeout_secs: int = 5,
+        timeout_secs: int = 10,
     ) -> str:
         """
         Describes the instance
@@ -532,7 +532,7 @@ class FactDescriber[T: BaseModel]:
         others: Iterable[T],
         llm: Model,
         *extra: str,
-        timeout_secs: int = 5,
+        timeout_secs: int = 10,
     ) -> str:
         """
         One-off instantiation and calling of a describer
@@ -555,7 +555,7 @@ def describe_facts(
     instances: Iterable[BaseModel],
     task_desc: str | None,
     llm: Model,
-    timeout_secs: int = 5,
+    timeout_secs: int = 10,
     debug: bool = False,
 ) -> str:
     """

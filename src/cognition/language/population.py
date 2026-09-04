@@ -92,7 +92,7 @@ class ModelPopulator[T: BaseModel]:
         utterance: str,
         llm: Model,
         *extra: str,
-        timeout_secs: int = 5,
+        timeout_secs: int = 10,
     ) -> T:
         """
         Produces a model instance
@@ -143,7 +143,7 @@ class ModelPopulator[T: BaseModel]:
         llm: Model,
         task_desc: str | None,
         *extra: str,
-        timeout_secs: int = 5,
+        timeout_secs: int = 10,
     ) -> T:
         """
         One-off instantiation and calling of a populator
