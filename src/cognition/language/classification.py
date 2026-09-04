@@ -147,7 +147,7 @@ class EnumClassifier[T: Enum]:
         return self._template.substitute(utterance=utterance)
 
     def __call__(
-        self, utterance: str, llm: Model, num_trials: int = 3, timeout_secs: int = 5
+        self, utterance: str, llm: Model, num_trials: int = 3, timeout_secs: int = 10
     ) -> tuple[T | None, EmpiricalConfidence]:
         """
         Classifies the utterance (with confidence)
@@ -220,7 +220,7 @@ class EnumClassifier[T: Enum]:
         llm: Model,
         task_desc: str | None,
         num_trials: int = 3,
-        timeout_secs: int = 5,
+        timeout_secs: int = 10,
     ) -> tuple[T | None, EmpiricalConfidence]:
         """
         One-off instantiation and calling of a classifier
