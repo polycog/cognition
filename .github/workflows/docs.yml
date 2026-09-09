@@ -45,7 +45,7 @@ jobs:
       
       - name: Sync build output
         run: |
-          rsync -v --delete --recursive --progress --exclude='.git' --exclude='.gitignore' --exclude='_sources' source/docs/build/html/* target
+          rsync -v --delete --recursive --progress --exclude='.git' --exclude='.gitignore' --exclude='_sources' --exclude '.nojekyll' --exclude "CNAME" --exclude ".buildinfo" source/docs/build/html/ target/
       
       # - name: Sync build output
       #   run: |
