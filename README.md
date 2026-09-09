@@ -17,3 +17,8 @@
 
 Reasoning infrastructure for trustworthy agents.
 
+## Getting started
+
+```bash
+pip install polycog-cognition
+```
