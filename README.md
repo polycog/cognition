@@ -19,7 +19,7 @@ Welcome to `cognition` 🧠, an open-source Python framework developed by Polyco
 
 Key affordances:
 
-* **Enforce** (hierarchical) agent orchestration via a knowledge-augmented `DecisionProcess` - a declarative, [state-driven execution machine that continually matches against policy directives](https://10.0.3.248/j.tics.2003.08.012).
+* **Enforce** (hierarchical) agent orchestration via a knowledge-augmented `DecisionProcess` - a declarative, [state-driven execution machine that continually matches against policy directives](https://doi.org/10.1016/j.tics.2003.08.012).
 * Declare [domain knowledge](https://doi.org/10.48550/arXiv.2506.18019) using **validated data models** (`Entity`, `BinaryRelation`), related & queried within a dynamic `WorldGraph`.
 * Integrate the cognitive [agent loop](https://en.wikipedia.org/wiki/Intelligent_agent) with custom environmental sensors and/or actuators via a `Cogent` (similar to a **harness** in LLM-based systems).
 * Use **your choice of language model(s)** for **classification** (e.g., intent recognition via `EnumClassifier`), **description** (e.g., human-readable situational awareness via `describe_facts`), and **population** (e.g., extract structured data via `ModelPopulator`) tasks, where context is [automatically infused](https://doi.org/10.48550/arXiv.2501.10868) with **expert knowledge**.
