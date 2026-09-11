@@ -16,7 +16,7 @@ The library comes with common frontier factories...
 * `Stack`: implements a depth-first search of the space (may be useful in memory-constrained situations)
 * `Queue`: implements a breadth-first search of the space (useful to find the shortest sequence of actions to goal)
 * `PriorityQueue`: implements a uniform-cost search of the space (useful to find the lowest-cost plan)
-  * If supplied an *admissible* heuristic, implements A* (for lowest cost with shortest search)
+  * If supplied an *admissible* heuristic, implements A* ([for lowest cost with shortest search](https://doi.org/10.1109/TSSC.1968.300136))
 
 To assist in developing succession functions, the library includes some useful abstractions...
 * A `SearchPlannerStaticOption` represents a planner action that might be available in multiple planner states
