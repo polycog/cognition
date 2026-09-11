@@ -1,4 +1,4 @@
-# Knowledge-Augmented Decision Process -> (KA)DP
+# Knowledge-Augmented Decision Process (KADP)
 
 > **Agentic AI Equivalent:**
 >**Orchestration** (see [GitHub's guide on AI Orchestration](https://github.com/resources/articles/what-is-ai-orchestration)).
