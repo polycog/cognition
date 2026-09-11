@@ -64,5 +64,5 @@ jobs:
             echo "No changes to publish."
             exit 0
           fi
-          git commit -m "Build from ${{ github.repository }} ${{ github.event.release.tag_name }}"
+          git commit -m "Build from ${{ github.repository }} ${{ github.event_name == 'release' && github.event.release.tag_name || github.sha }}"
           git push
