@@ -16,9 +16,8 @@
 </div>
 
 <!-- start intro -->
-Welcome to `cognition` 🧠 an open-source Python framework developed by [Polycog, Inc.](https://polycog.ai) 
-It enables agent developers to build trustworthy cognitive agents through a modular API. 
-The framework implements a [neurosymbolic](https://en.wikipedia.org/wiki/Neuro-symbolic_AI) foundation for complex decision-making, natural language processing, structural knowledge representation, and logical & deterministic reasoning.
+Welcome to `cognition` 🧠 an open-source agent framework in Python developed by [Polycog, Inc.](https://polycog.ai). The framework implements a [neurosymbolic](https://en.wikipedia.org/wiki/Neuro-symbolic_AI) foundation for complex decision-making, natural language processing, structural knowledge representation, and logical & deterministic reasoning.
+It enables developers to build trustworthy cognitive agents - agents that are reliable (repeatable, provably correct reasoning), steerable (programmatic enforcement of behavior directives), and explainable (causal provenance of all decisions).  
 
 ## 📖 Table of Contents
 - [Core Concepts](#core-concepts)
