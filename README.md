@@ -15,17 +15,37 @@
 
 </div>
 
-Welcome to `cognition` 🧠, an open-source Python framework developed by Polycog, Inc. designed to facilitate the creation of trustworthy cognitive agents via a modular API that handles complex decision-making, natural language processing, structural knowledge representation, and automated reasoning.
+<!-- start intro -->
+Welcome to `cognition` 🧠 an open-source Python framework developed by [Polycog, Inc.](https://polycog.ai) 
+It enables agent developers to build trustworthy cognitive agents through a modular API. 
+The framework implements a [neurosymbolic](https://en.wikipedia.org/wiki/Neuro-symbolic_AI) foundation for complex decision-making, natural language processing, structural knowledge representation, and logical & deterministic reasoning.
 
-Key affordances:
+## Core concepts
+### 1. Knowledge-Augmented `DecisionProcess`
+* **What it does:** Design agent behavior via a declarative, [state-driven execution machine](https://doi.org/10.1016/j.tics.2003.08.012) that matches the current environment state against explicit policy directives.
+* **Agentic AI Equivalent:** Orchestrator
+* **Why use it:** Replaces non-deterministic LLM loops and brittle if-else scripts with declarative state control — enforcing safety guardrails, business logic, and policies at every step. ![](https://img.shields.io/badge/-Compliance_without_Rigidity-E9D5FF?style=flat-square)
 
-* **Enforce** (hierarchical) agent orchestration via a knowledge-augmented `DecisionProcess` - a declarative, [state-driven execution machine that continually matches against policy directives](https://doi.org/10.1016/j.tics.2003.08.012).
-* Declare [domain knowledge](https://doi.org/10.48550/arXiv.2506.18019) using **validated data models** (`Entity`, `BinaryRelation`), related & queried within a dynamic `WorldGraph`.
-* Integrate the cognitive [agent loop](https://en.wikipedia.org/wiki/Intelligent_agent) with custom environmental sensors and/or actuators via a `Cogent` (similar to a **harness** in LLM-based systems).
-* Use **your choice of language model(s)** for **classification** (e.g., intent recognition via `EnumClassifier`), **description** (e.g., human-readable situational awareness via `describe_facts`), and **population** (e.g., extract structured data via `ModelPopulator`) tasks, where context is [automatically infused](https://doi.org/10.48550/arXiv.2501.10868) with **expert knowledge**.
-* Integrate symbolic **reasoning** to efficiently & verifiably solve sub-problems, such as using a `SearchPlanner` to find an [optimal sequence of steps to achieve a goal](https://doi.org/10.1109/TSSC.1968.300136).
+### 2. Structured Knowledge Representation with `WorldGraph`
+* **What it does:** Declares [domain knowledge](https://doi.org/10.48550/arXiv.2506.18019) using strongly-typed, validated data models that can be inspected, queried, and mutated at runtime.
+* **Agentic AI Equivalent:** engineered or raw prompt context
+* **Why use it:** Gives agents a typed, queryable source of truth instead of relying on fragile context windows or unvalidated text blobs. ![](https://img.shields.io/badge/-Stable_%26_Grounded-E9D5FF?style=flat-square)
 
-If you find `cognition` useful, please star the repo to help us grow the community!
+### 3. Agent Runtime Loop with `Cogent`
+* **What it does:** Manages the [intelligent agent loop](https://en.wikipedia.org/wiki/Intelligent_agent), bridging internal cognitive processes with external environmental sensors and actuators.
+* **Agentic AI Equivalent:** Harness
+* **Why use it:** Separates core cognitive reasoning from raw API calls. This creates a clean boundary for safety checks, API mocking, and simulation testing. ![](https://img.shields.io/badge/-Decoupled_%26_Modular-E9D5FF?style=flat-square)
+
+### 4. Language Processing with Data Models
+* **What it does:** Uses LLMs for specific, constrained tasks—such as intent classification (`EnumClassifier`), generating natural language from facts (`describe_facts`), and extracting structured data (`ModelPopulator`) with [automated context engineering](https://doi.org/10.48550/arXiv.2501.10868).
+* **Agentic AI Equivalent:** Structured Outputs
+* **Why use it:** Restricts LLM operations to strict input/output contracts, keeping non-deterministic text generation out of core control flow. ![](https://img.shields.io/badge/-Structured_%26_Safe-E9D5FF?style=flat-square)
+
+### 5. Verifiable Logical Reasoning with `SearchPlanner`
+* **What it does:** Solves planning sub-problems algorithmically to find an [optimal sequence of actions](https://doi.org/10.1109/TSSC.1968.300136) to reach a specified target state.
+* **Agentic AI Equivalent:** Chain-of-Thought
+* **Why use it:** Guarantees causal validity, completeness, and efficiency for complex multi-step problems without relying on probabilistic LLM guessing.![](https://img.shields.io/badge/-Provably_Correct_%26_Explainable-E9D5FF?style=flat-square)
+<!-- end intro -->
 
 > **Note:** This project is under active development. Expect regular updates and new features!
 
