@@ -20,6 +20,12 @@ Welcome to `cognition` 🧠 an open-source Python framework developed by [Polyco
 It enables agent developers to build trustworthy cognitive agents through a modular API. 
 The framework implements a [neurosymbolic](https://en.wikipedia.org/wiki/Neuro-symbolic_AI) foundation for complex decision-making, natural language processing, structural knowledge representation, and logical & deterministic reasoning.
 
+## 📖 Table of Contents
+- [Core Concepts](#core-concepts)
+- [Library Structure](#library-structure)
+- [Getting Started](#getting-started)
+- [Documentation & Resources](#documentation--resources)
+
 ## Core concepts
 ### 1. Knowledge-Augmented `DecisionProcess`
 * **What it does:** Design agent behavior via a declarative, [state-driven execution machine](https://doi.org/10.1016/j.tics.2003.08.012) that matches the current environment state against explicit policy directives.
@@ -49,10 +55,7 @@ The framework implements a [neurosymbolic](https://en.wikipedia.org/wiki/Neuro-s
 
 > **Note:** This project is under active development. Expect regular updates and new features!
 
-## 📖 Table of Contents
-- [Library Structure](#library-structure)
-- [Getting Started](#getting-started)
-- [Documentation & Resources](#documentation--resources)
+
 
 ## 🏗️ Library Structure
 
