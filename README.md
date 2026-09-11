@@ -44,7 +44,7 @@ The framework implements a [neurosymbolic](https://en.wikipedia.org/wiki/Neuro-s
 ### 5. Verifiable Logical Reasoning with `SearchPlanner`
 * **What it does:** Solves planning sub-problems algorithmically to find an [optimal sequence of actions](https://doi.org/10.1109/TSSC.1968.300136) to reach a specified target state.
 * **Agentic AI Equivalent:** Chain-of-Thought
-* **Why use it:** Guarantees causal validity, completeness, and efficiency for complex multi-step problems without relying on probabilistic LLM guessing.![](https://img.shields.io/badge/-Provably_Correct_%26_Explainable-E9D5FF?style=flat-square)
+* **Why use it:** Guarantees causal validity, completeness, and efficiency for complex multi-step problems without relying on probabilistic LLM guessing. ![](https://img.shields.io/badge/-Provably_Correct_%26_Explainable-E9D5FF?style=flat-square)
 <!-- end intro -->
 
 > **Note:** This project is under active development. Expect regular updates and new features!
