@@ -2,9 +2,8 @@
 
 A `Cogent` (short for **Cog**nitive Ag**ent**) is an integrated runtime framework designed to drive autonomous decision-making by coupling neuro-symbolic reasoning with environment interaction.
 
-> Agentic AI Equivalent
 > **Where does this fit in the Agentic AI tech stack?**
-> In modern Agentic AI design patterns, a `Cogent` acts as the **Harness / Agent Runtime**. It connects directly with the external environment, manages input/output (I/O) routing, and orchestrates the core execution loop controlling the agent's intelligence operations. (See the [Databricks AI Harness architecture](https://www.databricks.com/blog/ai-harness) for conceptual reference).
+> In Agentic AI design patterns, a `Cogent` acts as the **Harness / Agent Runtime**. It connects directly with the external environment, manages input/output (I/O) routing, and implements the core execution loop controlling the agent's task performance. (See the [Databricks AI Harness architecture](https://www.databricks.com/blog/ai-harness) for conceptual reference).
 
 ---
 
@@ -12,17 +11,19 @@ A `Cogent` (short for **Cog**nitive Ag**ent**) is an integrated runtime framewor
 
 At its core, a `Cogent` is a computational entity that continuously executes a three-phase loop:
 
-* **Perceive:** Gathers real-time telemetry and state updates from the environment through **Sensors**.
+* **Perceive:** Gathers real-time telemetry from the environment through **Sensors**.
 * **Decide:** Processes incoming information through reasoners to evaluate subproblems and select the next action.
 * **Act:** Executes changes back onto the external environment through **Actuators**.
 
 ### Neuro-Symbolic Operation
-Rather than relying exclusively on Large Language Models (LLMs) to handle all reasoning steps, a `Cogent` relies on neural and symbolic AI components:
+Rather than relying exclusively on Large Language Models (LLMs) to handle all reasoning and decision making steps, a `Cogent` relies on a heterogenous reasoning foundation implementing neural and symbolic AI:
 
 * **Natural Language Understanding & Generation:** Handled via Language Models.
-* **Situation Understanding:** Resolved through Graph Reasoning.
+* **Situational Awareness:** Resolved through Graph Reasoning.
 * **Plan Generation:** Computed via Automated Planning algorithms.
 * **Orchestration:** Managed by a Knowledge-Aware Decision Process (**KADP**), which dynamically invokes the appropriate reasoners for the task at hand.
+
+As the `cognition` library grows it will be extended to include algorithms for causal reasoning, spatio-temporal planning, diagnosis and remediation, numerical optimization etc. - all centered out processing structured information repesented via a knowledge graph.
 
 ---
 

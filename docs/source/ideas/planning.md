@@ -1,41 +1,44 @@
 # Planning
-
-The `Planning` module provides algorithms and abstractions for generating valid sequences of actions to transition an agent from an initial state to a target goal.
-
-## Agentic AI Equivalent
-
-* **Concept Equivalent:** **Chain of Thought (CoT) / Deliberative Reasoning**
-* **Function Implemented:** Step-by-step reasoning and search over discrete problem spaces.
-
-While Large Language Models (LLMs) perform Chain of Thought via probabilistic next-token prediction, formal planning implements explicit, algorithmic step-by-step reasoning. It systematically decomposes high-level goals into valid action chains by evaluating hypothetical future states before executing them in the physical or operational environment.
+> **Agentic AI Equivalent**.
+> In agentic AI, Chain of Thought (CoT), prompting a model to think step-by-step to generate longer intermediate reasoning traces, serves as the primary, language-based mechanims for reasoning.
 
 ## What is Planning?
-Planning is the process of generating a causal sequence of actions from a given starting point to achieve a desired target state.
+While Large Language Models (LLMs) execute Chain of Thought (CoT) through probabilistic next-token prediction, formal planning in `cognition` implements explicit, algorithmic step-by-step reasoning. Instead of relying on statistical completion, the planning engine systematically decomposes high-level goals into valid action chains by evaluating hypothetical future states before any action is executed in the physical or operational environment.
 
-A standard planning problem requires four core components:
-1. **Initial State**: The baseline state of the environment or agent before execution.
-2. **Action Space**: A set of valid actions characterized by:
-   * **Preconditions**: Logical constraints specifying when an action can be executed in a state.
-   * **Effects**: Mutative rules defining how the action alters the current state.
-3. **Goal State (Predicate)**: A target condition or predicate defining successful completion.
-4. **Search Strategy**: A general-purpose search method (e.g., A{sup}`*`, BFS, DFS) used to explore the state-action graph.
+At its core, planning is the process of generating a causal sequence of actions from a given starting point to achieve a desired target state. Every formal planning problem within **cognition** is constructed using four fundamental components.
+
+1. **Initial State**
+   The baseline state snapshot of the environment and agent context prior to plan execution. This is typically described using a `WorldGraph`
+
+2. **Action Space**
+   The set of all permissible operational actions available to the agent. Each action (a `SearchPlanOption`) is explicitly parameterized by:
+   * **Preconditions** implemented as Python factories: Logical constraints specifying the exact state criteria required before an action can be executed.
+   * **Effects** implemented as Python methods: Mutative state-transition rules that define how executing the action alters the current state.
+
+3. **Goal State**
+   A target logical condition that explicitly defines the criteria for successful task completion.
+
+4. **Search Strategy**
+   General-purpose graph traversal and optimization algorithms (e.g., $A^*$, Breadth-First Search, Depth-First Search) used to systematically explore the state-action graph and discover an optimal path from the initial state to the goal state.
 
 ### Planning vs. Decision Processes (KADP)
 While closely related, Planning and Decision Processes operate at different stages of execution:
 * **Planner**: Operates offline in a hypothetical state space. It searches for and outputs a static sequence of actions (a plan) without altering the live system.
 * **Decision Process**: Operates online cycle-by-cycle. It executes real steps, handles dynamic environment state mutations, and drives real-world actuation.
 
-## Scientific Foundations
+## What are the scientific principles?
 
-Automated Planning and Scheduling is a foundational discipline of Symbolic Artificial Intelligence.
+[Automated Planning and Scheduling](https://www.icaps-conference.org/) an Artificial Intelligence discipline that provides a mathematically rigorous framework for autonomous decision-making through deterministic state-space search. While modern Large Language Models (LLMs) excel at natural language parsing and intuition, they inherently struggle with multi-step search, strict constraint adherence, and provable correctness guarantees. Formal planning engines bridge this gap by serving as sound reasoning systems that guarantee valid, executable plan generation—making them essential for mission-critical, high-stakes autonomous systems like NASA JPL's Mars Rover activity scheduling, where operational failure is unacceptable.
 
-* **Complementing Generative AI:** Current research highlights that LLMs struggle with multi-step deterministic search, constraint adherence, and strict correctness guarantees (see [Subbarao Kambhampati on Planning & LLMs](https://thegradientpub.substack.com/p/subbarao-kambhampati-planning-reasoning-llms)). Formal planning tools bridge this gap by offering sound reasoning engines.
-* **Mission-Critical Applications:** Classical planning engines drive real-world autonomous systems where failure is not an option, such as NASA JPL's Mars Rover activity scheduling ([Mars 2020 Scheduler](https://ai.jpl.nasa.gov/public/projects/m2020-scheduler/) and [NASA CP&S Workshop Overview](https://www-robotics.jpl.nasa.gov/media/documents/02_estlin_cp&s_nasapswkshop.pdf)).
-* **Theoretical Foundation:** For a deep dive into formal search spaces and planning theory, refer to this [Automated Planning Overview Video](https://www.youtube.com/watch?v=epXjq1ekqao).
+```{seealso} Further Reading & References
+- **The Gradient:** [On the Role of LLMs in Planning & Reasoning](https://thegradientpub.substack.com/p/subbarao-kambhampati-planning-reasoning-llms) — Prof. Subbarao Kambhampati analyzes why LLMs struggle with multi-step deterministic search and the need for symbolic planners.
+- **NASA JPL AI Group:** [Mars 2020 Onboard Activity Scheduler](https://ai.jpl.nasa.gov/public/projects/m2020-scheduler/) — Technical overview of mission-critical, constraint-based automated planning on the Perseverance rover.
+- **NASA Robotics:** [Constraint-Based Planning & Scheduling for Spacecraft Autonomy](https://www-robotics.jpl.nasa.gov/media/documents/02_estlin_cp&s_nasapswkshop.pdf) — Workshop PDF detailing state-space constraints and autonomous scheduling architectures for space systems.
+- **Automated Planning Lecture:** [State-Space Search & Planning Foundations](https://www.youtube.com/watch?v=epXjq1ekqao) — Comprehensive video breakdown of formal state-action representations and graph search algorithms.
+```
 
 
-## Why Use Formal Planning?
-
+## Why Use Planning?
 * **Explainability:** Generates transparent action sequences where every step can be traced back to explicit state transitions and decision logic.
 * **Causal Determinism:** Ensures that actions are only selected if their preconditions are strictly met, eliminating hallucinations or illegal state transitions.
 * **Domain Expertise Integration:** Enables developers to encode domain rules and common-sense logic directly without training massive data models.

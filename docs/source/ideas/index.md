@@ -1,29 +1,27 @@
-# Key API Ideas
+# Core Concepts
 
 <!-- https://myst-parser.readthedocs.io/en/latest/syntax/typography.html -->
 
-This section highlights some of the key technical aspects of the library.
-
-:::{tip}
-The tutorials provide an annotated step-by-step guide with a domain.
-:::
+This section highlights some of key technical concepts in the library.
 
 ```{toctree}
 :hidden:
-kadp.md
 cogent.md
+kadp.md
 knowledge.md
-planning.md
 language.md
+planning.md
 ```
 
 ## Overview
 
-* [](./kadp.md): (hierarchical) agent orchestration using a declarative, state-driven execution machine that continually matches against policy directives.
+
 * [](./cogent.md): integrating the cognitive agent loop with custom environmental sensors and/or actuators (similar to a harness in LLM-based systems).
+* [](./kadp.md): (hierarchical) agent orchestration using a declarative, state-driven execution machine that continually matches against policy directives.
 * [](./knowledge.md): declaring, relating, and querying dynamic domain knowledge.
-* [](./planning.md): integrating symbolic reasoning to efficiently & verifiably solve sub-problems.
 * [](./language.md): model-agnostic language tasks that are automatically infused with domain knowledge.
+* [](./planning.md): integrating symbolic reasoning to efficiently & verifiably solve sub-problems.
+
 
 
 ## Guiding Principles
@@ -42,3 +40,8 @@ Declarative('ish)
 
 Clean/Fun
 : Where possible, abstract away boilerplate.
+
+
+:::{tip}
+The tutorials provide an annotated step-by-step guide with a domain.
+:::

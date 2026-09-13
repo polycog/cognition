@@ -4,7 +4,7 @@
 >**Orchestration** (see [GitHub's guide on AI Orchestration](https://github.com/resources/articles/what-is-ai-orchestration)).
 > In agentic systems, an orchestration engine manages sequential decision-making.
 
-## What is a Decision Process?
+## What is a decision process?
 A decision process is a **declarative, state-driven execution machine** that continually matches a state against a collection of independent operators to determine the next step.
 
 Key characteristics include:
@@ -15,10 +15,10 @@ Key characteristics include:
 
 `cognition` uses `DecisionProcess` to continuously evaluate declarative decision criteria against a live state, dynamically computing, executing, and adjusting workflows in real-time. This conceptualization is similar in spirit to a combination of event-driven and data-driven programming paradigms, but they are purpose-built for agentic systems.
 
-## What are the Scientific Principles?
+## What are the scientific principles?
 A knowledge-Augmented `DecisionProcess` (KADP) shares identical concepts of states and actions with MDPs but replaces data-driven, trial-and-error reinforcement learning with explicitly programmed expert domain knowledge. Rather than relying on environment simulators, reward functions, discount factors, or probabilistic state transitions, KADP uses deterministic programmatic operators, preconditions, and termination checks. This design bypasses the cold-start problem of reinforcement learning, enabling predictable, auditable, and expert-driven decision-making from the very first step.
 
-## Why Use a Decision Process?
+## Why use a decision process?
 Using a decision process for orchestration provides an ideal middle ground between deterministic code and non-deterministic AI generation. It fundamentally **balances the need for flexible process execution with the controllability of the process.**
 
 * **Context-Aware Flexibility:** It behaves with the flexibility of an LLM-driven orchestration, using a live state to dynamically figure out what to do next.
@@ -101,7 +101,7 @@ If multiple actions share the ranking of lowest value, the DP will randomly sele
 * **`SelfReinitState`**: Implements `__call__` so that supplying an instance as a state initialization function enables custom reinitialization logic.
 * `Elaborable` Protocol: If a DP state implements this, it receives a per-cycle callback for within-object elaboration.
   * `SelfElaborationState`: Provides easy access to a within-class key-value store of elaborated values.
-* **`PTEState`**: Grants convenient access to (**P**)ersistent, (**T**)ransient [to DP `reinit`], and (**E**)laborated data within a single state object. 
+* **`PTEState`**: Grants convenient access to (**P**)ersistent, (**T**)ransient [to DP `reinit`], and (**E**)laborated data within a single state object.
   * `PEState` is a variant for when transient data isn't needed.
 * **`create_chain_dp`**: Generates a DP based on an iterable state type, calling a supplied function at each *link* in the *chain* (optionally supporting the accumulator pattern).
 * **`StagedState`**: Represents states where transitions can be captured within a single `Enum` flag.
