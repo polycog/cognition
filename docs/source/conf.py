@@ -6,7 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'Cognition'
+project = 'cognition'
 copyright = '2026, Polycog, Inc.'
 author = 'Polycog, Inc.'
 
