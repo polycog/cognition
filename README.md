@@ -11,6 +11,7 @@
     <a href="https://polycog.ai" target="_blank">Website</a> &bull;
     <a href="https://github.com/polycog/tutorials" target="_blank">Tutorials</a> &bull;
     <a href="https://docs.polycog.ai" target="_blank">Docs</a>
+    <a href="https://docs.google.com/videos/d/1ZXO49VgD3pMfTRtArF0UttE5nTFwhVnGZk2fCps2UrU/play?usp=sharing target="_blank">Demo</a>
 </p>
 
 </div>
