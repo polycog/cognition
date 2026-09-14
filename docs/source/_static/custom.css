@@ -1,0 +1,17 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap');
+
+/* Apply Roboto to body content */
+body {
+  font-family: 'Roboto', sans-serif !important;
+}
+
+/* Apply Poppins to headings AND website name/logo text */
+h1, h2, h3, h4, h5, h6,
+.wy-side-nav-search > a,  /* Read the Docs theme */
+.sidebar-brand,           /* Furo theme */
+.sidebar-brand-text,      /* Furo theme text */
+.navbar-brand,            /* PyData theme */
+h1.logo,                  /* Alabaster theme */
+.sidebar-title {
+  font-family: 'Poppins', sans-serif !important;
+}

@@ -32,12 +32,17 @@ myst_enable_extensions = [
     "attrs_block",
     "colon_fence",
     "deflist",
+    "colon_fence",
 ]
 
 templates_path = ['_templates']
 exclude_patterns = []
 
-
+# Ensure .md files are processed by MyST
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+}
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -49,6 +54,8 @@ html_static_path = ['_static']
 html_theme_options = {
 }
 html_favicon = "_static/favicon.ico"
+
+html_css_files = ['custom.css',]
 
 
 # ===
