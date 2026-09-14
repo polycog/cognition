@@ -1,6 +1,6 @@
 <div align="center">
 
-# Polycog cognition
+# cognition
 
 [![Checks](https://github.com/polycog/cognition/actions/workflows/checks.yml/badge.svg)](https://github.com/polycog/cognition/actions/workflows/checks.yml)
 [![License: FSL-1.1-ALv2](https://img.shields.io/badge/license-FSL--1.1--ALv2-blue.svg)](https://fsl.software)
@@ -10,7 +10,8 @@
 <p>
     <a href="https://polycog.ai" target="_blank">Website</a> &bull;
     <a href="https://github.com/polycog/tutorials" target="_blank">Tutorials</a> &bull;
-    <a href="https://docs.polycog.ai" target="_blank">Docs</a>
+    <a href="https://docs.polycog.ai" target="_blank">Docs</a> &bull;
+    <a href="https://docs.google.com/videos/d/1ZXO49VgD3pMfTRtArF0UttE5nTFwhVnGZk2fCps2UrU/play?usp=sharing target="_blank">Demo</a>
 </p>
 
 </div>
@@ -28,27 +29,27 @@ It enables developers to build trustworthy cognitive agents - agents that are re
 ## Core concepts
 
 ### Agent Runtime Loop with `Cogent`
-* **What it does:** Manages the [intelligent agent loop](https://en.wikipedia.org/wiki/Intelligent_agent), bridging internal cognitive processes with external environmental sensors and actuators.
+* **What it does:** Manages the [intelligent agent loop](https://en.wikipedia.org/wiki/Intelligent_agent), bridging internal cognitive processes with external environmental sensors and actuators. [details](https://docs.polycog.ai/ideas/cogent.html)
 * **Agentic AI Equivalent:** Harness
 * **Why use it:** Separates core cognitive reasoning from raw API calls. This creates a clean boundary for safety checks, API mocking, and simulation testing. ![](https://img.shields.io/badge/-Decoupled_%26_Modular-E9D5FF?style=flat-square)
 
 ### Knowledge-Augmented `DecisionProcess`
-* **What it does:** Design agent behavior via a declarative, [state-driven execution machine](https://doi.org/10.1016/j.tics.2003.08.012) that matches the current environment state against explicit policy directives.
-* **Agentic AI Equivalent:** Orchestrator
+* **What it does:** Design agent behavior via a declarative, [state-driven execution machine](https://doi.org/10.1016/j.tics.2003.08.012) that matches the current environment state against explicit policy directives. [details](https://docs.polycog.ai/ideas/kadp.html)
+* **Agentic AI Equivalent:** Orchestrator; DAG workflows or skills.md
 * **Why use it:** Replaces non-deterministic LLM loops and brittle if-else scripts with declarative state control — enforcing safety guardrails, business logic, and policies at every step. ![](https://img.shields.io/badge/-Compliance_without_Rigidity-E9D5FF?style=flat-square)
 
 ### Structured Knowledge Representation with `WorldGraph`
-* **What it does:** Declares [domain knowledge](https://doi.org/10.48550/arXiv.2506.18019) using strongly-typed, validated data models that can be inspected, queried, and mutated at runtime.
+* **What it does:** Declares [domain knowledge](https://doi.org/10.48550/arXiv.2506.18019) using strongly-typed, validated data models that can be inspected, queried, and mutated at runtime. [details](https://docs.polycog.ai/ideas/knowledge.html)
 * **Agentic AI Equivalent:** engineered or raw prompt context
 * **Why use it:** Gives agents a typed, queryable source of truth instead of relying on fragile context windows or unvalidated text blobs. ![](https://img.shields.io/badge/-Stable_%26_Grounded-E9D5FF?style=flat-square)
 
 ### 4. Language Processing with Data Models
-* **What it does:** Uses LLMs for specific, constrained tasks—such as intent classification (`EnumClassifier`), generating natural language from facts (`describe_facts`), and extracting structured data (`ModelPopulator`) with [automated context engineering](https://doi.org/10.48550/arXiv.2501.10868).
+* **What it does:** Uses LLMs for specific, constrained tasks—such as intent classification (`EnumClassifier`), generating natural language from facts (`describe_facts`), and extracting structured data (`ModelPopulator`) with [automated context engineering](https://doi.org/10.48550/arXiv.2501.10868). [details](https://docs.polycog.ai/ideas/language.html)
 * **Agentic AI Equivalent:** Structured Outputs
 * **Why use it:** Restricts LLM operations to strict input/output contracts, keeping non-deterministic text generation out of core control flow. ![](https://img.shields.io/badge/-Structured_%26_Safe-E9D5FF?style=flat-square)
 
 ### 5. Verifiable Logical Reasoning with `SearchPlanner`
-* **What it does:** Solves planning sub-problems algorithmically to find an [optimal sequence of actions](https://doi.org/10.1109/TSSC.1968.300136) to reach a specified target state.
+* **What it does:** Solves planning sub-problems algorithmically to find an [optimal sequence of actions](https://doi.org/10.1109/TSSC.1968.300136) to reach a specified target state. [details](https://docs.polycog.ai/ideas/planning.html)
 * **Agentic AI Equivalent:** Chain-of-Thought
 * **Why use it:** Guarantees causal validity, completeness, and efficiency for complex multi-step problems without relying on probabilistic LLM guessing. ![](https://img.shields.io/badge/-Provably_Correct_%26_Explainable-E9D5FF?style=flat-square)
 <!-- end intro -->
