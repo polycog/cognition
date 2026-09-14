@@ -1,8 +1,14 @@
 # Language
 
-> **Agentic AI Equivalent**.
-> In agentic patterns, structured outputs serve as the interface for tool calling, for formatting parameters whenever the LLM invokes a specific programmatic method. The `language` module builds upon the structured output mechanisms, but restricts them strictly to *transduction* (mapping between natural language and typed domain contracts) without granting the LLM authority to execute tool calls or direct system flow.
+```{admonition} Agentic AI Equivalent
+:class: note
+In agentic AI patterns, LLMs drive all agent behavior. Structured outputs serve as the interface for tool calling, for formatting parameters whenever the LLM invokes a specific programmatic method.
 
+`cognition`'s `language` module builds upon the structured output mechanisms, but restricts LLMs strictly to *transduction* (mapping between natural language and typed domain contracts) without granting the LLM authority to execute tool calls or direct system flow.
+```
+
+> **Agentic AI Equivalent**.
+>
 ## What is `language`, `cognition`'s semantic transducer?
 Modern LLM inference engines provide native **structured output** primitives such as JSON mode that forces models into generating schema-compliant JSON payloads. `language` builds upon these mechanisms into a dedicated agent design pattern:
 

@@ -1,7 +1,14 @@
 # Knowledge-Augmented Decision Process (KADP)
 
-> **Agentic AI Equivalent:**
-> In agentic AI design patterns, [orchestration](https://github.com/resources/articles/what-is-ai-orchestration) is the control layer that coordinates model calls, tools, and data to execute complex, multi-step workflows. It manages context across steps and the sequence of reasoning and decision steps.
+```{admonition} Agentic AI Equivalent
+:class: note
+In agentic AI design patterns, [orchestration](https://github.com/resources/articles/what-is-ai-orchestration) serves as the control layer coordinating model invocations, tools, and system state across complex, multi-step reasoning cycles. Existing orchestration paradigms typically fall into one of the following two:
+- **DAG-based workflows:** Execute logic across structured nodes and fixed branches. They are highly controllable and explainable, but structurally rigid.
+- **`skills.md`-based approaches:** Rely on open-ended, prompt-driven instructions. They are highly context-aware and flexible, but challenging difficult to govern due to their non-determinism.
+
+`cognition`'s provides an ideal middle ground: context-aware, flexible `DecisionProcess` that is programmatically enforced.
+
+```
 
 ## What is a decision process?
 A decision process is a **declarative, state-driven execution machine** that continually matches a state against a collection of independent operators to determine the next step.

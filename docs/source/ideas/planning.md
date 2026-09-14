@@ -1,10 +1,13 @@
 # Planning
-> **Agentic AI Equivalent**.
-> In agentic AI, Chain of Thought (CoT), prompting a model to think step-by-step to generate longer intermediate reasoning traces, serves as the primary, language-based mechanims for reasoning.
+
+```{admonition} Agentic AI Equivalent
+:class: note
+In standard agentic AI, Chain of Thought (CoT)—prompting a model to generate step-by-step intermediate reasoning traces—serves as the primary mechanism for decision-making. However, because LLMs execute CoT through probabilistic next-token prediction, this process ultimately relies on statistical completion rather than true logic.
+
+`cognition`'s `planning` module implements formal, algorithmic planning. Instead of guessing the next token, the engine systematically decomposes high-level goals into valid action chains by evaluating hypothetical future states before executing any action in the operational environment.
+```
 
 ## What is Planning?
-While Large Language Models (LLMs) execute Chain of Thought (CoT) through probabilistic next-token prediction, formal planning in `cognition` implements explicit, algorithmic step-by-step reasoning. Instead of relying on statistical completion, the planning engine systematically decomposes high-level goals into valid action chains by evaluating hypothetical future states before any action is executed in the physical or operational environment.
-
 At its core, planning is the process of generating a causal sequence of actions from a given starting point to achieve a desired target state. Every formal planning problem within **cognition** is constructed using four fundamental components.
 
 1. **Initial State**
@@ -28,7 +31,7 @@ While closely related, Planning and Decision Processes operate at different stag
 
 ## What are the scientific principles?
 
-[Automated Planning and Scheduling](https://www.icaps-conference.org/) an Artificial Intelligence discipline that provides a mathematically rigorous framework for autonomous decision-making through deterministic state-space search. While modern Large Language Models (LLMs) excel at natural language parsing and intuition, they inherently struggle with multi-step search, strict constraint adherence, and provable correctness guarantees. Formal planning engines bridge this gap by serving as sound reasoning systems that guarantee valid, executable plan generation—making them essential for mission-critical, high-stakes autonomous systems like NASA JPL's Mars Rover activity scheduling, where operational failure is unacceptable.
+[Automated Planning and Scheduling](https://www.icaps-conference.org/) is an Artificial Intelligence discipline that provides a mathematically rigorous framework for autonomous decision-making through deterministic state-space search. While modern Large Language Models (LLMs) excel at natural language parsing and intuition, they struggle with multi-step search, strict constraint adherence, and provable correctness guarantees. Formal planning engines bridge this gap by serving as sound reasoning systems that guarantee valid, executable plan generation—making them essential for mission-critical, high-stakes autonomous systems like NASA JPL's Mars Rover activity scheduling, where operational failure is unacceptable.
 
 ```{seealso} Further Reading & References
 - **The Gradient:** [On the Role of LLMs in Planning & Reasoning](https://thegradientpub.substack.com/p/subbarao-kambhampati-planning-reasoning-llms) — Prof. Subbarao Kambhampati analyzes why LLMs struggle with multi-step deterministic search and the need for symbolic planners.

@@ -1,6 +1,11 @@
 # Cognitive Agent (Cogent)
-> **Agentic AI Equivalent**
-> In Agentic AI design patterns, a harness or agent runtime connects directly with the external environment, manages input/output (I/O) routing, and implements the core execution loop controlling the agent's task performance. (See the [Databricks AI Harness architecture](https://www.databricks.com/blog/ai-harness) for conceptual reference). ReACT paradigm
+
+```{admonition} Agentic AI Equivalent
+:class: note
+Agentic AI harnesses serve as the runtime interface: connecting to external environments, routing I/O, and running core execution loops (cf. Databricks AI Harness architecture). These setups usually rely on ReAct-style LLM loops and use blacklists to filter unwanted actions.
+
+`cognition`'s `Cogent` uses a neurosymbolic foundation to drive agent behavior. Rather than blacklisting bad behavior post-hoc, `Cogent` enables developers to whitelist valid actions, guaranteeing that agent decision-making stays within a defined governance envelope.
+```
 
 ## What is a Cogent?
 A `Cogent` (short for **Cog**nitive Ag**ent**) is an integrated runtime framework designed to drive autonomous decision-making by coupling [neurosymbolic](https://en.wikipedia.org/wiki/Neuro-symbolic_AI) foundation with environment interaction. At its core, a `Cogent` continuously executes a three-phase loop:

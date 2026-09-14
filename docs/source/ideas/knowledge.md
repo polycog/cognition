@@ -1,6 +1,12 @@
 # World Graph
-> **Agentic AI Equivalent**.
-> The agentic AI ecosystem currently lacks a consensus on how agents should manage world state. Most implementations rely on ad-hoc context construction, bundling world state into the prompt window alongside instructions, tool logs, and user inputs.
+
+```{admonition} Agentic AI Equivalent
+:class: note
+The agentic AI ecosystem currently lacks a consensus on how agents should manage world state. Most frameworks rely on ad-hoc context construction that bundles transient world state into the prompt window alongside system instructions, tool execution logs, and user inputs.
+
+`cognition` provides `WorldGraph` to maintain a stable, rich internal description of the world, providing a structured foundation for deterministic reasoning, long-horizon planning, and consistent decision-making.
+```
+
 
 
 ## What is a world graph?
