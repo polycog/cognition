@@ -1,8 +1,7 @@
 # Knowledge-Augmented Decision Process (KADP)
 
 > **Agentic AI Equivalent:**
->**Orchestration** (see [GitHub's guide on AI Orchestration](https://github.com/resources/articles/what-is-ai-orchestration)).
-> In agentic systems, an orchestration engine manages sequential decision-making.
+> In agentic AI design patterns, [orchestration](https://github.com/resources/articles/what-is-ai-orchestration) is the control layer that coordinates model calls, tools, and data to execute complex, multi-step workflows. It manages context across steps and the sequence of reasoning and decision steps.
 
 ## What is a decision process?
 A decision process is a **declarative, state-driven execution machine** that continually matches a state against a collection of independent operators to determine the next step.
@@ -16,7 +15,17 @@ Key characteristics include:
 `cognition` uses `DecisionProcess` to continuously evaluate declarative decision criteria against a live state, dynamically computing, executing, and adjusting workflows in real-time. This conceptualization is similar in spirit to a combination of event-driven and data-driven programming paradigms, but they are purpose-built for agentic systems.
 
 ## What are the scientific principles?
-A knowledge-Augmented `DecisionProcess` (KADP) shares identical concepts of states and actions with MDPs but replaces data-driven, trial-and-error reinforcement learning with explicitly programmed expert domain knowledge. Rather than relying on environment simulators, reward functions, discount factors, or probabilistic state transitions, KADP uses deterministic programmatic operators, preconditions, and termination checks. This design bypasses the cold-start problem of reinforcement learning, enabling predictable, auditable, and expert-driven decision-making from the very first step.
+A knowledge augmented `DecisionProcess` (KADP) grounds its execution in formal decision theory and state-space search. While it shares the foundational concepts of states and actions with Markov Decision Processes (MDPs), it diverges from data-driven reinforcement learning by operationalizing the Problem Space Hypothesis by replacing trial-and-error optimization with explicitly programmed expert domain knowledge.
+
+Rather than relying on environment simulators, reward functions, discount factors, or probabilistic state transitions, a KADP uses deterministic programmatic operators, preconditions, and termination checks. This design bypasses the cold-start problem of reinforcement learning, enabling predictable, auditable, and expert-driven decision-making from the very first step.
+
+`cognition` directly mirrors Dual-Process Cognitive Theory in Thinking, Fast and Slow; while LLMs and other reasoners implement fast, automatic inferences (*System 1*), the KADP acts as a deliberate, logical controller (*System 2*) that explicitly directs reasoning trajectories.
+
+```{seealso} Further Reading & References
+- **[A Markovian Decision Process](https://doi.org/10.1512/iumj.1957.6.56038)** (*Richard Bellman, 1957*): Foundational paper introducing Markov Decision Processes (MDPs) in decision theory.
+- **[Human Problem Solving](https://archive.org/details/humanproblemsolv0000newe)** (*Newell & Simon, 1972*): Seminal text establishing the Problem Space Hypothesis for AI decision systems.
+- **[Thinking Fast and Slow](https://www.youtube.com/watch?v=gmjgZF2HEwI)**:  Video lecture breaking down the dual-process theory of the human cognitive architecture delivered by Prof. Daniel Kahneman.
+```
 
 ## Why use a decision process?
 Using a decision process for orchestration provides an ideal middle ground between deterministic code and non-deterministic AI generation. It fundamentally **balances the need for flexible process execution with the controllability of the process.**
