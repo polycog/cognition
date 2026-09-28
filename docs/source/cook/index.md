@@ -12,4 +12,5 @@ See the `README` to get started!
 :hidden:
 hello.md
 counting.md
+preference.md
 ```
