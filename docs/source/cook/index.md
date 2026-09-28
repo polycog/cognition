@@ -13,4 +13,5 @@ See the `README` to get started!
 hello.md
 counting.md
 preference.md
+planning.md
 ```
