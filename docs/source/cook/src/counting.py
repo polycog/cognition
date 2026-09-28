@@ -52,11 +52,23 @@ class CountingState:
     """
 
 
-@stringify("is_perfect")  # easier-to-read in logs/debug output
-def is_perfect(cs: CountingState, _io: IOContainer) -> bool:
-    """example elaboration: is the counter value a perfect number?"""
+def _is_perfect_square(num: int) -> bool:
+    return sqrt(num) % 1 == 0
 
-    return (cs.counter is not None) and (sqrt(cs.counter) % 1 == 0)
+
+assert not _is_perfect_square(8)
+assert _is_perfect_square(9)
+assert not _is_perfect_square(10)
+
+
+@stringify("is_perfect")  # easier-to-read in logs/debug output
+def is_perfect_square(cs: CountingState, _io: IOContainer) -> bool:
+    """
+    example elaboration:
+    examine raw counter state to determine if the value is a perfect square?
+    """
+
+    return (cs.counter is not None) and _is_perfect_square(cs.counter)
 
 
 # ===
@@ -73,21 +85,21 @@ counting_cogent.dp.add_elaborator(
     create_elaborator(
         "examples",  # only visible in logs/debug output
         is_initialized=lambda cs, _: cs.counter is not None,
-        is_perfect=is_perfect,
-        as_str=lambda cs, _: str(cs.counter),  # unused (showing any result type)
+        is_perfect=is_perfect_square,
+        as_str=lambda cs, _: str(cs.counter),
     )
 )
 
 
 @counting_cogent.dp.termination_check
 @stringify("found_perfect")
-def found_perfect(cs: CountingState, io: IOContainer) -> bool:
+def found_perfect(_cs: CountingState, io: IOContainer) -> bool:
     """
     utilizes elaboration to detect custom termination logic:
-    in this case that a perfect number has been achieved
+    in this case that a perfect square has been achieved
     """
 
-    print(f"Terminate?: {cs.counter=} ({io.e.is_perfect=})")
+    print(f"Terminate?: {io.e.as_str=} ({io.e.is_perfect=})")
 
     return cast(bool, io.e.is_perfect)
 

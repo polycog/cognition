@@ -1,12 +1,24 @@
-# Counting
+# Some Basics
 
-In this recipe, we use a "counting" cogent to illustrate basic usage of a few library features:
+In this recipe, we use a "counting" cogent to illustrate basic usage of a few library features.
+For each cogent run, it is supplied a starting integer - the cogent then increments until it arrives at a "perfect square" (a number you get when you multiply a whole number by itself).
+We focus on the following new components...
+
 * Elaboration: information, accessible via `IOContainer.e.feature_name`, that is computed each cycle (during the DP `Elaboration` phase)
-  * `create_elaborator`: a convenience function for creating an `Elaborator` based upon kwargs that associate feature_name with a function to compute the associated value
+  * This will perform the math to identify a perfect square (independent of other logic)
+  * Also, `create_elaborator`: a convenience function for creating an `Elaborator` based upon kwargs that associate feature_name with a function to compute the associated value
 * Termination Check: a function that (during the DP `TerminationCheck` phase) determines if the DP should end
-* Arguments: name=value pairs supplied to a DP that are accessible via `IOContainer.a.name`
+  * Unlike some other recipes, it is not the application of an operator that signals termination, but instead a property of the DP state (namely, having achieved a perfect square)
+* Arguments: read-only name=value pairs supplied to a DP that are accessible via `IOContainer.a.name`
+  * In this case, the starting value
 * Logging: using the standard Python `logging` library
   * Debug output: using the `stringify` function can improve readability of logs, as well as debug output (e.g., printing a DP)
+
+## Code
+
+```{literalinclude} src/counting.py
+:linenos:
+```
 
 ## Detailed Run Summary
 Let's focus on line `142`, assuming `starting_val` is `2`...
@@ -35,10 +47,3 @@ Let's focus on line `142`, assuming `starting_val` is `2`...
         2. TerminationCheck: `True` (done!)
 5. DP run complete; Cogent gate check (done!)
 6. Arguments (`counting_start`) removed
-
-
-## Code
-
-```{literalinclude} src/counting.py
-:linenos:
-```
