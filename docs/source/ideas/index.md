@@ -18,7 +18,7 @@ planning.md
 
 * [](./cogent.md): integrating the cognitive agent loop with custom environmental sensors and/or actuators (similar to a harness in LLM-based systems).
 * [](./kadp.md): (hierarchical) agent orchestration using a declarative, state-driven execution machine that continually matches against policy directives.
-* [](./knowledge.md): declaring, relating, and querying dynamic domain knowledge.
+* [](./knowledge.md): dynamically declaring, relating, querying, and updating domain knowledge.
 * [](./language.md): model-agnostic language tasks that are automatically infused with domain knowledge.
 * [](./planning.md): integrating symbolic reasoning to efficiently & verifiably solve sub-problems.
 
@@ -40,8 +40,3 @@ Declarative('ish)
 
 Clean/Fun
 : Where possible, abstract away boilerplate.
-
-
-:::{tip}
-The tutorials provide an annotated step-by-step guide with a domain.
-:::

@@ -1,27 +1,24 @@
 # World Graph
 
+While most agentic frameworks rely on unstructured context windows or ad-hoc skill definitions, `cognition` provides a dedicated, persistent state-management layer: the **`WorldGraph`**. It serves as the agent's **World Model**—the single source of truth for its physical and conceptual environment.
+
 ```{admonition} Agentic AI Equivalent
 :class: note
 The agentic AI ecosystem currently lacks a consensus on how agents should manage world state. Most frameworks rely on ad-hoc context construction that bundles transient world state into the prompt window alongside system instructions, tool execution logs, and user inputs.
 
-`cognition` provides `WorldGraph` to maintain a stable, rich internal description of the world, providing a structured foundation for deterministic reasoning, long-horizon planning, and consistent decision-making.
+`cognition` provides `WorldGraph` to maintain a rich internal description of the world, providing a structured foundation for deterministic reasoning, long-horizon planning, and consistent decision-making.
 ```
 
-
-
-## What is a world graph?
-While most agentic frameworks rely on unstructured context windows or ad-hoc skill definitions, `cognition` provides a dedicated, persistent state-management layer: the **`WorldGraph`**. It serves as the agent's **World Model**—the single source of truth for its physical and conceptual environment.
-
-### Knowledge Graphs as World Models
-A **Knowledge Graph (KG)** is a structured data network that represents information as real-world entities connected by explicit, semantic relationships. Unlike flat text buffers or traditional tables, a knowledge graph makes complex webs of interconnected data directly queryable and machine-readable.
+## Knowledge Graphs as World Models
+A **Knowledge Graph (KG)** is a structured data network that represents information as real-world entities connected by explicit, semantic relationships. Unlike flat text buffers or traditional tables, a knowledge graph makes complex webs of interconnected data directly queryable, machine-readable, and modifiable.
 
 In `cognition`, this graph structure is implemented via `WorldGraph`, built from two core primitives:
-* **`Entity` (Nodes):** Represent objects, concepts, actors, or state variables in the environment.
-* **`BinaryRelation` (Edges):** Define directed relationships, attributes, and dependencies between entities.
+* `Entity` (Nodes): Represent objects, concepts, actors, or state variables in the environment.
+* `BinaryRelation` (Edges): Define directed relationships, attributes, and dependencies between entities.
 
 By converting raw contextual inputs and tool outputs into a structured graph, `WorldGraph` prevents context drift and grounds the agent's decision-making process in a coherent, queryable reality.
 
-### The WorldGraph Execution Loop
+## The WorldGraph Execution Loop
 During runtime, `WorldGraph` provides the substrate for tracking how the environment evolves across three core phases:
 1. **Observe:** Query live graph topology directly, or generate an immutable `WorldSnapshot` to inspect state without side effects.
 2. **Evaluate:** Perform deterministic state comparisons, differential tracking, or cached evaluations using hashable snapshots.
@@ -40,7 +37,7 @@ The origins of knowledge graphs trace back to 1960s artificial intelligence rese
 ## Why use world graphs?
 Knowledge graphs are at the core of modern search and recommendation systems. `cognition` brings this foundational AI concept to the agentic AI ecosystem. Using a world graph to describe the current state of the environment provides several advantages vis-a-vis a 'context'.
 * **Single Source of Truth:** A central `WorldGraph` instance acts as the authoritative state repository across all agent operations.
-* **Stable Contextual Foundation:** Creates a persistent, structured internal model of the agent’s actual environment.
+* **Stable Contextual Foundation:** Creates a persistent, structured internal representation of the agent’s actual environment.
 * **LLM Grounding:** Provides a fixed, deterministic reality around which non-deterministic Large Language Model (LLM) inference can be centered, mitigating context drift and hallucinations.
 * **Hashable State Snapshots:** The `WorldSnapshot` class provides read-only, hashable access to frozen fact sets, ideal for state hashing, caching, and comparison.
 * **Inspectability & Mutability:** Allows programmatic inspection and real-time state mutation so the agent can explicitly reason about upcoming actions or project downstream consequences.
@@ -52,10 +49,10 @@ World models in `cognition` are built on [Pydantic](https://pydantic.dev/docs/va
 
 | Class / Primitive | Type / Role | Description | Core Requirements |
 | :--- | :--- | :--- | :--- |
-| **`WorldGraph`** | Graph Structure | The central, mutable container representing world knowledge; acts as the single source of truth. | Mediates all graph queries and mutation operations through Pydantic schemas. |
-| **`Entity`** | Node (Pydantic Model) | Represents distinct objects, physical spaces, or abstract concepts within the world. | **Unique Identifier:** Requires a unique name/ID at instantiation to guarantee identity resolution across the graph. |
-| **`BinaryRelation`** | Edge (Pydantic Model) | Directed connections defined over `Entity` pairs that bind nodes into a structured network. | **Context Encoding:** Captures specific spatial, hierarchical, or operational relations between entities. |
-| **`WorldSnapshot`** | Immutable Wrapper | Wraps a frozen set of facts derived from a `WorldGraph`. | **Read-Only & Hashable:** Enables side-effect-free reading, caching, and state comparisons. |
+| `WorldGraph` | Graph Structure | The central, mutable container representing world knowledge; acts as the single source of truth. | Mediates all graph queries and mutation operations through Pydantic schemas. |
+| `Entity` | Node (Pydantic Model) | Represents distinct objects, physical spaces, or abstract concepts within the world. | **Unique Identifier:** Requires a unique name/ID at instantiation to guarantee identity resolution across the graph. |
+| `BinaryRelation` | Edge (Pydantic Model) | Directed connections defined over `Entity` pairs that bind nodes into a structured network. | **Context Encoding:** Captures specific spatial, hierarchical, or operational relations between entities. |
+| `WorldSnapshot` | Immutable Wrapper | Wraps a frozen set of facts derived from a `WorldGraph`. | **Read-Only & Hashable:** Enables side-effect-free reading, caching, and state comparisons. |
 
 ### System Operations
 
@@ -73,3 +70,7 @@ World models in `cognition` are built on [Pydantic](https://pydantic.dev/docs/va
 2. **Relationship Binding:** `BinaryRelation` objects specify directed relationships between `Entity` pairs (e.g., `located_within` [spatial], `is_a` [hierarchical], `executes_after` [operational]).
 3. **Graph Mutation:** Read/write access on `WorldGraph` updates the underlying state in real time as actions are executed.
 4. **Snapshot Generation:** When read-only or hashable state access is needed (e.g., for decision verification or caching), `WorldGraph` interacts fluidly with `WorldSnapshot` to wrap a frozen set of facts.
+
+```{seealso} Examples
+* [Tutorial 5](https://cognition.polycog.ai/tutorials)
+```

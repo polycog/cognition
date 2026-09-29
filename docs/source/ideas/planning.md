@@ -1,33 +1,33 @@
-# Planning
+# Reasoning: Planning
+
+At its core, planning is the process of generating a causal sequence of actions from a given starting point to achieve a desired target state.
 
 ```{admonition} Agentic AI Equivalent
 :class: note
 In standard agentic AI, Chain of Thought (CoT)—prompting a model to generate step-by-step intermediate reasoning traces—serves as the primary mechanism for decision-making. However, because LLMs execute CoT through probabilistic next-token prediction, this process ultimately relies on statistical completion rather than true logic.
 
-`cognition`'s `planning` module implements formal, algorithmic planning. Instead of guessing the next token, the engine systematically decomposes high-level goals into valid action chains by evaluating hypothetical future states before executing any action in the operational environment.
+`cognition`'s implements formal, algorithmic planning. Instead of guessing the next token, the engine systematically decomposes high-level goals into valid action chains by evaluating hypothetical future states before executing any action in the operational environment.
 ```
 
-## What is Planning?
-At its core, planning is the process of generating a causal sequence of actions from a given starting point to achieve a desired target state. Every formal planning problem within **cognition** is constructed using four fundamental components.
+The `cognition` library includes `SearchPlanner`, which _searches_ an action space to find an (optimal) sequence of actions from its initial state to a goal.
+Thus, every planning problem within **cognition** is constructed using four fundamental components:
 
 1. **Initial State**
-   The baseline state snapshot of the environment and agent context prior to plan execution. This is typically described using a `WorldGraph`
+   The baseline state snapshot of the environment and agent context prior to plan execution. For DPs that use a `WorldGraph`, this is typically described using a `WorldSnapshot`.
 
 2. **Action Space**
-   The set of all permissible operational actions available to the agent. Each action (a `SearchPlanOption`) is explicitly parameterized by:
-   * **Preconditions** implemented as Python factories: Logical constraints specifying the exact state criteria required before an action can be executed.
-   * **Effects** implemented as Python methods: Mutative state-transition rules that define how executing the action alters the current state.
+   A Python function dictating what action(s) are available in any planning state, the state that _would_ result from invoking that action, and the associated cost.
 
 3. **Goal State**
-   A target logical condition that explicitly defines the criteria for successful task completion.
+   A target logical condition that explicitly defines the criteria for a successful plan.
 
 4. **Search Strategy**
-   General-purpose graph traversal and optimization algorithms (e.g., $A^*$, Breadth-First Search, Depth-First Search) used to systematically explore the state-action graph and discover an optimal path from the initial state to the goal state.
+   General-purpose graph traversal and optimization algorithms (e.g., $A^*$, Breadth-First Search, Depth-First Search) used to systematically explore the state-action graph and discover an optimal path from the initial state to a goal state.
 
-### Planning vs. Decision Processes (KADP)
-While closely related, Planning and Decision Processes operate at different stages of execution:
-* **Planner**: Operates offline in a hypothetical state space. It searches for and outputs a static sequence of actions (a plan) without altering the live system.
-* **Decision Process**: Operates online cycle-by-cycle. It executes real steps, handles dynamic environment state mutations, and drives real-world actuation.
+## Planning vs. Decision Processes
+While closely related, Planning and [](./kadp.md) operate at different stages of execution:
+* **Planner**: Operates offline in a hypothetical state space -- it searches for and outputs a static sequence of actions (a plan) without altering the live system.
+* **Decision Process**: Operates online cycle-by-cycle -- it executes real steps, handles dynamic environment state mutations, and drives real-world actuation.
 
 ## What are the scientific principles?
 
@@ -62,8 +62,9 @@ To initialize and run a `SearchPlanner`, supply the following inputs:
 | **Succession Function** | Callable | Function producing available planner actions (`PA`), transition costs (lower is better), and resulting states (`PS`). |
 | **Frontier Factory** | Object | Strategy determining state expansion order. |
 
-> **Note on State Mutability:** The planner state (`PS`) is closely related to DP state, but **must be hashable (and thus immutable)** to enable efficient set-based duplicate detection in search frontiers.
-
+```{note}
+The planner state (`PS`) is closely related to DP state, but **must be hashable (and thus immutable)** to enable efficient set-based duplicate detection in search frontiers.
+```
 
 ### Frontier Strategies
 
@@ -84,4 +85,12 @@ To simplify building custom succession functions, the library provides built-in 
 * **`SearchPlannerDynamicOption`:** Represents pattern-based or dynamically generated actions dependent on current state features.
   * *Helper:* `dynamic_opts_succession` constructs a succession function from dynamic option generators.
 
-> **Analogy:** `SearchPlannerStaticOption` maps to fixed operators, while `SearchPlannerDynamicOption` maps to operator generators within a Decision Process.
+```{tip}
+`SearchPlannerStaticOption` maps to operators, while `SearchPlannerDynamicOption` maps to operator generators within a Decision Process.
+```
+
+```{seealso} Examples
+* [Tutorial 6](https://cognition.polycog.ai/tutorials)
+* [](../cook/planning.md)
+* [web-wj Example](https://github.com/polycog/cognition/tree/main/examples/)
+```

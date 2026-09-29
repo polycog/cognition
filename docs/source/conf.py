@@ -13,7 +13,7 @@ author = 'Polycog, Inc.'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.autodoc', 'autoapi.extension', 'myst_parser']
+extensions = ['sphinx.ext.autodoc', 'autoapi.extension', 'myst_parser', 'sphinx_copybutton']
 
 autodoc_typehints = 'description'
 autoapi_python_class_content = 'both'
@@ -32,7 +32,7 @@ myst_enable_extensions = [
     "attrs_block",
     "colon_fence",
     "deflist",
-    "colon_fence",
+    "dollarmath",
 ]
 
 templates_path = ['_templates']
