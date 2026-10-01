@@ -469,7 +469,7 @@ class SearchPlannerStaticOption[PS, PA](ABC):
         :param action: search action that might be applicable in multiple states
         """
 
-        self._action = action
+        self.__action = action
 
     @property
     def action(self) -> PA:
@@ -477,7 +477,7 @@ class SearchPlannerStaticOption[PS, PA](ABC):
         :return: associated action
         """
 
-        return self._action
+        return self.__action
 
     @abstractmethod
     def is_available(self, state: PS) -> bool:
@@ -510,7 +510,7 @@ class SearchPlannerDynamicOption[PS, PA](ABC):
         :param action: search action to be performed
         """
 
-        self._action = action
+        self.__action = action
 
     @property
     def action(self) -> PA:
@@ -518,7 +518,7 @@ class SearchPlannerDynamicOption[PS, PA](ABC):
         :return: associated action
         """
 
-        return self._action
+        return self.__action
 
     @classmethod
     @abstractmethod

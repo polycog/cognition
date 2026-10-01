@@ -206,12 +206,12 @@ class _BaseOperator[S](ABC, NamedObject):
         :param kwargs: optional params for the resulting action
         """
 
-        self._name = name
-        self._params = MappingProxyType(kwargs)
+        self.__name = name
+        self.__params = MappingProxyType(kwargs)
 
     def __str__(self) -> str:
         return (
-            f"{type(self).__name__}({format_name_params(self._name, **self._params)})"
+            f"{type(self).__name__}({format_name_params(self.__name, **self.__params)})"
         )
 
     @property
@@ -220,7 +220,7 @@ class _BaseOperator[S](ABC, NamedObject):
         :return: name supplied upon construction
         """
 
-        return self._name
+        return self.__name
 
     @property
     def params(self) -> Mapping[str, Any]:
@@ -228,7 +228,7 @@ class _BaseOperator[S](ABC, NamedObject):
         :return: params supplied upon construction
         """
 
-        return self._params
+        return self.__params
 
     @abstractmethod
     def perform(self, state: S, io: IOContainer) -> S | None:
