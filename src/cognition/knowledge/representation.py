@@ -10,6 +10,7 @@ from string import Template
 from typing import Any, ClassVar, Protocol, Self, cast, final, runtime_checkable
 
 from pydantic import BaseModel, Field, create_model
+from typing_extensions import TypeForm
 
 from ..util.functypes import Supplier
 from ..util.misc import TypedMixin, is_list, is_set
@@ -165,8 +166,8 @@ class BaseSchema(TypedMixin, BaseModel, ABC):
         field_cache: dict[str, Any] = {}
 
         def _freeze_field_type(
-            src: object, name: str, orig: type[Any] | None
-        ) -> type[Any]:
+            src: object, name: str, orig: TypeForm[Any] | None
+        ) -> TypeForm[Any]:
             if orig is None:
                 orig = type(getattr(src, name))
 
@@ -190,7 +191,7 @@ class BaseSchema(TypedMixin, BaseModel, ABC):
 
             return orig
 
-        field_source: dict[str, type[Any] | None] = {
+        field_source: dict[str, TypeForm[Any] | None] = {
             name: field.annotation for name, field in type(self).model_fields.items()
         }
 

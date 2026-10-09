@@ -7,12 +7,13 @@ from collections.abc import Iterable, Sequence
 from enum import Enum
 from string import Template
 from types import GenericAlias, UnionType
-from typing import Union, cast, get_args, get_origin
+from typing import Any, Union, cast, get_args, get_origin
 
 from pydantic import BaseModel
 from pydantic.fields import Field, FieldInfo
 from pydantic_ai import Agent as LanguageConvo
 from pydantic_ai.models import Model
+from typing_extensions import TypeForm
 
 from ..knowledge.representation import BinaryRelation, Entity
 from ..util.enumeration import AutoDocEnum, DocEnum
@@ -124,7 +125,7 @@ def basemodel_name_doc(schema_type: type[BaseModel]) -> str:
     )
 
 
-def _is_union(annotation: type | None) -> bool:
+def _is_union(annotation: TypeForm[Any] | None) -> bool:
     return isinstance(annotation, UnionType) or (get_origin(annotation) is Union)
 
 

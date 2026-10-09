@@ -20,6 +20,8 @@ from typing import (
     get_origin,
 )
 
+from typing_extensions import TypeForm
+
 # ===
 
 
@@ -38,7 +40,7 @@ class TypedMixin:
         return type(self).__name__
 
 
-def _is_type(query: type[Any], target: type[Any]) -> bool:
+def _is_type(query: TypeForm[Any], target: type[Any]) -> bool:
     if get_origin(query) is Annotated:
         query = get_args(query)[0]
 
@@ -46,12 +48,12 @@ def _is_type(query: type[Any], target: type[Any]) -> bool:
     base_class = origin if origin is not None else query
 
     try:
-        return issubclass(base_class, target)
+        return issubclass(cast(type, base_class), target)
     except TypeError:
         return False
 
 
-def is_set(tp: type[Any]) -> bool:
+def is_set(tp: TypeForm[Any]) -> bool:
     """
     Determines if the supplied type annotation is a set
 
@@ -62,7 +64,7 @@ def is_set(tp: type[Any]) -> bool:
     return _is_type(tp, set)
 
 
-def is_list(tp: type[Any]) -> bool:
+def is_list(tp: TypeForm[Any]) -> bool:
     """
     Determines if the supplied type annotation is a list
 
