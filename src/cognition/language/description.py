@@ -173,6 +173,8 @@ def basemodel_field_doc(field_name: str, field_info: FieldInfo) -> str:
     return f"{field_name} ({types_names}{ _sub_if(_t_sc, field_info.description) })"
 
 
+# pylint: disable=too-many-locals
+# pylint: disable=too-many-statements
 def basemodel_dep_types(
     start_schema: type[BaseModel] | Iterable[type[BaseModel]], deep: bool
 ) -> Iterable[type]:
@@ -184,6 +186,48 @@ def basemodel_dep_types(
     :return: :class:`enum.Enum` and :class:`pydantic.BaseModel` types
              needed to understand the schema (including itself)
     """
+
+    def _pydantic_parameterization(node: object) -> tuple[object, tuple[object]] | None:
+        if not isinstance(node, type):
+            return None
+
+        metadata = node.__dict__.get("__pydantic_generic_metadata__")
+        if not metadata or metadata.get("origin") is None:
+            return None
+
+        return metadata["origin"], metadata["args"]
+
+    # pylint: disable=too-many-return-statements
+    def _children(node: object) -> Iterable[object]:
+        if (parameterization := _pydantic_parameterization(node)) is not None:
+            _, args = parameterization
+            yield from args
+            return
+
+        origin = get_origin(node)
+        if origin is None:
+            return
+
+        args = get_args(node)
+
+        # yield origin
+        yield from args
+
+    def _component_classes(annotation: object) -> Iterable[type]:
+        seen: dict[int, object] = {}
+        queue = [annotation]
+
+        while queue:
+            node = queue.pop(0)
+
+            if id(node) in seen:
+                continue
+            seen[id(node)] = node
+
+            if isinstance(node, type):
+                yield node
+
+            queue.extend(_children(node))
 
     def _supported_type(t: type) -> bool:
         origin = get_origin(t)
@@ -197,14 +241,7 @@ def basemodel_dep_types(
             for f_i in schema_type.model_fields.values()
             if f_i.annotation is not None
         ):
-
-            candidates: Iterable[type]
-            if _is_union(f_a):
-                candidates = get_args(f_a)
-            else:
-                candidates = [f_a]
-
-            yield from (t for t in candidates if _supported_type(t))
+            yield from (t for t in _component_classes(f_a) if _supported_type(t))
 
     # ===
 

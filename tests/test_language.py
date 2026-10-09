@@ -2,6 +2,7 @@
 Tests for language code
 """
 
+import inspect
 import unittest
 from enum import StrEnum, auto
 from typing import Any, Self, cast
@@ -270,88 +271,26 @@ DESC_USERROLE_SCHEMA: str = (
 )
 
 
-class ComplexSchema(BaseModel):
-    """Multiple pieces"""
-
-    a: int = Field(description="apple")
-    b: str | None
-    c: tuple[str, list[Fruit]] = Field(description="annotation")
-    e: BinaryResponse = Field(description="binary")
-    q: FruitSchema | BinaryResponseSchema | UserRoleSchema = Field(
-        description="ternary"
-    )
-
-
-DOC_COMPLEX_SCHEMA: str = f"{ComplexSchema.__name__} ({ ComplexSchema.__doc__ })"
-DOC_COMPLEX_A: str = "a (int; apple)"
-DOC_COMPLEX_B: str = "b (str | NoneType)"
-DOC_COMPLEX_C: str = "c (tuple[str, list[Fruit]]; annotation)"
-DOC_COMPLEX_E: str = "e (BinaryResponse; binary)"
-DOC_COMPLEX_Q: str = "q (FruitSchema | BinaryResponseSchema | UserRoleSchema; ternary)"
-
-DESC_COMPLEX_SCHEMA_SHALLOW: str = (
-    f"Base Model: { DOC_COMPLEX_SCHEMA }"
-    ", fields...\n"
-    f"* { DOC_COMPLEX_A }\n"
-    f"* { DOC_COMPLEX_B }\n"
-    f"* { DOC_COMPLEX_C }\n"
-    f"* { DOC_COMPLEX_E }\n"
-    f"* { DOC_COMPLEX_Q }\n"
-    "\n"
-    f"{DESC_BINARYRESPONSE}\n"
-    "\n"
-    f"Base Model: { DOC_FRUIT_SCHEMA }"
-    ", fields...\n"
-    f"* { DOC_FRUIT_VALUE }\n"
-    "\n"
-    f"Base Model: { DOC_BINARYRESPONSE_SCHEMA }"
-    ", fields...\n"
-    f"* { DOC_BINARYRESPONSE_YN }\n"
-    "\n"
-    f"Base Model: { DOC_USERROLE_SCHEMA }"
-    ", fields...\n"
-    f"* { DOC_USERROLE_VALUE }"
-)
-
-DESC_COMPLEX_SCHEMA_DEEP: str = (
-    f"{DESC_COMPLEX_SCHEMA_SHALLOW}\n\n{DESC_FRUIT}\n\n{DESC_USERROLE}"
-)
-
-COMBO_COMPLEX_SCHEMA_SHALLOW: str = (
-    f"Base Model: { DOC_FRUIT_SCHEMA }"
-    ", fields...\n"
-    f"* { DOC_FRUIT_VALUE }\n"
-    "\n"
-    f"Base Model: { DOC_COMPLEX_SCHEMA }"
-    ", fields...\n"
-    f"* { DOC_COMPLEX_A }\n"
-    f"* { DOC_COMPLEX_B }\n"
-    f"* { DOC_COMPLEX_C }\n"
-    f"* { DOC_COMPLEX_E }\n"
-    f"* { DOC_COMPLEX_Q }\n"
-    "\n"
-    f"{DESC_FRUIT}\n"
-    "\n"
-    f"{DESC_BINARYRESPONSE}\n"
-    "\n"
-    f"Base Model: { DOC_BINARYRESPONSE_SCHEMA }"
-    ", fields...\n"
-    f"* { DOC_BINARYRESPONSE_YN }\n"
-    "\n"
-    f"Base Model: { DOC_USERROLE_SCHEMA }"
-    ", fields...\n"
-    f"* { DOC_USERROLE_VALUE }"
-)
-
-COMBO_COMPLEX_SCHEMA_DEEP: str = f"{COMBO_COMPLEX_SCHEMA_SHALLOW}\n\n{DESC_USERROLE}"
-
-
 class NestedSchema(BaseModel):
     """wide and deep"""
 
     f: Fruit
     yn: BinaryResponseSchema
     name: str
+
+
+DOC_NESTED_SCHEMA: str = f"{NestedSchema.__name__} ({ NestedSchema.__doc__ })"
+DOC_NESTED_F: str = "f (Fruit)"
+DOC_NESTED_YN: str = f"yn ({BinaryResponseSchema.__name__})"
+DOC_NESTED_NAME: str = "name (str)"
+
+DESC_NESTED_SCHEMA_SHALLOW: str = (
+    f"Base Model: { DOC_NESTED_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_NESTED_F }\n"
+    f"* { DOC_NESTED_YN }\n"
+    f"* { DOC_NESTED_NAME }"
+)
 
 
 PROMPT_NESTED: str = (
@@ -383,6 +322,132 @@ PROMPT_NESTED: str = (
     "\n"
     "Return ONLY valid JSON from the schema."
 )
+
+
+class GenericBase[T](BaseModel):
+    """type in schema"""
+
+    name: str = Field(description="name")
+    val: T = Field(description="value")
+
+    # needed because of how Pydantic handles generic subclasses
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        if cls.__doc__ is None:
+            cls.__doc__ = inspect.getdoc(cls)
+
+
+DOC_GENERIC_BASE_SCHEMA_NESTED: str = (
+    f"{GenericBase.__name__}[{NestedSchema.__name__}] ({ GenericBase.__doc__ })"
+)
+DOC_GENERIC_BASE_NAME: str = "name (str; name)"
+DOC_GENERIC_BASE_VAL_NESTED: str = f"val ({NestedSchema.__name__}; value)"
+
+DESC_GENERIC_BASE_SCHEMA_NESTED_SHALLOW: str = (
+    f"Base Model: { DOC_GENERIC_BASE_SCHEMA_NESTED }"
+    ", fields...\n"
+    f"* { DOC_GENERIC_BASE_NAME }\n"
+    f"* { DOC_GENERIC_BASE_VAL_NESTED }\n"
+    "\n"
+    f"{ DESC_NESTED_SCHEMA_SHALLOW }"
+)
+
+DESC_GENERIC_BASE_SCHEMA_NESTED_DEEP: str = (
+    f"Base Model: { DOC_GENERIC_BASE_SCHEMA_NESTED }"
+    ", fields...\n"
+    f"* { DOC_GENERIC_BASE_NAME }\n"
+    f"* { DOC_GENERIC_BASE_VAL_NESTED }\n"
+    "\n"
+    f"{ basemodel_description(NestedSchema, True) }"
+)
+
+
+class ComplexSchema(BaseModel):
+    """Multiple pieces"""
+
+    a: int = Field(description="apple")
+    b: str | None
+    c: tuple[str, dict[str, Fruit]] = Field(description="annotation")
+    e: BinaryResponse = Field(description="binary")
+    q: BinaryResponseSchema | UserRoleSchema | None = Field(description="ternary")
+    z: GenericBase[NestedSchema]
+
+
+DOC_COMPLEX_SCHEMA: str = f"{ComplexSchema.__name__} ({ ComplexSchema.__doc__ })"
+DOC_COMPLEX_A: str = "a (int; apple)"
+DOC_COMPLEX_B: str = "b (str | NoneType)"
+DOC_COMPLEX_C: str = "c (tuple[str, dict[str, Fruit]]; annotation)"
+DOC_COMPLEX_E: str = "e (BinaryResponse; binary)"
+DOC_COMPLEX_Q: str = "q (BinaryResponseSchema | UserRoleSchema | NoneType; ternary)"
+DOC_COMPLEX_Z: str = "z (GenericBase[NestedSchema])"
+
+DESC_COMPLEX_SCHEMA_SHALLOW: str = (
+    f"Base Model: { DOC_COMPLEX_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_COMPLEX_A }\n"
+    f"* { DOC_COMPLEX_B }\n"
+    f"* { DOC_COMPLEX_C }\n"
+    f"* { DOC_COMPLEX_E }\n"
+    f"* { DOC_COMPLEX_Q }\n"
+    f"* { DOC_COMPLEX_Z }\n"
+    "\n"
+    f"{DESC_FRUIT}\n"
+    "\n"
+    f"{DESC_BINARYRESPONSE}\n"
+    "\n"
+    f"Base Model: { DOC_BINARYRESPONSE_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_BINARYRESPONSE_YN }\n"
+    "\n"
+    f"Base Model: { DOC_USERROLE_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_USERROLE_VALUE }\n"
+    "\n"
+    f"Base Model: { DOC_GENERIC_BASE_SCHEMA_NESTED }"
+    ", fields...\n"
+    f"* { DOC_GENERIC_BASE_NAME }\n"
+    f"* { DOC_GENERIC_BASE_VAL_NESTED }\n"
+    "\n"
+    f"{DESC_NESTED_SCHEMA_SHALLOW}"
+)
+
+DESC_COMPLEX_SCHEMA_DEEP: str = f"{DESC_COMPLEX_SCHEMA_SHALLOW}\n\n{DESC_USERROLE}"
+
+COMBO_COMPLEX_SCHEMA_SHALLOW: str = (
+    f"Base Model: { DOC_FRUIT_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_FRUIT_VALUE }\n"
+    "\n"
+    f"Base Model: { DOC_COMPLEX_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_COMPLEX_A }\n"
+    f"* { DOC_COMPLEX_B }\n"
+    f"* { DOC_COMPLEX_C }\n"
+    f"* { DOC_COMPLEX_E }\n"
+    f"* { DOC_COMPLEX_Q }\n"
+    f"* { DOC_COMPLEX_Z }\n"
+    "\n"
+    f"{DESC_FRUIT}\n"
+    "\n"
+    f"{DESC_BINARYRESPONSE}\n"
+    "\n"
+    f"Base Model: { DOC_BINARYRESPONSE_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_BINARYRESPONSE_YN }\n"
+    "\n"
+    f"Base Model: { DOC_USERROLE_SCHEMA }"
+    ", fields...\n"
+    f"* { DOC_USERROLE_VALUE }\n"
+    "\n"
+    f"Base Model: { DOC_GENERIC_BASE_SCHEMA_NESTED }"
+    ", fields...\n"
+    f"* { DOC_GENERIC_BASE_NAME }\n"
+    f"* { DOC_GENERIC_BASE_VAL_NESTED }\n"
+    "\n"
+    f"{DESC_NESTED_SCHEMA_SHALLOW}"
+)
+
+COMBO_COMPLEX_SCHEMA_DEEP: str = f"{COMBO_COMPLEX_SCHEMA_SHALLOW}\n\n{DESC_USERROLE}"
 
 
 def _base_model_info(t: type[BaseModel]) -> dict[str, type]:
@@ -542,6 +607,7 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(enum_description(BinaryResponse), DESC_BINARYRESPONSE)
         self.assertEqual(enum_description(UserRole), DESC_USERROLE)
 
+    # pylint: disable=too-many-statements
     def test_bm_description(self) -> None:
         """Tests for base model description"""
 
@@ -667,6 +733,53 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
 
         # ===
 
+        _t_crazy = GenericBase[NestedSchema]
+
+        self.assertEqual(basemodel_name_doc(_t_crazy), DOC_GENERIC_BASE_SCHEMA_NESTED)
+        self.assertEqual(
+            basemodel_field_doc(
+                "name", cast(FieldInfo, _t_crazy.model_fields.get("name"))
+            ),
+            DOC_GENERIC_BASE_NAME,
+        )
+        self.assertEqual(
+            basemodel_field_doc(
+                "val", cast(FieldInfo, _t_crazy.model_fields.get("val"))
+            ),
+            DOC_GENERIC_BASE_VAL_NESTED,
+        )
+
+        self.assertListEqual(
+            list(basemodel_dep_types(_t_crazy, False)),
+            [
+                _t_crazy,
+                NestedSchema,
+            ],
+        )
+
+        self.assertListEqual(
+            list(basemodel_dep_types(_t_crazy, True)),
+            [
+                _t_crazy,
+                NestedSchema,
+                Fruit,
+                BinaryResponseSchema,
+                BinaryResponse,
+            ],
+        )
+
+        self.assertEqual(
+            basemodel_description(_t_crazy, False),
+            DESC_GENERIC_BASE_SCHEMA_NESTED_SHALLOW,
+        )
+
+        self.assertEqual(
+            basemodel_description(_t_crazy, True),
+            DESC_GENERIC_BASE_SCHEMA_NESTED_DEEP,
+        )
+
+        # ===
+
         _ = FactDescriber(ComplexSchema, "")  # just confirming it does not error
 
         self.assertEqual(basemodel_name_doc(ComplexSchema), DOC_COMPLEX_SCHEMA)
@@ -698,21 +811,24 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
             list(basemodel_dep_types(ComplexSchema, False)),
             [
                 ComplexSchema,
+                Fruit,
                 BinaryResponse,
-                FruitSchema,
                 BinaryResponseSchema,
                 UserRoleSchema,
+                GenericBase[NestedSchema],
+                NestedSchema,
             ],
         )
         self.assertListEqual(
             list(basemodel_dep_types(ComplexSchema, True)),
             [
                 ComplexSchema,
+                Fruit,
                 BinaryResponse,
-                FruitSchema,
                 BinaryResponseSchema,
                 UserRoleSchema,
-                Fruit,
+                GenericBase[NestedSchema],
+                NestedSchema,
                 UserRole,
             ],
         )
@@ -737,6 +853,8 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
                 BinaryResponse,
                 BinaryResponseSchema,
                 UserRoleSchema,
+                GenericBase[NestedSchema],
+                NestedSchema,
             ],
         )
         self.assertListEqual(
@@ -748,6 +866,8 @@ class TestLanguage(unittest.IsolatedAsyncioTestCase):
                 BinaryResponse,
                 BinaryResponseSchema,
                 UserRoleSchema,
+                GenericBase[NestedSchema],
+                NestedSchema,
                 UserRole,
             ],
         )
