@@ -70,9 +70,7 @@ class ChatDispatch(EnumDispatch[ChatView]):
 
         # ===
 
-        p_bot = Process(
-            target=bot_worker, args=(in_q, out_q, bot_factory)
-        )
+        p_bot = Process(target=bot_worker, args=(in_q, out_q, bot_factory))
         _logger.debug("tui: bot process ready")
 
         interface = ChatApp(in_q, out_q)

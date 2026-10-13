@@ -4,6 +4,7 @@ Planning code for WaterJug
 
 from __future__ import annotations
 
+from abc import ABC
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import IntEnum
@@ -55,7 +56,7 @@ class WhichJug(IntEnum):
         return WhichJug.FIRST if self == WhichJug.SECOND else WhichJug.SECOND
 
 
-class JugPairOption(SearchPlannerStaticOption[JugPair, "JugPairOption"]):
+class JugPairOption(SearchPlannerStaticOption[JugPair, "JugPairOption"], ABC):
     """
     An option on a pair of jugs
     """
