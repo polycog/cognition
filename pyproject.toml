@@ -1,14 +1,14 @@
 [build-system]
-requires = ["setuptools >= 82.0.1"]
+requires = ["setuptools >= 84.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "polycog-cognition"
 dynamic = ["version"]
 dependencies = [
-    "pydantic-ai-slim[spec] ~= 2.9.1",
-    "networkx ~= 3.6.1",
-    "types-networkx ~= 3.6.1.0",
+    "pydantic-ai-slim[spec] ~= 2.56.0",
+    "networkx ~= 3.7",
+    "types-networkx ~= 3.6.1.20261006",
 ]
 requires-python = ">=3.13"
 authors = [
