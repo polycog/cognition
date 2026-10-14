@@ -9,6 +9,7 @@ from cognition import (
     DocEnum,
     Entity,
     FactDescriber,
+    ModelPopulator,
     timed,
 )
 from dotenv import load_dotenv
@@ -119,7 +120,7 @@ def main() -> None:
         ),
     )
 
-    task_desc = "A logistics app in which packages are routed between office locations"
+    task_desc = "A logistics app in which packages are routed between office locations."
 
     facts = [
         City.BOSTON.office,
@@ -148,18 +149,47 @@ def main() -> None:
         ),
     ]
 
+    desc_extra = (
+        "Note: fact name fields are considered critical and case-sensitive, and so be careful "
+        "about (a) making sure to include them, and (b) putting them at the beginning of a "
+        "sentence without care, since capitalization would then become ambiguous - "
+        " either avoid names in that position, or quote them."
+    )
+
+    pop_extra = (
+        "The names of offices and airports are derived from their corresponding city: "
+        "\n"
+        "* The name of an office is the corresponding city name."
+        "\n"
+        f"  For example, the name of the office in Boston ({City.BOSTON.office}) "
+        f"  is the same as Boston's name ({City.BOSTON.name})"
+        "\n"
+        "* The name of an airport is the corresponding city value/code."
+        "\n"
+        f"  For example, the name of the airport in San Francisco ({City.SAN_FRANCISCO.airport}) "
+        f"  is the same as San Francisco's value/code ({City.SAN_FRANCISCO.value})"
+        "\n"
+        "Note that in each case, spaces are converted to underscores."
+    )
+
     print(f"Model: { llm_model.model_id }")
     print()
 
     for fact_type in {type(f) for f in facts}:
         describer = FactDescriber(fact_type, task_desc)
+        populator = ModelPopulator(fact_type, task_desc)
 
-        rprint(f"[bold underline]Prompt ({fact_type.__name__})[/]")
+        rprint(f"[bold underline]Describer Prompt ({fact_type.__name__})[/]")
         print()
         rprint(f"[i]{describer.prompt(
                    "<< target fact here >>",  # type: ignore
                    ("<< other fact 1 >>", "<< other fact 2 >>", "..."),  # type: ignore
                 )}[/]")
+        print()
+
+        rprint(f"[bold underline]Populator Prompt ({fact_type.__name__})[/]")
+        print()
+        rprint(f"[i]{populator.prompt("<< utterance here >>")}[/]")
         print()
 
         rprint("[bold underline]Facts[/]")
@@ -170,13 +200,33 @@ def main() -> None:
             def _describe():  # type: ignore
                 # pylint: disable=cell-var-from-loop
                 # ruff: ignore[B023]
-                return describer(typed_fact, others, llm_model)
+                return describer(typed_fact, others, llm_model, desc_extra)
+
+            @timed
+            def _populate(desc):  # type: ignore
+                # pylint: disable=cell-var-from-loop
+                # ruff: ignore[B023]
+                return populator(desc, llm_model, pop_extra)
 
             rprint(f"Fact: {typed_fact}")
-            for _ in range(num_trials):
-                result, time = _describe()
-                print(f"* ({time:.2f}sec): ", end="")
-                rprint(f"[i]{result}[/]")
+            for t in range(num_trials):
+                print(f"* Trial { t + 1 }")
+
+                d_result, d_time = _describe()
+                print(f"  -describer ({d_time:.2f}sec)-> ", end="")
+                rprint(f"[i]{d_result}[/]")
+
+                p_result, p_time = _populate(d_result)
+                print(f"  -populator ({p_time:.2f}sec)-> ", end="")
+                rprint(f"[i]{p_result}[/]")
+
+                match = p_result == typed_fact
+                if match:
+                    color = "green"
+                else:
+                    color = "red"
+
+                rprint(f"   -match-> [bold { color }]{match}[/]")
             print()
 
 
