@@ -30,3 +30,4 @@ abstract: >-
   reasoning), steerable (programmatic enforcement of
   behavior directives), and explainable (causal provenance
   of all decisions).
+license: FSL-1.1-ALv2
