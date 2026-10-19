@@ -23,4 +23,4 @@ if "PYDANTIC_AI_NO_BANNER" not in os.environ:
 
 # ===
 
-__version__ = "1.0.3"
+__version__ = "1.0.4-rc2"
