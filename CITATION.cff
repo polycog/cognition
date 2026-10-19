@@ -18,6 +18,9 @@ authors:
     orcid: 'https://orcid.org/0000-0002-9299-4414'
   - name: 'Polycog, Inc.'
     website: 'https://polycog.ai'
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.23482676
 repository-code: 'https://github.com/polycog/cognition'
 url: 'https://cognition.polycog.ai'
 repository-artifact: 'https://pypi.org/project/polycog-cognition'

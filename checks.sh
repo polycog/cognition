@@ -37,6 +37,7 @@ success_or_die ruff check tests src
 success_or_die black --check tests src
 
 success_or_die validate-pyproject pyproject.toml
+success_or_die cffconvert --validate
 
 success_or_die coverage run --source=cognition -m unittest discover
 
