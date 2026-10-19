@@ -1,0 +1,32 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: cognition
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Nate
+    family-names: Derbinsky
+    affiliation: 'Polycog, Inc.'
+    orcid: 'https://orcid.org/0000-0001-9039-0599'
+  - given-names: Shiwali
+    family-names: Mohan
+    affiliation: 'Polycog, Inc.'
+    orcid: 'https://orcid.org/0000-0002-9299-4414'
+  - name: 'Polycog, Inc.'
+    website: 'https://polycog.ai'
+repository-code: 'https://github.com/polycog/cognition'
+url: 'https://cognition.polycog.ai'
+repository-artifact: 'https://pypi.org/project/polycog-cognition'
+abstract: >-
+  A neurosymbolic foundation for complex decision-making,
+  natural language processing, structural knowledge
+  representation, and logical & deterministic reasoning that
+  enables developers to build trustworthy cognitive agents -
+  agents that are reliable (repeatable, provably correct
+  reasoning), steerable (programmatic enforcement of
+  behavior directives), and explainable (causal provenance
+  of all decisions).
