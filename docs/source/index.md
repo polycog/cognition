@@ -5,19 +5,13 @@
 :end-before: "<!-- end intro -->"
 ```
 
-```{seealso} Resources & Getting Started
-
-* **[Repository](https://cognition.polycog.ai)**
-  The GitHub repo for the `cognition` framework.
-
-* **[Intro Video](https://docs.google.com/videos/d/1ZXO49VgD3pMfTRtArF0UttE5nTFwhVnGZk2fCps2UrU/play?usp=sharing)**
-  A video demonstration showcasing a neurosymbolic agent parsing natural language intent, maintaining state topologies, and executing multi-step operations.
-
-* **[Interactive Tutorial Series](https://cognition.polycog.ai/tutorials)**
-  A tutorial repository featuring Jupyter Notebooks that take you step-by-step through various concepts in the framework as you build an interactive smart home assistant.
-
-* **[Demos](https://cognition.polycog.ai/demos)**
-  A catalog of demonstration agents using the `cognition` framework.
+```{seealso}
+Useful GitHub repositories...
+* This framework: [cognition](https://cognition.polycog.ai)
+* Demo: [SIJ Document Validator](https://github.com/polycog/demo-legal-tech)
+* Demo: [Student Injury Triage Assistant](https://github.com/polycog/demo-incident-triage)
+* Demo: [Logistics Support Agent](https://github.com/polycog/demo-logistics-tech)
+* [Interactive Tutorial Series](https://cognition.polycog.ai/tutorials)<br />featuring Jupyter Notebooks that take you step-by-step through various concepts in the framework as you build an interactive smart home assistant
 ```
 
 
