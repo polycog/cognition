@@ -11,9 +11,10 @@
 
 <p>
     <a href="https://polycog.ai" target="_blank">Website</a> &bull;
-    <a href="https://github.com/polycog/tutorials" target="_blank">Tutorials</a> &bull;
-    <a href="https://docs.polycog.ai" target="_blank">Docs</a> &bull;
-    <a href="https://docs.google.com/videos/d/1ZXO49VgD3pMfTRtArF0UttE5nTFwhVnGZk2fCps2UrU/play?usp=sharing target="_blank">Demo</a>
+    <a href="https://docs.google.com/videos/d/1ZXO49VgD3pMfTRtArF0UttE5nTFwhVnGZk2fCps2UrU/play?usp=sharing" target="_blank">Intro Video</a> &bull;
+    <a href="https://cognition.polycog.ai/tutorials" target="_blank">Tutorials</a> &bull;
+    <a href="https://cognition.polycog.ai/docs" target="_blank">Docs</a> &bull;
+    <a href="https://cognition.polycog.ai/demos" target="_blank">Demos</a>
 </p>
 
 </div>
