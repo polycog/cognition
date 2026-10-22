@@ -601,7 +601,7 @@ def describe_facts(
     """
     One-off description of a supplied set of facts
 
-    :param instance: instance(s) to describe
+    :param instances: instance(s) to describe
     :param task_desc: textual description of the task
     :param llm: textual model to utilize
     :param timeout_secs: time given per LLM call
