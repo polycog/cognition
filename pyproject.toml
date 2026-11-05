@@ -37,7 +37,7 @@ version = {attr = "cognition.__version__"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-"cognition" = ["py.typed"]
+"cognition" = ["py.typed", "AGENTS.md"]
 
 [tool.black]
 target-version = ["py313",]

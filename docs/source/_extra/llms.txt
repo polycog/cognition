@@ -1,0 +1,51 @@
+# cognition
+
+> `cognition` (PyPI: `polycog-cognition`, import: `cognition`, Python >= 3.13) is a fair-source Python framework from Polycog, Inc. for building neurosymbolic agents. Deterministic, declarative decision processes own the control flow. Search planners solve sub-problems with provable correctness. Typed knowledge graphs hold domain facts. LLMs (through Pydantic AI) are used only to translate between natural language and typed data.
+
+Key facts for code generation:
+
+- Install with `pip install polycog-cognition`. Every public name is re-exported at the top level (`from cognition import DecisionProcess, Cogent, Operator, ...`).
+- `DecisionProcess[S]` cycles through: elaborate, then termination check, then propose (operators), then rank (evaluators; smaller rank wins, ties broken at random), then apply one action. An action returning `None` mutates state in place, and any other return value replaces the state.
+- Non-state data is reached through `io`: `io.i` (inputs/sensors), `io.o` (outputs/actuators, plus `io.o.log`), `io.e` (elaborated values), `io.a` (run arguments). Each also has a read-only mapping form (`io.input`, `io.output`, `io.elab`, `io.args`) for `.get()`, membership checks and iteration, since attribute access raises `AttributeError` on a missing key.
+- A finished decision process must be `reinit()`-ed before it can run again. `dp()` returns `None` on error unless `suppress_errors=False`.
+- `Cogent` wraps a root decision process with sensors and actuators and runs the perceive/decide/act loop.
+- The language helpers (`EnumClassifier`, `ModelPopulator`, `describe_facts`) take a Pydantic AI `Model`. Provider extras such as `pydantic-ai-slim[openai]` are installed separately.
+
+## Agent guide
+
+- [AGENTS.md: usage guide for coding agents](https://docs.polycog.ai/AGENTS.md): mental model, verified recipes for every subpackage, gotchas, debugging. The same file ships inside the installed package as `cognition/AGENTS.md`.
+
+## Concepts
+
+- [Cognitive Agent (Cogent)](https://docs.polycog.ai/ideas/cogent.html): the agent loop, with sensors and actuators
+- [Decision Process (DP)](https://docs.polycog.ai/ideas/kadp.html): phases, IO container, operators, evaluators, state helpers
+- [World Graph](https://docs.polycog.ai/ideas/knowledge.html): entities, relations, WorldGraph, WorldSnapshot
+- [Language](https://docs.polycog.ai/ideas/language.html): EnumClassifier, ModelPopulator, FactDescriber
+- [Reasoning: Planning](https://docs.polycog.ai/ideas/planning.html): SearchPlanner, frontiers, static and dynamic options
+
+## Cookbook
+
+- [Hello World](https://docs.polycog.ai/cook/hello.html): minimal cogent, plus the same thing with low-level primitives
+- [Some Basics](https://docs.polycog.ai/cook/counting.html): elaborators (`create_elaborator`), state-based termination checks, run arguments (`io.a`), logging and `stringify`, with a cycle-by-cycle walkthrough of a run
+- [Decision Preferences](https://docs.polycog.ai/cook/preference.html): ranking competing actions with evaluators (`uniform_evaluator`, `sorting_evaluator`, `Rank`)
+- [Hierarchical Decision Processes](https://docs.polycog.ai/cook/hdp.html): composing, parameterizing and testing sub-processes
+- [Search-Based Planning](https://docs.polycog.ai/cook/planning.html): fewest-coins planning with static and dynamic search options
+
+## API reference
+
+- [API reference (autoapi)](https://docs.polycog.ai/autoapi/index.html): every module, class and function, generated from docstrings
+
+## Example apps
+
+Complete, runnable apps. Each folder has its own `requirements.txt`, and run instructions are in the [examples README](https://github.com/polycog/cognition/blob/main/examples/README.md).
+
+- [cli](https://github.com/polycog/cognition/tree/main/examples/cli): console I/O loop cogent; `@self_sensor` / `@self_actuator`, `StagedState` + `staged_operator`, logging setup (start at `main.py`)
+- [choice](https://github.com/polycog/cognition/tree/main/examples/choice): sequential decisions under constraints; `OperatorGenerator` proposals, `ActionEvaluator` / `sorting_evaluator` / `uniform_evaluator` ranking (start at `main.py`)
+- [lang](https://github.com/polycog/cognition/tree/main/examples/lang): language helpers against a real LLM; `FactDescriber` and `ModelPopulator` over `Entity` / `BinaryRelation` facts (`describe.py`), `EnumClassifier` (`unit_choice.py`)
+- [chat](https://github.com/polycog/cognition/tree/main/examples/chat): multiprocess chat bot (terminal or web UI); `EnumClassifier` intents become cogent run arguments, and `io.o.log` builds the reply (start at `main.py`)
+- [web-wj](https://github.com/polycog/cognition/tree/main/examples/web-wj): Streamlit water-jug puzzle; an LLM (Pydantic AI directly) parses the problem, and `SearchPlanner` with static options solves it (start at `app.py`)
+
+## Optional
+
+- [Source repository](https://github.com/polycog/cognition)
+- [Tutorials](https://github.com/polycog/tutorials): Jupyter notebook series that builds a smart-home assistant
