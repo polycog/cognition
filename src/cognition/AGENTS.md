@@ -7,7 +7,7 @@ package is typed (`py.typed`), so reading the source next to this file is a reli
 
 - Install: `pip install polycog-cognition` (Python >= 3.13). Import name: `cognition`.
 - Every public name is re-exported at the top level: `from cognition import DecisionProcess, Cogent, ...`.
-- The LLM features (`cognition.language`) use [Pydantic AI](https://ai.pydantic.dev) models. The
+- The LLM features (`cognition.language`) use [Pydantic AI](https://pydantic.dev/docs/ai/overview/) models. The
   provider extra is **not** installed by default (e.g., `pip install "pydantic-ai-slim[openai]"`).
 
 **Contents**
@@ -864,10 +864,12 @@ assert final.plan == ["move C onto table", "move B onto C", "move A onto B"]
   `dp.reinit()` first. (`Cogent.__call__` reinits for you.)
 - **`dp()` hides errors by default**: it returns `None` both on an exception *and* when
   `max_cycles` ran out before termination. Use `dp(suppress_errors=False)` (raises `RuntimeError`
-  chained to the cause) or call `dp.run_until_done()` directly while developing.
+  chained to the cause) or call `dp.run_until_done()` directly while developing; be sure to check `dp.done`
+  since running out of `max_cycles` will still return `None`.
 - **No proposals while not done** raises `DecisionProcessExecutionError(NO_PROPOSAL)`. Every reachable
   non-terminal state needs an applicable operator, or a termination check that fires first.
-- **`run_until_done()` has no cycle limit.** Pass `max_cycles` when termination isn't guaranteed.
+- **`dp()`, `agent()` and `run_until_done()` have no cycle limit by default.** Pass `max_cycles=N` to 
+  `dp(...)` or `agent(...)`, or step with `run_cycles(n)`.
 - **Return value of an action:** `None` means mutate in place. Any other value replaces the state, so a
   stray `return True` from `perform` silently swaps your state for `True`.
 - **Ties at the best rank are chosen at random.** Make ranks distinct (or seed `random`) if you need

@@ -113,10 +113,10 @@ Suggested exploration plan:
 3. **[Cookbook](https://docs.polycog.ai/cook)**: annotated recipes related to library features.
 
 ## 🤖 Using `cognition` with AI coding agents
-
-* **Usage guide for agents:** [`src/cognition/AGENTS.md`](src/cognition/AGENTS.md), also shipped inside the installed package (`cognition/AGENTS.md`)
+<!-- start agents -->
+* **Usage guide for agents:** [`src/cognition/AGENTS.md`](https://raw.githubusercontent.com/polycog/cognition/refs/heads/main/src/cognition/AGENTS.md), also shipped inside the installed package (`cognition/AGENTS.md`)
 * **llms.txt:** [docs.polycog.ai/llms.txt](https://docs.polycog.ai/llms.txt)
-
+<!-- end agents -->
 Tip: add a line to your own project's `AGENTS.md` / `CLAUDE.md` such as
 "This project uses the `cognition` library; read https://docs.polycog.ai/AGENTS.md before writing code with it."
 
