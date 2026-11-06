@@ -62,7 +62,7 @@ releases for small fixes (e.g., typos): `gh workflow run docs.yml --ref <branch>
 publishes the docs *at that ref*, so running it from `main` also publishes any docs or API changes
 that haven't been released yet. Don't trigger either workflow without being asked.
 
-The plugin (`plugins/cognition/`, listed in `.claude-plugin/marketplace.json`) is versioned in 
+The plugin (`plugins/cognition/`, listed in `.claude-plugin/marketplace.json`) is versioned in
 lockstep with the library: bump `version` in `plugins/cognition/.claude-plugin/plugin.json`
 along with `__version__` (`tests/test_skills.py` enforces this). Installed plugins only update when
 that version changes, so skill fixes reach users at the next release.
