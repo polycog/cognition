@@ -14,6 +14,7 @@ Key facts for code generation:
 ## Agent guide
 
 - [AGENTS.md: usage guide for coding agents](https://docs.polycog.ai/AGENTS.md): mental model, verified recipes for every subpackage, gotchas, debugging. The same file ships inside the installed package as `cognition/AGENTS.md`; print one section for the installed version with `python -m cognition.guide "<heading>"` (no argument lists the headings).
+- [Coding agent plugin](https://github.com/polycog/cognition/tree/main/plugins/cognition): skills for building, reviewing, and debugging cognition code; install with `/plugin install cognition --marketplace polycog/cognition`
 
 ## Concepts
 

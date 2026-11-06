@@ -9,6 +9,9 @@ Guidance for AI coding agents working **on** this repository. If you are writing
 - Source lives in `src/cognition/`; tests in `tests/` (`unittest`, one `test_<module>.py` per module).
 - Docs live in `docs/` (Sphinx + MyST + sphinx-autoapi), and the cookbook code is in `docs/source/cook/src/`.
   Runnable example apps are in `examples/`.
+- Agent-facing material: the usage guide `src/cognition/AGENTS.md` (read by section via
+  `python -m cognition.guide`), user skills in the plugin `plugins/cognition/`
+  (catalog: `.claude-plugin/marketplace.json`), and contributor skills in `.claude/skills/`.
 
 ## Setup and checks
 
@@ -46,6 +49,10 @@ Keep the downstream guidance in sync:
 - `src/cognition/AGENTS.md` (shipped inside the wheel)
 - `docs/source/_extra/llms.txt` (published at docs.polycog.ai/llms.txt)
 - the relevant page in `docs/source/ideas/` or `docs/source/cook/`
+- the user-facing skills in `plugins/cognition/skills/` (they name guide headings, which
+  `tests/test_skills.py` checks exist)
+
+The project skill `.claude/skills/add-public-api/` walks through these steps.
 
 ## Releases
 
@@ -54,3 +61,8 @@ build/deploy (`.github/workflows/docs.yml`). The docs workflow can also be run b
 releases for small fixes (e.g., typos): `gh workflow run docs.yml --ref <branch>`. A manual run
 publishes the docs *at that ref*, so running it from `main` also publishes any docs or API changes
 that haven't been released yet. Don't trigger either workflow without being asked.
+
+The plugin (`plugins/cognition/`, listed in `.claude-plugin/marketplace.json`) is versioned in 
+lockstep with the library: bump `version` in `plugins/cognition/.claude-plugin/plugin.json`
+along with `__version__` (`tests/test_skills.py` enforces this). Installed plugins only update when
+that version changes, so skill fixes reach users at the next release.

@@ -116,6 +116,7 @@ Suggested exploration plan:
 <!-- start agents -->
 * **Usage guide for agents:** [`AGENTS.md`](https://docs.polycog.ai/AGENTS.md), also shipped inside the installed package (`cognition/AGENTS.md`)
 * **[llms.txt](https://docs.polycog.ai/llms.txt)**
+* **Skills** plugin for building, reviewing and debugging `cognition` code: `/plugin install cognition --marketplace polycog/cognition` ([details](https://github.com/polycog/cognition/tree/main/plugins/cognition))
 * Add a line like this to your own project's `AGENTS.md` / `CLAUDE.md`...
 
 > This project uses the `cognition` library.
