@@ -114,7 +114,7 @@ Suggested exploration plan:
 
 ## 🤖 Using `cognition` with AI coding agents
 <!-- start agents -->
-* **Usage guide for agents:** [`src/cognition/AGENTS.md`](https://raw.githubusercontent.com/polycog/cognition/refs/heads/main/src/cognition/AGENTS.md), also shipped inside the installed package (`cognition/AGENTS.md`)
+* **Usage guide for agents:** [`src/cognition/AGENTS.md`](https://docs.polycog.ai/AGENTS.md), also shipped inside the installed package (`cognition/AGENTS.md`)
 * **llms.txt:** [docs.polycog.ai/llms.txt](https://docs.polycog.ai/llms.txt)
 <!-- end agents -->
 Tip: add a line to your own project's `AGENTS.md` / `CLAUDE.md` such as

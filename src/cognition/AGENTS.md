@@ -864,11 +864,11 @@ assert final.plan == ["move C onto table", "move B onto C", "move A onto B"]
   `dp.reinit()` first. (`Cogent.__call__` reinits for you.)
 - **`dp()` hides errors by default**: it returns `None` both on an exception *and* when
   `max_cycles` ran out before termination. Use `dp(suppress_errors=False)` (raises `RuntimeError`
-  chained to the cause) or call `dp.run_until_done()` directly while developing; be sure to check `dp.done`
-  since running out of `max_cycles` will still return `None`.
+  chained to the cause) or `dp.run_until_done()` while developing. Running out of `max_cycles`
+  still returns `None` even with `suppress_errors=False`, so check `dp.done`.
 - **No proposals while not done** raises `DecisionProcessExecutionError(NO_PROPOSAL)`. Every reachable
   non-terminal state needs an applicable operator, or a termination check that fires first.
-- **`dp()`, `agent()` and `run_until_done()` have no cycle limit by default.** Pass `max_cycles=N` to 
+- **`dp()`, `agent()` and `run_until_done()` have no cycle limit by default.** Pass `max_cycles=N` to
   `dp(...)` or `agent(...)`, or step with `run_cycles(n)`.
 - **Return value of an action:** `None` means mutate in place. Any other value replaces the state, so a
   stray `return True` from `perform` silently swaps your state for `True`.
