@@ -1,7 +1,7 @@
 """
 Guide sub-module: the packaged agent guide (AGENTS.md), by section
 
-Since meta, not exporting quite so much
+Not re-exported from top-level cognition (as meta tooling), so: import from cognition.guide
 """
 
 from .sections import (

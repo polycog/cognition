@@ -61,6 +61,8 @@ def _heading_name(heading: str) -> str:
 
 def guide_file() -> Traversable:
     """
+    File path of ``AGENTS.md``
+
     :return: the guide shipped inside the installed ``cognition`` package
     """
 
