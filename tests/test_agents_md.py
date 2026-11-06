@@ -288,7 +288,3 @@ class TestAgentsGuide(unittest.TestCase):
             sorted(n for n in INTENTIONALLY_OMITTED if _mentioned(n, text)),
             "Now mentioned in the guide; remove from INTENTIONALLY_OMITTED",
         )
-
-
-if __name__ == "__main__":
-    unittest.main()
