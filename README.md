@@ -120,7 +120,7 @@ Suggested exploration plan:
 
 > This project uses the `cognition` library.
 > Before writing code with it, run `python -m cognition.guide` to list the sections of its agent guide (for the installed version), then read the relevant ones, e.g. `python -m cognition.guide "Mental model" "Gotchas"`.
-> If it isn't installed yet, read https://docs.polycog.ai/AGENTS.md".
+> If it isn't installed yet, read <https://docs.polycog.ai/AGENTS.md>.
 <!-- end agents -->
 
 ## 📚 Documentation & Resources
