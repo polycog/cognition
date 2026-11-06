@@ -14,6 +14,13 @@ Useful GitHub repositories...
 * [Interactive Tutorial Series](https://cognition.polycog.ai/tutorials)<br />featuring Jupyter Notebooks that take you step-by-step through various concepts in the framework as you build an interactive smart home assistant
 ```
 
+:::{tip}
+Using with AI coding agents...
+```{include} ../../README.md
+:start-after: "<!-- start agents -->"
+:end-before: "<!-- end agents -->"
+```
+:::
 
 :::{note}
 This project is under active development!

@@ -1,5 +1,8 @@
 """
 Polycog cognition library
+
+Usage guide for AI coding agents: AGENTS.md in this package directory
+(also at https://docs.polycog.ai/AGENTS.md; index at https://docs.polycog.ai/llms.txt)
 """
 
 import logging

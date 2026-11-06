@@ -112,6 +112,18 @@ Suggested exploration plan:
 2. **[Examples](https://github.com/polycog/cognition/blob/main/examples/README.md)**: fully coded mini-applications.
 3. **[Cookbook](https://docs.polycog.ai/cook)**: annotated recipes related to library features.
 
+## 🤖 Using `cognition` with AI coding agents
+<!-- start agents -->
+* **Usage guide for agents:** [`AGENTS.md`](https://docs.polycog.ai/AGENTS.md), also shipped inside the installed package (`cognition/AGENTS.md`)
+* **[llms.txt](https://docs.polycog.ai/llms.txt)**
+* **Skills** plugin for building, reviewing and debugging `cognition` code: `/plugin install cognition --marketplace polycog/cognition` ([details](https://github.com/polycog/cognition/tree/main/plugins/cognition))
+* Add a line like this to your own project's `AGENTS.md` / `CLAUDE.md`...
+
+> This project uses the `cognition` library.
+> Before writing code with it, run `python -m cognition.guide` to list the sections of its agent guide (for the installed version), then read the relevant ones, e.g. `python -m cognition.guide "Mental model" "Gotchas"`.
+> If it isn't installed yet, read <https://docs.polycog.ai/AGENTS.md>.
+<!-- end agents -->
+
 ## 📚 Documentation & Resources
 
 For detailed technical descriptions & deep dives into the design philosophy:

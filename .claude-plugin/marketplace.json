@@ -1,0 +1,15 @@
+{
+  "name": "polycog",
+  "owner": {
+    "name": "Polycog, Inc.",
+    "email": "nate@polycog.ai"
+  },
+  "description": "Plugins from Polycog for building with the cognition library",
+  "plugins": [
+    {
+      "name": "cognition",
+      "source": "./plugins/cognition",
+      "description": "Skills for building, reviewing, and debugging agents with the cognition library (polycog-cognition)"
+    }
+  ]
+}

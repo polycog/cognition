@@ -1,0 +1,13 @@
+{
+  "name": "cognition",
+  "version": "1.0.4",
+  "description": "Skills for building, reviewing and debugging agents with the cognition library (polycog-cognition)",
+  "author": {
+    "name": "Polycog, Inc.",
+    "email": "nate@polycog.ai"
+  },
+  "homepage": "https://docs.polycog.ai",
+  "repository": "https://github.com/polycog/cognition",
+  "license": "FSL-1.1-ALv2",
+  "keywords": ["cognition", "polycog", "agents", "neurosymbolic"]
+}
