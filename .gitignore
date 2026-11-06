@@ -14,6 +14,8 @@ htmlcov
 *.egg-info
 dist
 build
+# ...except the plugin skill named build
+!plugins/*/skills/build/
 
 .streamlit
 .env
