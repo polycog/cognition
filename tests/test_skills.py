@@ -6,6 +6,8 @@ Tests for the agent skills and the plugin marketplace
 * every skill has frontmatter whose name matches its folder
 * every ``cognition.guide "<heading>"`` reference (skills, README)
   names a real heading in the packaged agent guide
+* every skill named in the docs or other skills (``/<plugin>:<skill>``,
+  "the `<skill>` skill") exists, and each plugin README lists all its skills
 """
 
 import json
@@ -38,6 +40,8 @@ SKILL_DIRS: tuple[Path, ...] = tuple(
 _FRONTMATTER_RE = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 _GUIDE_CMD_RE = re.compile(r'cognition\.guide((?:[ \t]+"[^"\n]+")+)')
 _QUOTED_RE = re.compile(r'"([^"\n]+)"')
+_SKILL_NAME = r"[a-z0-9][a-z0-9-]*"
+_THE_SKILL_RE = re.compile(rf"`({_SKILL_NAME})` skill")
 
 # ===
 
@@ -126,5 +130,37 @@ class TestSkills(unittest.TestCase):
                 found += 1
                 with self.subTest(file=str(path.relative_to(ROOT)), heading=heading):
                     self.assertIn(heading.replace("`", ""), names)
+
+        self.assertGreater(found, 0)
+
+    def test_skill_references(self) -> None:
+        """skills named anywhere exist, and each plugin README lists all of them"""
+
+        found = 0
+
+        for entry in _load_json(MARKETPLACE)["plugins"]:
+            plugin, plugin_dir = entry["name"], ROOT / entry["source"]
+            skills = {p.name for p in (plugin_dir / "skills").iterdir() if p.is_dir()}
+            command_re = re.compile(rf"/{re.escape(plugin)}:({_SKILL_NAME})")
+
+            readme = (plugin_dir / "README.md").read_text(encoding="utf-8")
+            with self.subTest(plugin=plugin, check="README lists every skill"):
+                self.assertEqual(set(command_re.findall(readme)), skills)
+
+            files = [
+                ROOT / "README.md",
+                ROOT / "docs" / "source" / "_extra" / "llms.txt",
+                *sorted(plugin_dir.glob("skills/*/SKILL.md")),
+            ]
+            for path in files:
+                text = path.read_text(encoding="utf-8")
+                refs = command_re.findall(text)
+                if path.name == "SKILL.md":  # "see the `build` skill" (same plugin)
+                    refs += _THE_SKILL_RE.findall(text)
+
+                for ref in refs:
+                    found += 1
+                    with self.subTest(file=str(path.relative_to(ROOT)), skill=ref):
+                        self.assertIn(ref, skills)
 
         self.assertGreater(found, 0)
