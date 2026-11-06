@@ -1,6 +1,6 @@
 {
   "name": "cognition",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Skills for building, reviewing and debugging agents with the cognition library (polycog-cognition)",
   "author": {
     "name": "Polycog, Inc.",
