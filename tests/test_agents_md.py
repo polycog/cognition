@@ -20,10 +20,11 @@ from pathlib import Path
 from mypy import api as mypy_api
 
 import cognition
+from cognition.guide import guide_file, guide_sections
 
 # ===
 
-GUIDE_PATH: Path = Path(cognition.__file__).parent / "AGENTS.md"
+GUIDE_PATH = guide_file()
 """Location of the guide (next to the package source, as shipped in the wheel)"""
 
 _BLOCK_RE = re.compile(r"^```python\n(.*?)^```", re.MULTILINE | re.DOTALL)
@@ -103,6 +104,8 @@ INTENTIONALLY_OMITTED: frozenset[str] = frozenset(
         "is_set",
         "optionally_name",
         "timed",
+        # sections
+        "guide_file",
     }
 )
 """
@@ -157,24 +160,22 @@ def _mentioned(name: str, text: str) -> bool:
     return re.search(rf"\b{re.escape(name)}\b", _code_text(text)) is not None
 
 
-_FENCE_RE = re.compile(r"^```.*?^```", re.MULTILINE | re.DOTALL)
-_HEADING_RE = re.compile(r"^(##|###) (.+)$", re.MULTILINE)
 _CONTENTS_RE = re.compile(r"^\*\*Contents\*\*\n\n((?:- .+\n)+)", re.MULTILINE)
 
 
 def _expected_contents(text: str) -> list[str]:
     """
     One line per ## heading, listing its ### headings
-    (code blocks removed first: their comments start with #)
+    (parsed by cognition.guide, the same parser agents use)
     """
 
     sections: list[tuple[str, list[str]]] = []
 
-    for level, title in _HEADING_RE.findall(_FENCE_RE.sub("", text)):
-        if level == "##":
-            sections.append((title, []))
-        else:
-            sections[-1][1].append(title)
+    for s in guide_sections(text):
+        if s.level == 2:
+            sections.append((s.heading, []))
+        elif s.level == 3:
+            sections[-1][1].append(s.heading)
 
     return [f"- {h2}" + (": " + " · ".join(h3s) if h3s else "") for h2, h3s in sections]
 

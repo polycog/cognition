@@ -6,7 +6,11 @@ https://docs.polycog.ai/autoapi/. Every public symbol also has a Sphinx-style do
 package is typed (`py.typed`), so reading the source next to this file is a reliable fallback.
 
 - Install: `pip install polycog-cognition` (Python >= 3.13). Import name: `cognition`.
-- Every public name is re-exported at the top level: `from cognition import DecisionProcess, Cogent, ...`.
+- Every public name is re-exported at the top level: `from cognition import DecisionProcess, Cogent, ...`
+  except meta tooling (`guide`): `from cognition.guide import guide_section`.
+- Read one section of this guide, for the installed version: `python -m cognition.guide "Gotchas"`
+  (several headings at once are fine; with none, it lists them; backticks in headings are optional).
+  From Python: `guide_section("Gotchas").text`, or `guide_sections()` for every `GuideSection`.
 - The LLM features (`cognition.language`) use [Pydantic AI](https://pydantic.dev/docs/ai/overview/) models. The
   provider extra is **not** installed by default (e.g., `pip install "pydantic-ai-slim[openai]"`).
 

@@ -37,6 +37,7 @@ tooling (`checks.sh`, `dev-requirements.txt`, supported Python versions), keep t
 - Public names are re-exported by hand through each subpackage's `__init__.py` (imports + `__all__`),
   and from there through `cognition/__init__.py`. See `development.md` for the `mkinit` workflow. A new public
   name must be added to its subpackage `__init__`. Note that `type` aliases are always added manually.
+  Also note that meta tooling (`guide`) is intentionally NOT re-exported.
 - The version is `__version__` in `src/cognition/__init__.py` (setuptools reads it dynamically).
 
 ## When you change the public API
