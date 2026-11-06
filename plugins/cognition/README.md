@@ -19,6 +19,27 @@ The coding agent picks these up automatically when relevant; you can also invoke
 
 Or in two steps: `/plugin marketplace add polycog/cognition`, then `/plugin install cognition@polycog`.
 
+### For a team project
+
+To offer the plugin to everyone working in a project, add this to the project's
+`.claude/settings.json`. Each person is prompted once they trust the project folder.
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "polycog": { "source": { "source": "github", "repo": "polycog/cognition" } }
+  },
+  "enabledPlugins": { "cognition@polycog": true }
+}
+```
+
+### Other agent tools
+
+The skills are plain `SKILL.md` folders, so tools that read skills from a directory can use them
+too: copy the folders in `skills/` into that tool's skills directory. Without this plugin's
+`cognition:` namespace, rename each folder and its `name:` field (e.g., `cognition-build`,
+`cognition-review`, `cognition-debug`) to avoid clashing with other skills.
+
 ## Setup
 
 The skills read the agent guide that ships inside the installed library
