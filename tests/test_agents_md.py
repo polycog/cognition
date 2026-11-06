@@ -64,6 +64,7 @@ INTENTIONALLY_OMITTED: frozenset[str] = frozenset(
         "BaseSensor",
         "Sensor",
         "SensorReader",
+        "install",
         "invoke_actuator",
         "perceive",
         "read_sensor_data",
@@ -138,15 +139,18 @@ def _public_names() -> set[str]:
 
 
 _INLINE_CODE_RE = re.compile(r"`([^`\n]+)`")
+_SHELL_SPAN_RE = re.compile(r"^(pip|python|uv)\s")
 
 
 def _code_text(text: str) -> str:
     """
     Only code counts as a mention (fenced blocks + inline `spans`),
-    so prose words like "perceive" or "Phase" don't match API names
+    so prose words like "perceive" or "Phase" don't match API names;
+    shell commands are skipped, so `pip install ...` doesn't count as `install`
     """
 
-    return "\n".join(_BLOCK_RE.findall(text) + _INLINE_CODE_RE.findall(text))
+    spans = [s for s in _INLINE_CODE_RE.findall(text) if not _SHELL_SPAN_RE.match(s)]
+    return "\n".join(_BLOCK_RE.findall(text) + spans)
 
 
 def _mentioned(name: str, text: str) -> bool:
