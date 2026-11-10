@@ -121,7 +121,7 @@ test_suites: Sequence[ChoiceTestSuite[Enum]] = (
         UserRole,
         "Suggesting the appropriate level of account access given a role description",
         (
-            ChoiceTestCase("Just coming in for the day", UserRole.GUEST),
+            ChoiceTestCase("A temp just coming in for the day", UserRole.GUEST),
             ChoiceTestCase("A new visiting faculty member", UserRole.GUEST),
             ChoiceTestCase("needs sudo powers!", UserRole.ADMIN),
             ChoiceTestCase("A new CTO", UserRole.ADMIN),
@@ -138,9 +138,7 @@ test_suites: Sequence[ChoiceTestSuite[Enum]] = (
             ChoiceTestCase("I cannot breath", PhoneIntent.EMERGENCY),
             ChoiceTestCase("My mom is having a seizure", PhoneIntent.EMERGENCY),
             ChoiceTestCase("I cannot make my visit tomorrow", PhoneIntent.SCHEDULING),
-            ChoiceTestCase(
-                "My son has a fever - can we get in today?", PhoneIntent.SCHEDULING
-            ),
+            ChoiceTestCase("Can we get in today?", PhoneIntent.SCHEDULING),
             ChoiceTestCase("I need to refill my inhaler", PhoneIntent.MEDICATIONS),
             ChoiceTestCase(
                 "CVS says you haven't sent over the rx", PhoneIntent.MEDICATIONS
