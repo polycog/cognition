@@ -121,7 +121,7 @@ class EnumClassifier[T: Enum]:
                 "\n",
                 f"* { self._schema(value=None).model_dump_json() }",
                 "\n",
-                "  the other values to not reasonably match the utterance",
+                "  the other values do not reasonably match the utterance",
                 "\n\n",
                 "== Utterance ==",
                 "\n",
