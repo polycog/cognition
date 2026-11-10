@@ -2,7 +2,7 @@
 Cogent sub-module
 """
 
-from . import cogent, env
+from . import env
 from .cogent import (
     Cogent,
     self_actuator,
@@ -31,7 +31,7 @@ __all__ = [
     "Cogent",
     "Sensor",
     "SensorReader",
-    "cogent",
+    # "cogent",  # avoid overwriting cognition.cogent
     "create_actuator",
     "create_sensor",
     "env",
